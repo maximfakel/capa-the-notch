@@ -263,6 +263,10 @@ enum CapacityNotchTestRunner {
                 askingClaudeCodeIsThrottled
             ),
             (
+                "ClaudeUsageCommandTests.aFailedAskIsHeldOnlyBrieflyNotForTheWholeInterval",
+                aFailedAskIsHeldOnlyBrieflyNotForTheWholeInterval
+            ),
+            (
                 "UnreadCapacityTests.anUnreadSurfaceShowsNoNumbersAtAll",
                 anUnreadSurfaceShowsNoNumbersAtAll
             ),

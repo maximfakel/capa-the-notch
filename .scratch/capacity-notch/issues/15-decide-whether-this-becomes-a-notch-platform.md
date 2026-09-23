@@ -4,7 +4,7 @@
 
 **Blocked by:** 11/Publish a free GitHub beta release.
 
-**Status:** needs-info
+**Status:** resolved
 
 **Why:** Three features have been asked for that have nothing to do with
 Capacity — Face Unlock, a teleprompter, and clipboard history. Each is
@@ -50,3 +50,84 @@ without evidence.
 
 Like ticket 12, this records interest and the shape of the decision. It is not
 a promise to build any of the three.
+
+## Comments
+
+**2026-09-24 — the whole deferred list, from the spec.**
+
+The question above was framed around three features. The spec the author
+confirmed before ticket 01 — saved on this date as `.scratch/capacity-notch/spec.md`
+— already deferred more, "until the MVP is finished", and the beta is now out
+(ticket 11: released, one friend installed it; the clean-Mac smoke test is
+still open). So the decision covers all of it, in two groups that should be
+settled separately, because they are different questions:
+
+*About Capacity — does the product grow within its own sentence?*
+
+- **Cost and active AI sessions.** Closest to the product; the glossary has
+  no word for either yet.
+- **History and charts.** Ticket 07 promises Settings "without introducing a
+  dashboard or historical analytics", and the product is defined as
+  glanceable. A decision, not an addition.
+- **New AI Providers.** `CONTEXT.md` scopes Codex and Claude Code as the
+  *initial* ones; `notchy.dev` covers Copilot and Cursor too. Each would need
+  a Provider-owned interface under ADR 0001.
+
+*Not about Capacity — does the product become a platform?*
+
+- music;
+- Shelf and clipboard (clipboard history is one of the three above);
+- calendar;
+- Face Unlock and a teleprompter, from above;
+- Speech Dictation — ticket 12's spike. The spec calls it "a deferred
+  hypothesis, not a roadmap promise", and ticket 12 matches it nearly point
+  for point. Whatever this ticket decides for the second group decides
+  whether that spike is worth running.
+
+Never, per the spec, and not part of this question: Intel, the Mac App Store,
+the surface on several displays at once.
+
+`CONTEXT.md`'s `_Avoid_` for Capacity Notch — "Universal notch hub, Dynamic
+Island clone" — is the one line that already leans on the second group.
+Deciding for a platform means changing that line on purpose.
+
+## Answer
+
+Decided with the author on 2026-09-24, in a grilling session.
+
+**Capacity Notch becomes a platform** (ADR 0003). The Notch Surface hosts
+Modules; the Capacity Module is the first. `CONTEXT.md` now says so, with
+**Notch Surface**, **Module** and **Capacity Module** as terms, and "notch hub"
+is no longer something it avoids.
+
+- **Name:** kept. Renaming changes the bundle id — every stored preference —
+  the repository and the update link, so it waits until the second Module
+  ships, if it happens at all.
+- **The compact strip:** belongs to Capacity, except while a Module is doing
+  something that needs attention now — recording, a running teleprompter.
+  Music does not take it.
+- **Where Modules come from:** built in, never third-party.
+- **Defaults:** every Module but Capacity off until turned on; permissions
+  asked for then; nothing runs while off.
+- **Architecture:** no Module host ahead of need; the teleprompter is the
+  second thing the surface shows, and the shared shape comes out of two
+  Modules when the third arrives.
+- **Moving between Modules** in the expanded surface is designed from the
+  project's references; where a mockup is needed, Claude builds it in Figma or
+  Paper, the author adjusts it by hand, and it comes back as the source of
+  truth.
+- **Order:** teleprompter (ticket 16); dictation (ticket 12's spike, then the
+  Module); music and calendar; Shelf and clipboard, which need an ADR for the
+  data they hold; Face Unlock.
+
+**The Capacity group, all declined for now:**
+
+- **Cost** — everyone here is on a subscription, so there is no balance to
+  show; an API-equivalent estimate would need session transcripts, which ADR
+  0001 keeps out. Not doing.
+- **Active AI sessions** — activity rather than Capacity, or transcripts
+  again. Not doing.
+- **History and charts** — nothing was missed in the beta. No history now; a
+  dashboard never, per ticket 07.
+- **New Providers** — only Codex and Claude Code are used here. On first
+  request, and each through a Provider-owned interface under ADR 0001.

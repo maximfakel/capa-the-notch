@@ -120,12 +120,24 @@ func theWaitStretchesWhileAProviderIsFailing() throws {
         "A closed one is glanced at, so five minutes will do"
     )
     try expect(
-        schedule.delay(expanded: true, consecutiveFailures: 1) == 120,
-        "One failure doubles the wait"
+        schedule.delay(expanded: true, consecutiveFailures: 1) == 30,
+        "One failure is a blip until it happens twice, so it is tried again soon"
     )
     try expect(
-        schedule.delay(expanded: true, consecutiveFailures: 2) == 240,
-        "Two failures double it again"
+        schedule.delay(expanded: false, consecutiveFailures: 1) == 30,
+        "Soon whichever pace the surface is at — a closed one would otherwise wait ten minutes"
+    )
+    try expect(
+        schedule.delay(expanded: true, consecutiveFailures: 2) == 120,
+        "The second failure starts the doubling"
+    )
+    try expect(
+        schedule.delay(expanded: true, consecutiveFailures: 3) == 240,
+        "And each one after doubles it again"
+    )
+    try expect(
+        schedule.delay(expanded: false, consecutiveFailures: 2) == 600,
+        "From the closed surface's own pace"
     )
     try expect(
         schedule.delay(expanded: true, consecutiveFailures: 40) == 900,

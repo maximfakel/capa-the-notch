@@ -217,18 +217,24 @@ public struct NewestClaudeCapacity: ClaudeCapacitySource, Sendable {
 public final class ThrottledCapacitySource: ClaudeCapacitySource, @unchecked Sendable {
     private let source: any ClaudeCapacitySource
     private let interval: TimeInterval
+    private let failureInterval: TimeInterval
     private let now: @Sendable () -> Date
     private let lock = NSLock()
     private var lastAttempt: Date?
     private var lastResult: Result<ClaudeCapacityReading, Error>?
 
+    /// An answer is held for `interval`; a failure only for `failureInterval`,
+    /// since holding a failure as long as an answer is what kept Claude
+    /// unread for minutes after an update.
     public init(
         _ source: any ClaudeCapacitySource,
         interval: TimeInterval,
+        failureInterval: TimeInterval = 30,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.source = source
         self.interval = interval
+        self.failureInterval = min(failureInterval, interval)
         self.now = now
     }
 
@@ -238,8 +244,15 @@ public final class ThrottledCapacitySource: ClaudeCapacitySource, @unchecked Sen
         let attemptedAt = lastAttempt
         lock.unlock()
 
-        if let held, let attemptedAt, now().timeIntervalSince(attemptedAt) < interval {
-            return try held.get()
+        if let held, let attemptedAt {
+            let holdsFor: TimeInterval
+            switch held {
+            case .success: holdsFor = interval
+            case .failure: holdsFor = failureInterval
+            }
+            if now().timeIntervalSince(attemptedAt) < holdsFor {
+                return try held.get()
+            }
         }
 
         let result = Result { try source.read() }

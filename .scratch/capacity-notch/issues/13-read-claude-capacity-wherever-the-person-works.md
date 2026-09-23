@@ -239,3 +239,28 @@ rerun on the fix. `CAPACITY_NOTCH_LIVE_CLAUDE=1` still reads Fresh Capacity
 
 The roll-back was never watched on the running surface: `/usage` did not fail
 on this machine during the session.
+
+**2026-09-24 — a friend's install: the five-hour window was missing.**
+
+Reported by the author from a friend's first install (MacBook Pro 14, M5): the
+Weekly window showed, the five-hour one did not, and it appeared only after the
+friend ran Claude Code in a terminal.
+
+The likely cause, not yet confirmed: the five-hour window starts with the first
+request, so after hours without Claude Code there is none, and `/usage` may
+then print no `Current session:` line, or one without `N% used`. Either reads
+as "this plan has no such window" — deliberately not an alarm, since the
+bridge treats windows as optional too — so the surface showed Weekly alone.
+Running Claude Code started the window and the line appeared. What argues for
+this over a wording change: a changed session line *with* `% used` would have
+refused the whole report, and Weekly would not have shown either.
+
+What would confirm it: the friend's output of
+
+    claude --print --no-session-persistence --strict-mcp-config /usage
+
+while the five-hour window is missing, and his Copy Diagnostics (`windows 1`
+under `claudeCode`). Asked for. If confirmed, a session that has not started
+should show as a five-hour window with all of it left and no reset, rather
+than no window — built against that real output, not a guess. It could not be
+reproduced here: this machine's own Claude Code use keeps the window open.

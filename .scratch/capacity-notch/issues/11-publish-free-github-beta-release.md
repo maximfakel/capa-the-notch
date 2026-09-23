@@ -128,3 +128,119 @@ keeps the path's length, which differs with every clone. `-file-prefix-map`
 does not reach it. `build-release.sh` now builds `git archive HEAD` unpacked
 into a fixed directory; the source checkout and the snapshot, in different
 directories, then gave the same archive.
+
+**2026-09-23 — published.**
+
+`https://github.com/maximfakel/capacity-notch`, private. Its history is one
+commit, `12858c2`, authored by `190096705+maximfakel@users.noreply.github.com`
+with the date of local `c5a8d45`, whose tree it is exactly. Release `v0.1.0`,
+"Capacity Notch 0.1.0 (beta)", carries `CapacityNotch-0.1.0.zip` and its
+`.sha256`:
+
+`91fb9ddb8d8cea3e37b5ddbcd62bab6a1c8a40fcba7e71bdbe36b1f228658763`
+
+The same archive came out of the local checkout and out of the snapshot's, in
+different directories, and the assets downloaded back from the release pass
+`shasum -c`.
+
+Published first as a pre-release, then made an ordinary release: GitHub never
+counts a pre-release as latest, so `/releases/latest` — what Check for
+Updates… opens — answered 404 while it was the only one. "Beta" is in the
+title and the notes instead. Signed out, that URL still answers 404, because
+the repository is private; a friend signed in to GitHub, with access, gets
+the release.
+
+**Releasing the next version.** The published history is not this one, so a
+push from here does not apply. For each release: bump `Packaging/Info.plist`,
+commit, `git archive HEAD` into a clone of the published repository as one new
+commit with the source commit's date and the noreply author, sweep it for
+personal data, run `build-release.sh` there and check it matches the local
+archive, push, tag, and release as an ordinary release.
+
+### Still open
+
+- The clean-Mac smoke test, `docs/release-smoke-test.md` — the ticket closes
+  on it.
+- Friends need access to the private repository to download.
+- Homebrew, later, by decision.
+- Ticket 03's question about Anthropic's terms, left open by the author.
+
+**2026-09-23 — the next release is one script.**
+
+`Scripts/publish-release.sh` does what the steps above describe, and asks
+before anything is pushed; `--dry-run` does everything but push and release.
+It holds nothing personal itself — it is published too — so what it sweeps
+for is read at run time: the home directory's name, `git config` name and
+address, any email address outside an allowlist, any `/Users/` path. The
+repository comes from `Releases.swift`, the one place it is named, and the
+noreply author from `gh api user`.
+
+### Verified
+
+A dry run from a throwaway clone built the archive, committed the snapshot
+onto the published `12858c2`, swept it clean, and built the same archive from
+it. With a file naming the home directory and the git address planted in the
+clone, the sweep named both and stopped before anything was pushed.
+
+### Not verified
+
+The pushing half — push, tag, release, download-back and the latest check —
+has not run through the script; it is the sequence that published 0.1.0 by
+hand. Nor has the refusal when the two archives differ, since they did not.
+
+**2026-09-24 — Hardened Runtime on, and what checking it turned up.**
+
+The spec asked for Hardened Runtime with minimal entitlements; the release was
+signed without it. Both executables are now signed with `--options runtime`
+and no entitlements, the bridge on its own and first, since signing the bundle
+marks only its main executable and Claude Code runs the bridge directly. The
+release archive stays reproducible (two clean runs, the same bytes).
+
+Checked on the installed application: the Codex App Server starts and reads
+within seconds of launch; the bridge, fed `{}`, records its note, forwards to
+the command after `--`, and leaves the snapshot alone; `/usage` reads Fresh
+Capacity.
+
+*A finding along the way, not caused by it.* The first `/usage` after
+installing a **new build** hangs: its `claude` child spawns `security` —
+Claude Code reaching for its own credential in the Keychain — which does not
+return, and the run is cut off at the twenty-second timeout. The same happened
+with and without Hardened Runtime. The throttle then holds that failure for
+five minutes, so after every update Claude shows "Claude Code did not answer"
+for up to five minutes before its next run reads normally, without `security`.
+Relaunching the *same* build read Claude two seconds after launch. Seen three
+times with a new build, once with the same one.
+
+Ruled out: the environment (the app's full environment, replayed from a shell,
+read in 2.3 s) and a visible Keychain dialog (`SecurityAgent` never ran). Not
+yet known: what `security` waits for. It matches the ad-hoc problem this ticket
+already names — each build is a new signature — but through Claude Code's own
+Keychain access rather than a permission of Capacity Notch's.
+
+**2026-09-24 — the window after an update, shortened.**
+
+The finding above was worse in the background than it looked. A closed
+surface reads a Provider every five minutes and doubled the wait after a
+failure worth retrying, so a first `/usage` that hung after an update left
+Claude unread for about ten minutes; the throttle, holding the failure as
+long as an answer, would have kept a sooner refresh from asking anyway.
+
+Now a first consecutive failure is tried again after 30 seconds, whichever
+pace the surface is at, and doubling starts from the second
+(`RefreshSchedule.firstRetry`); and `ThrottledCapacitySource` holds a failure
+for 30 seconds, an answer still for five minutes. Codex's transient failures
+get the same quick second chance.
+
+### Verified
+
+97 checks pass; the schedule test now expects 30 s for a first failure and
+the doubling from the second, and a new test has a failure held 30 seconds,
+not the interval. Both were seen to fail first.
+
+### Not verified
+
+The path this is for was not seen live. On the next new build, installed to
+watch it, the first `/usage` called `security` and read in five seconds — so
+the hang happens on some new builds, not all (three of four today), for a
+reason still unknown. The two parts are tested; the refresh loop in
+`AppDelegate` that joins them is not.

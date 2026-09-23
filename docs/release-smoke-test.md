@@ -1,5 +1,7 @@
 # Release smoke test
 
+In Russian: [release-smoke-test.ru.md](release-smoke-test.ru.md).
+
 Run on a Mac that has never had Capacity Notch — a spare machine, or a
 separate macOS user account — with the archive downloaded from the release,
 not built locally. Ticket 11 closes on this, not on the development machine.
@@ -9,7 +11,9 @@ line. A fail is a finding, with what was seen.
 
 ## Install
 
-- [ ] `shasum -a 256 -c` on the downloaded `.sha256` prints `OK`.
+- [ ] In the download folder (`cd ~/Downloads`), `shasum -a 256 -c` on the
+      `.sha256` prints `OK`, and the SHA-256 matches the one in the release
+      notes.
 - [ ] First open shows macOS's "could not verify" warning, and nothing else.
 - [ ] System Settings → Privacy & Security shows **Open Anyway** for Capacity
       Notch; after it and **Open**, the application starts.

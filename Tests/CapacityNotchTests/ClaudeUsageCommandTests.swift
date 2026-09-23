@@ -340,6 +340,34 @@ func askingClaudeCodeIsThrottled() throws {
     try expect(counted.reads == 2, "Past the interval it asks again, got \(counted.reads)")
 }
 
+final class FailingCountingSource: ClaudeCapacitySource, @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+    var reads: Int { lock.withLock { count } }
+
+    func read() throws -> ClaudeCapacityReading {
+        lock.withLock { count += 1 }
+        throw ClaudeUsageCommandError.commandFailed
+    }
+}
+
+func aFailedAskIsHeldOnlyBrieflyNotForTheWholeInterval() throws {
+    // After an update the first /usage can hang until its timeout; holding
+    // that failure as long as an answer kept Claude unread for minutes.
+    let failing = FailingCountingSource()
+    let clock = MutableClock(now: readAt)
+    let throttled = ThrottledCapacitySource(failing, interval: 300, now: clock.read)
+
+    _ = try? throttled.read()
+    clock.advance(by: 29)
+    _ = try? throttled.read()
+    try expect(failing.reads == 1, "A failure is held for a moment, got \(failing.reads) asks")
+
+    clock.advance(by: 2)
+    _ = try? throttled.read()
+    try expect(failing.reads == 2, "Then asked again, not after five minutes; got \(failing.reads) asks")
+}
+
 final class MutableClock: @unchecked Sendable {
     private let lock = NSLock()
     private var current: Date

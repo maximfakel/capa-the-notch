@@ -21,5 +21,10 @@ install -m 755 "$binary_dir/CapacityNotchClaudeBridge" "$app_bundle/Contents/Mac
 install -m 644 "$project_root/Packaging/Info.plist" "$app_bundle/Contents/Info.plist"
 install -m 644 "$project_root/Sources/CapacityNotch/Resources/OpenAIBlossom.svg" "$app_bundle/Contents/Resources/OpenAIBlossom.svg"
 
-codesign --force --sign - "$app_bundle"
+# Hardened Runtime, with no entitlements: nothing here needs JIT, injected
+# libraries or a debugger. The bridge is signed on its own and first —
+# signing the bundle marks only its main executable — because Claude Code runs
+# it directly.
+codesign --force --options runtime --sign - "$app_bundle/Contents/MacOS/CapacityNotchClaudeBridge"
+codesign --force --options runtime --sign - "$app_bundle"
 print "$app_bundle"

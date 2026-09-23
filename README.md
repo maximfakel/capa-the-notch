@@ -24,26 +24,35 @@ things you will notice:
 
 To install:
 
-1. Download `CapacityNotch-<version>.zip` and its `.sha256` from the latest
-   release.
-2. Check the download, in the folder you saved both to:
-
-   ```sh
-   shasum -a 256 -c CapacityNotch-<version>.zip.sha256
-   ```
-
-   It must print `OK`. If it does not, delete the download.
-3. Open the zip and move `CapacityNotch.app` to Applications.
-4. Open it. macOS says it could not verify the application; close that
+1. Download `CapacityNotch-<version>.zip` from the latest release.
+2. Open the zip and move `CapacityNotch.app` to Applications.
+3. Open it. macOS says it could not verify the application; close that
    message.
-5. Open **System Settings → Privacy & Security**, scroll down, and click
+4. Open **System Settings → Privacy & Security**, scroll down, and click
    **Open Anyway** beside Capacity Notch. When the warning comes back, click
    **Open**. From then on it opens like any other application.
+
+**Optional: check the download.** The release notes give the archive's
+SHA-256. Compare it with yours, in the folder the zip was saved to —
+usually Downloads:
+
+```sh
+cd ~/Downloads
+shasum -a 256 CapacityNotch-<version>.zip
+```
+
+The two must be the same; if they are not, delete the download. This catches
+a broken download. It catches a tampered one only if the SHA-256 reached you
+some other way than the release itself — in a message from whoever sent you
+the link, say — since whoever could replace the archive could replace the
+notes too. The release also carries a `.sha256` file, for
+`shasum -a 256 -c`, and for anyone who builds the archive themselves and
+wants to compare.
 
 To update, choose **Check for Updates…** in the menu bar menu or in Settings.
 It opens the latest release on GitHub; Capacity Notch never checks on its
 own. Quit the running copy, then repeat the steps above with the new zip —
-step 5 again, because the new build is a new signature to macOS.
+step 4 again, because the new build is a new signature to macOS.
 
 ## Requirements
 
@@ -73,6 +82,20 @@ toolchain, with no builder's home directory inside:
 ```
 
 It writes `dist/CapacityNotch-<version>.zip` and its `.sha256`.
+
+Publish it as a GitHub release, once `Packaging/Info.plist` has the new
+version and `docs/releases/<version>.md` its notes:
+
+```sh
+./Scripts/publish-release.sh --dry-run
+./Scripts/publish-release.sh
+```
+
+The published repository keeps one snapshot commit per release rather than
+this history, so the script commits HEAD's tree onto it, refuses if the
+snapshot carries the publisher's name, address or home directory, or if the
+archive built from it differs from the one built here, and asks before
+anything is pushed.
 
 Build an ad-hoc signed application bundle for the install loop:
 

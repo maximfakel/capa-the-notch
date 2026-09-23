@@ -1,12 +1,26 @@
-# AI Capacity Notch
+# Capacity Notch
 
-A glanceable macOS surface that keeps AI-service capacity visible and reveals detailed usage information on demand. It is initially designed for its creator and a small group of developers.
+A glanceable macOS surface in the notch that hosts Modules — built-in features, off until asked for. The first, the Capacity Module, keeps AI-service Capacity visible and reveals detailed usage on demand. It is initially designed for its creator and a small group of developers.
 
 ## Language
 
+### The surface
+
 **Capacity Notch**:
-The product's persistent top-of-screen surface: compact while idle and expandable for details about AI-service capacity.
-_Avoid_: Universal notch hub, Dynamic Island clone
+The application.
+
+**Notch Surface**:
+The persistent top-of-screen surface in the notch: a compact strip while idle, expandable to show a Module in full.
+_Avoid_: Dynamic Island, hub
+
+**Module**:
+One built-in feature the Notch Surface hosts. Every Module except the Capacity Module is off until a person turns it on.
+_Avoid_: Plugin, widget, extension
+
+**Capacity Module**:
+The Module that shows AI-service Capacity; the one Capacity Notch started as. The terms below are its language.
+
+### Capacity
 
 **Provider**:
 An AI service whose capacity information is presented by Capacity Notch.
@@ -21,7 +35,7 @@ A Provider-defined period with measured usage and a reset time, such as a short 
 _Avoid_: Limit, billing period
 
 **Headline Window**:
-The Quota Window with the least remaining Capacity, the earlier reset breaking a tie. It represents a Provider in the compact surface.
+The Quota Window with the least remaining Capacity, the earlier reset breaking a tie. It represents a Provider in the compact strip.
 _Avoid_: Primary limit, most urgent window
 
 **Fresh Capacity**:

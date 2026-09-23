@@ -68,7 +68,10 @@ for binary in "$app"/Contents/MacOS/*; do
   fi
 done
 
-codesign --force --sign - "$app"
+# Hardened Runtime, with no entitlements; the bridge first and on its own,
+# because signing the bundle marks only its main executable.
+codesign --force --options runtime --sign - "$app/Contents/MacOS/CapacityNotchClaudeBridge"
+codesign --force --options runtime --sign - "$app"
 find "$app" -exec touch -h -t "$stamp" {} +
 
 archive="CapacityNotch-$version.zip"
