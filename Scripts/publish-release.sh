@@ -118,18 +118,19 @@ read -r answer
 git -C "$clone" push -q origin HEAD
 git -C "$clone" tag -a "$tag" -m "Capacity Notch $version"
 git -C "$clone" push -q origin "$tag"
-# The checksum goes into the notes here rather than in the committed file:
-# it depends on the commit, so the file cannot know it beforehand.
-body="$(mktemp)"
-{ cat "$notes"; print ""; print "**SHA-256** of \`$archive\`:"; print ""; print "\`$reference\`"; } > "$body"
+# The archive alone. A checksum beside it proves nothing a download from the
+# same release could not fake, and GitHub shows each asset's digest itself;
+# the reproducibility check above is where the checksum does its work.
 gh release create "$tag" --repo "$slug" --latest \
-  --title "Capacity Notch $version (beta)" --notes-file "$body" \
-  "$clone/dist/$archive" "$clone/dist/$archive.sha256"
+  --title "Capacity Notch $version (beta)" --notes-file "$notes" \
+  "$clone/dist/$archive"
 
 print "== checking the release as a download"
 check="$(mktemp -d)"
 gh release download "$tag" --repo "$slug" --dir "$check"
-(cd "$check" && shasum -a 256 -c "$archive.sha256")
+downloaded="$(shasum -a 256 "$check/$archive" | cut -d' ' -f1)"
+[[ "$downloaded" == "$reference" ]] || fail "the downloaded archive is $downloaded, not $reference."
+print "$archive: OK"
 latest="$(gh api "repos/$slug/releases/latest" --jq .tag_name)"
 [[ "$latest" == "$tag" ]] || fail "released, but latest is $latest, not $tag."
 print "Published: https://github.com/$slug/releases/tag/$tag"

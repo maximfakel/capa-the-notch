@@ -61,8 +61,8 @@ struct MusicArtwork: View {
 
 /// Seven bars, as drawn. Decorative: while the track plays each one moves to
 /// a new height of its own every 0.3 seconds, so the bars never fall into a
-/// rhythm; paused, or under Reduce Motion, they rest at the drawn heights. No
-/// audio is captured.
+/// rhythm; paused they sink to four-point dashes ("Notch — Compact — Pause"),
+/// and under Reduce Motion they hold still. No audio is captured.
 ///
 /// Drawn with Core Animation, not SwiftUI. Animated in SwiftUI — a timeline
 /// redrawing the bars — the surface cost a fifth of a core, measured; here the
@@ -71,53 +71,55 @@ struct MusicArtwork: View {
 struct EqualizerBars: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let isPlaying: Bool
+    /// The tallest a bar can stand: 30 under the strip, 34 on the music page.
+    var height: CGFloat = 34
 
     var body: some View {
-        EqualizerLayers(moving: isPlaying && !reduceMotion)
-            .frame(width: EqualizerLayers.width, height: EqualizerLayers.height)
+        EqualizerLayers(moving: isPlaying && !reduceMotion, resting: !isPlaying, height: height)
+            .frame(width: EqualizerView.width, height: height)
             .accessibilityHidden(true)
     }
 }
 
 private struct EqualizerLayers: NSViewRepresentable {
-    static let heights: [CGFloat] = [34, 22, 18, 30, 10, 26, 30]
-    static let height: CGFloat = 34
-    static let width: CGFloat = CGFloat(heights.count) * 2 + CGFloat(heights.count - 1) * 3
-
     let moving: Bool
+    let resting: Bool
+    let height: CGFloat
 
     func makeNSView(context: Context) -> EqualizerView {
-        EqualizerView()
+        EqualizerView(height: height)
     }
 
     func updateNSView(_ view: EqualizerView, context: Context) {
-        view.moving = moving
+        view.update(moving: moving, resting: resting)
     }
 }
 
 final class EqualizerView: NSView {
+    static let count = 7
+    static let width: CGFloat = CGFloat(count) * 2 + CGFloat(count - 1) * 3
+    /// A paused bar: a four-point dash.
+    private static let rest: CGFloat = 4
     private static let beat: TimeInterval = 0.3
+
+    private let height: CGFloat
     private var bars: [CALayer] = []
     private var timer: Timer?
+    private var moving = false
+    private var resting: Bool?
 
-    var moving = false {
-        didSet {
-            guard moving != oldValue else { return }
-            moving ? start() : rest()
-        }
-    }
-
-    init() {
+    init(height: CGFloat) {
+        self.height = height
         super.init(frame: .zero)
         wantsLayer = true
-        for (index, height) in EqualizerLayers.heights.enumerated() {
-            // Full height, scaled down to the drawn one, so every bar can
+        for index in 0 ..< Self.count {
+            // Full height, scaled down to the one shown, so every bar can
             // reach the top and each moves by scale alone.
             let bar = CALayer()
             bar.backgroundColor = NSColor.white.withAlphaComponent(0x8C / 255).cgColor
             bar.cornerRadius = 1
-            bar.frame = CGRect(x: CGFloat(index) * 5, y: 0, width: 2, height: EqualizerLayers.height)
-            bar.transform = CATransform3DMakeScale(1, height / EqualizerLayers.height, 1)
+            bar.frame = CGRect(x: CGFloat(index) * 5, y: 0, width: 2, height: height)
+            bar.transform = CATransform3DMakeScale(1, Self.rest / height, 1)
             layer?.addSublayer(bar)
             bars.append(bar)
         }
@@ -126,9 +128,26 @@ final class EqualizerView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    func update(moving: Bool, resting: Bool) {
+        if moving != self.moving {
+            self.moving = moving
+            if moving { start() } else { stop() }
+        }
+        if resting != self.resting {
+            self.resting = resting
+            // Paused, the bars sink to dashes; playing under Reduce Motion
+            // they stand still at heights of their own.
+            if resting {
+                for bar in bars { move(bar, to: Self.rest / height) }
+            } else if !moving {
+                step()
+            }
+        }
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if window == nil { timer?.invalidate(); timer = nil } else if moving { start() }
+        if window == nil { stop() } else if moving { start() }
     }
 
     private func start() {
@@ -141,16 +160,15 @@ final class EqualizerView: NSView {
         self.timer = timer
     }
 
-    private func rest() {
+    private func stop() {
         timer?.invalidate()
         timer = nil
-        for (bar, height) in zip(bars, EqualizerLayers.heights) {
-            move(bar, to: height / EqualizerLayers.height)
-        }
     }
 
+    /// A new height for every bar, from a third of the way up to the top —
+    /// the drawing's shortest playing bar stands 10 of 30.
     private func step() {
-        for bar in bars { move(bar, to: .random(in: 0.25...1)) }
+        for bar in bars { move(bar, to: .random(in: 0.3...1)) }
     }
 
     /// From wherever the bar is on screen now, so a new height taken mid-way
@@ -243,7 +261,7 @@ struct CompactMusicRow: View {
             }
             HStack(spacing: 20) {
                 MusicControls(isPlaying: track.isPlaying, small: 10, large: 14, send: send)
-                EqualizerBars(isPlaying: track.isPlaying)
+                EqualizerBars(isPlaying: track.isPlaying, height: 30)
             }
         }
         .frame(height: MusicType.rowArtwork)

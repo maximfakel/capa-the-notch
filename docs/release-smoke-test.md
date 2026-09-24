@@ -6,14 +6,11 @@ Run on a Mac that has never had Capacity Notch — a spare machine, or a
 separate macOS user account — with the archive downloaded from the release,
 not built locally. Ticket 11 closes on this, not on the development machine.
 
-Record the macOS version, the archive's SHA-256, and a pass or fail for each
+Record the macOS version, the release version, and a pass or fail for each
 line. A fail is a finding, with what was seen.
 
 ## Install
 
-- [ ] In the download folder (`cd ~/Downloads`), `shasum -a 256 -c` on the
-      `.sha256` prints `OK`, and the SHA-256 matches the one in the release
-      notes.
 - [ ] First open shows macOS's "could not verify" warning, and nothing else.
 - [ ] System Settings → Privacy & Security shows **Open Anyway** for Capacity
       Notch; after it and **Open**, the application starts.
@@ -62,7 +59,7 @@ line. A fail is a finding, with what was seen.
 
 ## Updating
 
-- [ ] **Check for Updates…**, from the menu and from Settings, opens the
+- [ ] **Check for Updates…**, in Settings → General, opens the
       latest release in the browser.
 - [ ] Installing a newer archive over this one follows the same steps, and
       the README's warning about forgotten permissions matches what happens.

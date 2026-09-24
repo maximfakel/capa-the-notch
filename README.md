@@ -31,24 +31,7 @@ To install:
    **Open Anyway** beside Capacity Notch. When the warning comes back, click
    **Open**. From then on it opens like any other application.
 
-**Optional: check the download.** The release notes give the archive's
-SHA-256. Compare it with yours, in the folder the zip was saved to —
-usually Downloads:
-
-```sh
-cd ~/Downloads
-shasum -a 256 CapacityNotch-<version>.zip
-```
-
-The two must be the same; if they are not, delete the download. This catches
-a broken download. It catches a tampered one only if the SHA-256 reached you
-some other way than the release itself — in a message from whoever sent you
-the link, say — since whoever could replace the archive could replace the
-notes too. The release also carries a `.sha256` file, for
-`shasum -a 256 -c`, and for anyone who builds the archive themselves and
-wants to compare.
-
-To update, choose **Check for Updates…** in the menu bar menu or in Settings.
+To update, choose **Check for Updates…** in Settings → General.
 It opens the latest release on GitHub; Capacity Notch never checks on its
 own. Quit the running copy, then repeat the steps above with the new zip —
 step 4 likely again, since a new download of an application that is not
@@ -107,11 +90,11 @@ The bundle is written to `.build/CapacityNotch.app`.
 
 ## Connect Codex
 
-Capacity Notch reads Codex Capacity through the official Codex App Server. Pick
-**Connect Codex** in the menu bar: it starts one `codex app-server` process,
+Capacity Notch reads Codex Capacity through the official Codex App Server. Turn
+on **Codex** in Settings → Providers: it starts one `codex app-server` process,
 performs the `initialize` handshake, and reads `account/rateLimits/read`. Live
 `account/rateLimits/updated` notifications and a sixty-second refresh keep the
-surface current without a relaunch. **Disconnect Codex** and Quit end only the
+surface current without a relaunch. Turning it off, and Quit, end only the
 App Server that Capacity Notch started.
 
 Capacity Notch sends four App Server methods and no others: `initialize`,
@@ -173,8 +156,8 @@ to it. Replace the last command with your existing executable or script:
 }
 ```
 
-Run Claude Code through one response, then choose **Connect Claude Code…** in
-the menu bar. Readings older than five minutes are visibly Stale Capacity; a
+Run Claude Code through one response, then turn on **Claude Code** in
+Settings → Providers. Readings older than five minutes are visibly Stale Capacity; a
 missing snapshot is disconnected rather than being shown as `0%`. The bridge
 works for subscription accounts for which Claude Code exposes `rate_limits`.
 See [Anthropic's status-line documentation](https://code.claude.com/docs/en/statusline).
