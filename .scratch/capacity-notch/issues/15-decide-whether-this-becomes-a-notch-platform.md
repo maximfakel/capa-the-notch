@@ -131,3 +131,10 @@ is no longer something it avoids.
   dashboard never, per ticket 07.
 - **New Providers** — only Codex and Claude Code are used here. On first
   request, and each through a Provider-owned interface under ADR 0001.
+
+**2026-09-24 — the order changed: music first.**
+
+The author chose to start with music (ticket 17) rather than the
+teleprompter, which moves to second among the new Modules (ticket 16). ADR
+0003 is amended to match, and to say what the strip may do: a Module that
+needs attention adds a row beneath Capacity, never replaces it.

@@ -402,6 +402,42 @@ enum CapacityNotchTestRunner {
                 "ClaudeCapacityServiceTests.disconnectingClaudeClearsFreshCapacityFromTheSurface",
                 disconnectingClaudeClearsFreshCapacityFromTheSurface
             ),
+            (
+                "MusicTests.aFullLineFromTheAdapterSaysWhatIsPlaying",
+                aFullLineFromTheAdapterSaysWhatIsPlaying
+            ),
+            (
+                "MusicTests.aDiffLineUpdatesTheLastFullOne",
+                aDiffLineUpdatesTheLastFullOne
+            ),
+            (
+                "MusicTests.theArtworkOutlivesAFullLineForTheSameTrackOnly",
+                theArtworkOutlivesAFullLineForTheSameTrackOnly
+            ),
+            (
+                "MusicTests.aMusicModuleThatCannotReadSaysSoInTheReport",
+                aMusicModuleThatCannotReadSaysSoInTheReport
+            ),
+            (
+                "MusicTests.eachControlIsTheCommandTheAdapterExpects",
+                eachControlIsTheCommandTheAdapterExpects
+            ),
+            (
+                "MusicTests.thePositionMovesOnFromWhenItWasReported",
+                thePositionMovesOnFromWhenItWasReported
+            ),
+            (
+                "MusicTests.aLineTheAdapterDidNotWriteIsNotAReading",
+                aLineTheAdapterDidNotWriteIsNotAReading
+            ),
+            (
+                "MusicTests.theRowShowsWhilePlayingAndLingersBrieflyOnPause",
+                theRowShowsWhilePlayingAndLingersBrieflyOnPause
+            ),
+            (
+                "MusicTests.nothingPlayingOrUnreadableShowsNoRow",
+                nothingPlayingOrUnreadableShowsNoRow
+            ),
         ]
         let selection = CommandLine.arguments.dropFirst().first
         let selected = tests.filter { selection == nil || $0.0 == selection }

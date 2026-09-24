@@ -34,3 +34,7 @@ What it needs before building — its own design interview, and a mockup:
   source of truth.
 
 ## Comments
+
+**2026-09-24 — now after music.** The author chose music first (ticket 17),
+so the teleprompter is the third thing the surface shows, and the shared
+Module shape is drawn out of Capacity and music when it arrives.

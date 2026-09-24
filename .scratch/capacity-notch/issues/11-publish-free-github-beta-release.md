@@ -244,3 +244,53 @@ watch it, the first `/usage` called `security` and read in five seconds — so
 the hang happens on some new builds, not all (three of four today), for a
 reason still unknown. The two parts are tested; the refresh loop in
 `AppDelegate` that joins them is not.
+
+**2026-09-24 — 0.1.1 published by the script.**
+
+`./Scripts/publish-release.sh` released v0.1.1 end to end, so its pushing
+half — push, tag, release, download-back and the latest check — has now run,
+where the note above had it unverified. The published history is two
+snapshots, `12858c2` (0.1.0) and `e9bec78` (0.1.1), both by the noreply
+address; v0.1.1 is latest and not a pre-release; its notes end with the
+archive's SHA-256, appended by the script:
+
+`d9b27900dc198a69b04d267dc22e3077c2f9ba52c70379880e6c422d1108a9fd`
+
+Still not seen: the refusal when the two archives differ, since they did not.
+
+**2026-09-24 — permissions now survive a rebuild, and will survive an update.**
+
+The comment at the top of this ticket named the cause: macOS remembers a grant
+against the signature, and an ad-hoc signature is new with every build. More
+exactly, it remembers it against the *designated requirement*, and for an
+ad-hoc signature codesign makes that the build's own hash
+(`designated => cdhash H"…"`). Both build scripts now name it instead:
+`designated => identifier "app.capacitynotch.CapacityNotch"`, which every
+build satisfies. No certificate, no key, nothing trusted; the release stays
+reproducible.
+
+A self-signed certificate was tried first, in a throwaway keychain: codesign
+will not sign with one that is not trusted for code signing, and trusting it
+is a change to the account's security settings the author would have to make.
+The key was deleted.
+
+What it gives up, stated plainly: any application claiming this bundle
+identifier satisfies the requirement, and so could inherit what was granted
+to Capacity Notch. A certificate-based requirement would not; for a beta among
+friends this was judged the smaller cost.
+
+### Verified
+
+With the author: build A (`003097dc…`) installed, the Documents prompt shown
+once and allowed; build B (`a4e82f5e…`, a clean rebuild with a different
+hash, the same requirement) installed over it — no prompt. Two release builds
+still give the same archive (`de32e9a5…`), with the named requirement.
+
+### Not verified
+
+- An update downloaded from a release: Gatekeeper's check of a new download is
+  a different mechanism, and "Open Anyway" is likely still needed each time.
+- Which process asks for Documents at all. It asks at launch; `lsof` saw
+  nothing in `codex` or `claude`, TCC's database and logs are closed to this
+  session. Removing the access itself, rather than remembering its answer,
+  would need that found.

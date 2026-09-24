@@ -17,10 +17,9 @@ things you will notice:
 - **macOS warns you the first time you open it**, because Apple has not
   checked it. The steps below approve this one application; nothing asks you
   to turn Gatekeeper off, and you should not.
-- **macOS forgets its permissions at every update.** Its signature is made
-  fresh with each build, and macOS remembers a permission against a
-  signature, so after installing a new version you may be asked again for
-  anything you had allowed — notifications, for instance.
+- **What you allow is kept across updates** — from 0.1.2 on. Updating from
+  0.1.1 asks once more for anything you had allowed: that version was signed
+  in a way macOS took for a different application every time.
 
 To install:
 
@@ -52,7 +51,8 @@ wants to compare.
 To update, choose **Check for Updates…** in the menu bar menu or in Settings.
 It opens the latest release on GitHub; Capacity Notch never checks on its
 own. Quit the running copy, then repeat the steps above with the new zip —
-step 4 again, because the new build is a new signature to macOS.
+step 4 likely again, since a new download of an application that is not
+notarized is checked afresh.
 
 ## Requirements
 

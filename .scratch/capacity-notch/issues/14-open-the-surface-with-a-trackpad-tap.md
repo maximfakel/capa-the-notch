@@ -50,3 +50,12 @@ A global keyboard shortcut. The author declined one. The menu's own shortcuts
 stay — they are scoped to the menu, and the status menu is reachable with the
 system's own key, which is what keeps the surface operable from the keyboard
 for ticket 09.
+
+**2026-09-24 — ADR 0004 answers the policy question.**
+
+A private interface is allowed where no public one exists, inside a Module or
+feature that is off until asked for, with a visible failure state. So the
+question this ticket waited on is settled as policy; what it still needs is
+the fact of whether a private path for a one-finger double tap exists at all,
+and what permission it would cost — which its own checklist says must be
+stated and agreed before building.

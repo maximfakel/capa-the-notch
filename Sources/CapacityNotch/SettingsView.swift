@@ -72,6 +72,18 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Music") {
+                Toggle("Show what's playing", isOn: $model.musicEnabled)
+                Text("While something plays, the strip shows it under Capacity, with its controls; open, the surface has a page for it. It is read through a part of macOS that Apple does not publish, which a macOS update could close.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if model.musicEnabled, model.musicUnreadable {
+                    Text(MusicModule.unreadableGuidance)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+
             Section("Diagnostics") {
                 Toggle("Keep a log for bug reports", isOn: $model.keepsDiagnosticLog)
 

@@ -59,9 +59,15 @@ install -m 755 "$binaries/CapacityNotchClaudeBridge" "$app/Contents/MacOS/Capaci
 install -m 644 Packaging/Info.plist "$app/Contents/Info.plist"
 install -m 644 Sources/CapacityNotch/Resources/OpenAIBlossom.svg "$app/Contents/Resources/OpenAIBlossom.svg"
 
+# The Music Module's reader (ADR 0004): run by /usr/bin/perl, never loaded here.
+mkdir -p "$app/Contents/Frameworks"
+"$source/Scripts/build-adapter.sh" "$source/Vendor/mediaremote-adapter" "$app/Contents/Frameworks/MediaRemoteAdapter.framework" \
+  "$app/Contents/Helpers/MediaRemoteAdapterTestClient"
+install -m 644 Vendor/mediaremote-adapter/bin/mediaremote-adapter.pl "$app/Contents/Resources/mediaremote-adapter.pl"
+
 # Nobody's home directory goes out with the release. The one `/Users/` string
 # allowed is Redaction's own pattern for scrubbing them.
-for binary in "$app"/Contents/MacOS/*; do
+for binary in "$app"/Contents/MacOS/* "$app"/Contents/Helpers/* "$app"/Contents/Frameworks/MediaRemoteAdapter.framework/Versions/A/MediaRemoteAdapter; do
   if strings -a "$binary" | grep '^/Users/' | grep -qvxF '/Users/[^/\s]+'; then
     print -u2 "${binary:t} contains a home directory path; refusing to release it."
     exit 1
@@ -71,7 +77,10 @@ done
 # Hardened Runtime, with no entitlements; the bridge first and on its own,
 # because signing the bundle marks only its main executable.
 codesign --force --options runtime --sign - "$app/Contents/MacOS/CapacityNotchClaudeBridge"
-codesign --force --options runtime --sign - "$app"
+# A named designated requirement, so an update keeps what macOS granted the
+# last version; see build-app.sh.
+codesign --force --options runtime --sign - \
+  -r='designated => identifier "app.capacitynotch.CapacityNotch"' "$app"
 find "$app" -exec touch -h -t "$stamp" {} +
 
 archive="CapacityNotch-$version.zip"

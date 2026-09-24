@@ -1,6 +1,43 @@
 # Third-Party Notices
 
-Capacity Notch is a clean-room implementation informed by the architecture and interaction patterns of the following MIT-licensed projects. No GPL-licensed implementation code is included.
+Capacity Notch is a clean-room implementation informed by the architecture and interaction patterns of the following MIT-licensed projects. It includes one third-party component's code, mediaremote-adapter, under the BSD 3-Clause License. No GPL-licensed implementation code is included.
+
+## mediaremote-adapter
+
+Included in `Vendor/mediaremote-adapter`, unmodified, at commit
+`73f14ab1568371e6e3c44063f21c34c5e2712c4d` of
+https://github.com/ungive/mediaremote-adapter, and built into the application
+as `MediaRemoteAdapter.framework` with `mediaremote-adapter.pl`. The Music
+Module uses it to read what is playing (ADR 0004).
+
+    BSD 3-Clause License
+
+    Copyright (c) 2025, Jonas van den Berg and contributors
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+    3. Neither the name of the copyright holder nor the names of its
+       contributors may be used to endorse or promote products derived from
+       this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Cyclop
 

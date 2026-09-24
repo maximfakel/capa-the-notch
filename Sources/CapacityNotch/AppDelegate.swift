@@ -5,6 +5,11 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let preferences = Preferences()
+    /// The Music Module's reader (ticket 17); running only while the Module is on.
+    let music = MusicReader()
+    /// SIGTERM — what `pkill` sends, and the install loop uses — quits the
+    /// application properly, so its children are stopped rather than orphaned.
+    private var termination: DispatchSourceSignal?
     private var alertDecider = CapacityAlertDecider()
     private var notifications: CapacityNotifications?
     private let archive = CapacityArchive()
@@ -66,13 +71,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
 
+        signal(SIGTERM, SIG_IGN)
+        let termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        termination.setEventHandler { NSApplication.shared.terminate(nil) }
+        termination.resume()
+        self.termination = termination
+
         let panelController = NotchPanelController(
             store: store,
+            music: music,
             connect: { [weak self] provider in self?.connect(provider) },
             refresh: { [weak self] provider in self?.refresh(provider) }
         )
         self.panelController = panelController
         panelController.show()
+        if preferences.musicEnabled { music.start() }
 
         if CapacityNotifications.isAvailable {
             notifications = CapacityNotifications { [weak self] provider, window in
@@ -97,8 +110,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         archive.save(store.snapshots)
         panelController?.stopPointerTracking()
-        disconnectCodex()
-        disconnectClaudeCode()
+        music.stop()
+        stopCodex()
+        stopClaudeCode()
     }
 
     // MARK: - The surface
@@ -170,8 +184,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// A deliberate Disconnect: remembered, so the next launch honours it.
     func disconnectCodex() {
         preferences.setConnectsAtLaunch(.codex, false)
+        stopCodex()
+    }
+
+    /// Stops reading Codex without deciding anything about the next launch —
+    /// which is all that quitting should do.
+    private func stopCodex() {
         codexRefresh?.cancel()
         codexRefresh = nil
 
@@ -200,8 +221,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         connectClaudeCode()
     }
 
+    /// A deliberate Disconnect: remembered, so the next launch honours it.
     func disconnectClaudeCode() {
         preferences.setConnectsAtLaunch(.claudeCode, false)
+        stopClaudeCode()
+    }
+
+    private func stopClaudeCode() {
         claudeRefresh?.cancel()
         claudeRefresh = nil
 
@@ -209,9 +235,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { await claude.disconnect() }
     }
 
+    /// Quitting stops everything and remembers nothing: a Provider connected
+    /// when the application quit is connected when it starts. Quit used to go
+    /// through Disconnect, which recorded both Providers as switched off, so
+    /// every launch after a quit read nothing and opened the welcome window.
     func quit() {
-        disconnectCodex()
-        disconnectClaudeCode()
         NSApplication.shared.terminate(nil)
     }
 
@@ -286,6 +314,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         connectChosenProviders()
         panelController?.show()
         panelController?.open()
+    }
+
+    /// Turns the Music Module on or off. Off, nothing is read and the adapter
+    /// is not running (ADR 0003).
+    func setMusicEnabled(_ enabled: Bool) {
+        preferences.musicEnabled = enabled
+        if enabled { music.start() } else { music.stop() }
     }
 
     /// Opens the latest release in the browser. See `Releases` for why this
@@ -395,6 +430,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if !LaunchAtLogin.isEnabled {
             observations.append("launch-at-login-off")
+        }
+        if preferences.musicEnabled, music.isUnreadable {
+            observations.append(MusicModule.unreadableCode)
         }
 
         return DiagnosticReport(

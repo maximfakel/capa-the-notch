@@ -128,3 +128,29 @@ when something does, a true default would make checking the application's
 first network request of its own, made without asking. It now defaults to
 false, and `nothingIsEnabledOnAnybodysBehalf` pins it. A choice already stored
 is kept. On this machine nothing was stored, so Settings now shows it off.
+
+**2026-09-24 — quitting switched both Providers off.**
+
+Found while building ticket 17. `quit()` and `applicationWillTerminate` both
+went through `disconnectCodex()` and `disconnectClaudeCode()`, which record a
+*deliberate* Disconnect (`connectsAtLaunch = false`). So every ordinary quit —
+the menu's Quit, a logout, a restart — left both Providers switched off: the
+next launch read nothing and, since `needsOnboarding` then found no Provider
+connected, opened the welcome window. The 2026-09-23 fix above did not cover
+this path; it may be part of what the author saw. It surfaced when SIGTERM was
+made to quit properly (ticket 17), which put `pkill` through the same path.
+
+Quitting now stops everything and records nothing; only Disconnect, from the
+menu or Settings, is remembered.
+
+### Verified
+
+On the installed application, twice over: launched with both Providers
+connected, the only window is the strip, and Codex, Claude Code and the
+adapter run; after `pkill`, both `connectsAtLaunch` flags are still true and
+no adapter process is left; the relaunch shows no welcome window.
+
+### Not verified
+
+The menu's Quit, clicked: it now reaches the same `terminate` path as SIGTERM,
+which was exercised.

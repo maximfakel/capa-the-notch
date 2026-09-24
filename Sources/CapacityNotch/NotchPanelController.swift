@@ -7,6 +7,11 @@ import SwiftUI
 @MainActor
 final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private let store: CapacityNotchStore
+    private let music: MusicReader
+    private let pages = SurfacePages()
+    private var scrollMonitor: Any?
+    private var keyMonitor: Any?
+    private var swipe: CGFloat = 0
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
     private let metrics = SurfaceMetrics()
@@ -27,10 +32,12 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
 
     init(
         store: CapacityNotchStore,
+        music: MusicReader,
         connect: @escaping (Provider) -> Void,
         refresh: @escaping (Provider) -> Void
     ) {
         self.store = store
+        self.music = music
         self.connect = connect
         self.refresh = refresh
 
@@ -63,6 +70,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             rootView: NotchRootView(
                 store: store,
                 metrics: metrics,
+                music: music,
+                pages: pages,
                 connect: connect,
                 refresh: refresh
             )
@@ -105,6 +114,31 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.followDisplays() }
             .store(in: &observers)
+
+        // A track starting or ending grows or shrinks the closed strip by its
+        // music row; the window follows so the row is neither clipped nor
+        // floating in an empty band.
+        music.$shown
+            .map { $0 != nil }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.store.presentation == .compact else { return }
+                self.positionPanel(for: .compact, animated: self.window?.isVisible == true)
+            }
+            .store(in: &observers)
+
+        // Open, the page shown decides the height, and a track loading or
+        // going away adds or removes the music page and its dots.
+        Publishers.CombineLatest(music.$loaded.map { $0 != nil }.removeDuplicates(), pages.$selected)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.store.presentation == .expanded else { return }
+                self.positionPanel(for: .expanded, animated: true)
+            }
+            .store(in: &observers)
+
+        watchPageGestures()
 
         metrics.objectWillChange
             .receive(on: DispatchQueue.main)
@@ -201,6 +235,68 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         FileHandle.standardError.write(Data(
             "metrics: strip=\(metrics.geometry.menuBarHeight) card=\(card.fittingSize.height) detail=\(detail) column=\(column) width=\(width)\n".utf8
         ))
+
+        // The Music Module, measured against the drawing: the row under the
+        // closed strip, the expanded page, and the open surface showing it.
+        let track = NowPlaying(
+            title: "Mad Technology", artist: "CZARFACE, Frankie Pulitzer, Method Man",
+            player: "com.google.Chrome", isPlaying: true, duration: 224, elapsed: 46,
+            elapsedAt: Date(), rate: 1
+        )
+        let row = NSHostingView(
+            rootView: CompactMusicRow(track: track, width: metrics.geometry.compactWidth(), send: { _ in })
+        )
+        let page = height(of: NSHostingView(rootView: MusicPage(track: track, now: Date(), send: { _ in })))
+        let playingColumn = height(of: NSHostingView(
+            rootView: SurfaceColumn(
+                snapshots: store.snapshots,
+                geometry: metrics.geometry,
+                now: Date(),
+                isExpanded: true,
+                loaded: track,
+                page: .music,
+                connect: { _ in },
+                refresh: { _ in },
+                toggle: {}
+            )
+        ))
+        FileHandle.standardError.write(Data(
+            "music: row=\(row.fittingSize.height) page=\(page) open=\(playingColumn) closed=\(metrics.geometry.menuBarHeight + row.fittingSize.height)\n".utf8
+        ))
+
+        // Pictures of both, to hold against the drawing, when asked for.
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_PICTURES"] {
+            func picture(_ view: some View, width: CGFloat, named name: String) {
+                let host = NSHostingView(rootView: view.background(Color.black))
+                host.frame = NSRect(x: 0, y: 0, width: width, height: 0)
+                host.layoutSubtreeIfNeeded()
+                host.frame.size = host.fittingSize
+                guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+                host.cacheDisplay(in: host.bounds, to: rep)
+                try? rep.representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: folder).appendingPathComponent(name))
+            }
+            let geometry = metrics.geometry
+            picture(
+                VStack(spacing: 0) {
+                    SurfaceColumn(
+                        snapshots: store.snapshots, geometry: geometry, now: Date(),
+                        isExpanded: false, playing: track, connect: { _ in }, refresh: { _ in }, toggle: {}
+                    )
+                    .frame(height: geometry.menuBarHeight + MusicType.rowHeight, alignment: .top)
+                    .clipped()
+                },
+                width: geometry.surfaceWidth(), named: "compact-playing.png"
+            )
+            picture(
+                SurfaceColumn(
+                    snapshots: store.snapshots, geometry: geometry, now: Date(),
+                    isExpanded: true, loaded: track, page: .music,
+                    connect: { _ in }, refresh: { _ in }, toggle: {}
+                ),
+                width: geometry.surfaceWidth(), named: "expanded-playing.png"
+            )
+        }
     }
 
     /// Opens the surface, as finishing onboarding does: the first thing the
@@ -313,10 +409,19 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private func readPointer() {
         guard let panel = window, panel.isVisible else { return }
 
-        // Closed, the surface answers to its strip; open, to the whole of
-        // itself. Both are the same width, so the region only ever grows
-        // downwards and the two states cannot chase each other.
-        guard !panel.frame.contains(NSEvent.mouseLocation) else {
+        // Closed, the surface answers to its strip — and only the strip, so
+        // a music row under it keeps its buttons within reach; open, to the
+        // whole of itself. Both are the same width, so the region only ever
+        // grows downwards and the two states cannot chase each other.
+        let region = store.presentation == .expanded
+            ? panel.frame
+            : NSRect(
+                x: panel.frame.minX,
+                y: panel.frame.maxY - metrics.geometry.menuBarHeight,
+                width: panel.frame.width,
+                height: metrics.geometry.menuBarHeight
+            )
+        guard !region.contains(NSEvent.mouseLocation) else {
             absentTicks = 0
             presentTicks += 1
             if presentTicks >= Self.presentTicksBeforeOpen { store.expand() }
@@ -350,6 +455,53 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         window?.makeKeyAndOrderFront(nil)
     }
 
+    // MARK: - Pages
+
+    /// Moving between the expanded surface's pages: a two-finger swipe, and —
+    /// for anyone without a trackpad — the arrow keys while it is pinned.
+    /// VoiceOver has its own actions on the column.
+    private func watchPageGestures() {
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, event.window === self.window else { return event }
+            return self.follow(swipe: event) ? nil : event
+        }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, event.window === self.window, self.canTurnPages else { return event }
+            switch event.keyCode {
+            case 123: self.pages.previous(); return nil
+            case 124: self.pages.next(); return nil
+            default: return event
+            }
+        }
+    }
+
+    private var canTurnPages: Bool {
+        store.presentation == .expanded && music.loaded != nil
+    }
+
+    /// Accumulates one horizontal swipe and turns a page when it ends, so one
+    /// gesture is one page however long it runs.
+    private func follow(swipe event: NSEvent) -> Bool {
+        guard canTurnPages, event.hasPreciseScrollingDeltas else { return false }
+        guard abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) || swipe != 0 else { return false }
+
+        switch event.phase {
+        case .began:
+            swipe = 0
+        case .changed:
+            swipe += event.scrollingDeltaX
+        case .ended, .cancelled:
+            // Fingers moving left bring the next page in, as on a phone,
+            // whichever way the person has scrolling set.
+            let travel = event.isDirectionInvertedFromDevice ? swipe : -swipe
+            if travel < -40 { pages.next() } else if travel > 40 { pages.previous() }
+            swipe = 0
+        default:
+            break
+        }
+        return true
+    }
+
     // MARK: - Placement
 
     private func positionPanel(
@@ -362,7 +514,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         let openWidth = geometry.surfaceWidth()
         let size = switch presentation {
         case .compact:
-            NSSize(width: geometry.compactWidth(), height: geometry.menuBarHeight)
+            NSSize(
+                width: geometry.compactWidth(),
+                height: geometry.menuBarHeight + (music.shown == nil ? 0 : MusicType.rowHeight)
+            )
         case .expanded:
             NSSize(width: openWidth, height: expandedHeight(on: screen, width: openWidth))
         }
@@ -423,6 +578,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 geometry: metrics.geometry,
                 now: Date(),
                 isExpanded: true,
+                loaded: music.loaded,
+                page: pages.selected,
                 connect: { _ in },
                 refresh: { _ in },
                 toggle: {}

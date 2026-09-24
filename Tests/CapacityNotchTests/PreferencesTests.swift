@@ -16,6 +16,7 @@ func nothingIsEnabledOnAnybodysBehalf() throws {
     try expect(!preferences.screenSharingAllowed, "Nor is appearing in a shared screen")
     try expect(!preferences.keepsDiagnosticLog, "Nor is keeping a log")
     try expect(!preferences.checksForUpdates, "Nor is asking the network about updates")
+    try expect(!preferences.musicEnabled, "Nor is reading what is playing")
     try expect(!preferences.hasFinishedOnboarding, "A first run has not been through onboarding")
     try expect(!preferences.claudeConsentGiven, "And has consented to nothing")
 }

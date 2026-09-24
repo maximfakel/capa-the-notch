@@ -116,6 +116,15 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "checksForUpdates") }
     }
 
+    // MARK: - Modules
+
+    /// The Music Module. Off until asked for, like every Module but Capacity
+    /// (ADR 0003): while off, nothing is read.
+    public var musicEnabled: Bool {
+        get { defaults.bool(forKey: "musicEnabled") }
+        set { defaults.set(newValue, forKey: "musicEnabled") }
+    }
+
     // MARK: - Onboarding
 
     public var hasFinishedOnboarding: Bool {

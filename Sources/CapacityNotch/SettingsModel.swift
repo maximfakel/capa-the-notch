@@ -19,6 +19,7 @@ struct ProviderChoice: Identifiable {
 final class SettingsModel: ObservableObject {
     private let preferences: Preferences
     private unowned let application: AppDelegate
+    private var watching: Set<AnyCancellable> = []
 
     init(preferences: Preferences, application: AppDelegate) {
         self.preferences = preferences
@@ -29,7 +30,20 @@ final class SettingsModel: ObservableObject {
         launchAtLogin = LaunchAtLogin.isEnabled
         alertsEnabled = preferences.alertsEnabled
         keepsDiagnosticLog = preferences.keepsDiagnosticLog
+        musicEnabled = preferences.musicEnabled
+        application.music.$isUnreadable
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] unreadable in self?.musicUnreadable = unreadable }
+            .store(in: &watching)
     }
+
+    /// The Music Module. Off until asked for; off, nothing is read.
+    @Published var musicEnabled: Bool {
+        didSet { application.setMusicEnabled(musicEnabled) }
+    }
+
+    /// macOS stopped telling Capacity Notch what is playing (ADR 0004).
+    @Published private(set) var musicUnreadable = false
 
     let providers = [
         ProviderChoice(provider: .codex, name: "Codex", note: nil),

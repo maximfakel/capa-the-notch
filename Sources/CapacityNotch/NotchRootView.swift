@@ -73,19 +73,32 @@ enum SurfaceType {
 struct NotchRootView: View {
     @StateObject private var store: CapacityNotchStore
     @ObservedObject private var metrics: SurfaceMetrics
+    @ObservedObject private var music: MusicReader
+    @ObservedObject private var pages: SurfacePages
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
 
     init(
         store: CapacityNotchStore,
         metrics: SurfaceMetrics,
+        music: MusicReader,
+        pages: SurfacePages,
         connect: @escaping (Provider) -> Void,
         refresh: @escaping (Provider) -> Void
     ) {
         _store = StateObject(wrappedValue: store)
         self.metrics = metrics
+        self.music = music
+        self.pages = pages
         self.connect = connect
         self.refresh = refresh
+    }
+
+    /// The drawing's corners: the open surface 38, the closed strip with a
+    /// music row under it 18, and the closed strip alone as it was.
+    private var bottomRadius: CGFloat {
+        if store.presentation == .expanded { return 38 }
+        return music.shown == nil ? 38 : 18
     }
 
     var body: some View {
@@ -106,6 +119,10 @@ struct NotchRootView: View {
                         now: context.date,
                         highlighted: store.highlighted,
                         isExpanded: store.presentation == .expanded,
+                        playing: music.shown,
+                        loaded: music.loaded,
+                        page: pages.selected,
+                        send: { music.send($0) },
                         connect: connect,
                         refresh: refresh
                     ) {
@@ -114,11 +131,19 @@ struct NotchRootView: View {
                         store.togglePin()
                     }
                 }
+                // The second way between pages, for VoiceOver: nothing on
+                // screen, as the swipe is the only thing drawn.
+                .accessibilityActions {
+                    if store.presentation == .expanded, music.loaded != nil {
+                        Button("Next page") { pages.next() }
+                        Button("Previous page") { pages.previous() }
+                    }
+                }
             }
             .clipShape(
                 UnevenRoundedRectangle(
-                    bottomLeadingRadius: 38,
-                    bottomTrailingRadius: 38,
+                    bottomLeadingRadius: bottomRadius,
+                    bottomTrailingRadius: bottomRadius,
                     style: .continuous
                 )
             )
@@ -136,6 +161,12 @@ struct SurfaceColumn: View {
     let now: Date
     var highlighted: CapacityNotchStore.HighlightedWindow?
     let isExpanded: Bool
+    /// The Music Module's track for the compact row: playing, or just paused.
+    var playing: NowPlaying? = nil
+    /// Its track for the expanded page: whatever is loaded.
+    var loaded: NowPlaying? = nil
+    var page: SurfacePage = .capacity
+    var send: (MusicCommand) -> Void = { _ in }
     let connect: (Provider) -> Void
     let refresh: (Provider) -> Void
     let toggle: () -> Void
@@ -150,14 +181,22 @@ struct SurfaceColumn: View {
                 toggle: toggle
             )
 
-            DetailCapacityView(
-                snapshots: snapshots,
-                now: now,
-                highlighted: highlighted,
-                isExpanded: isExpanded,
-                connect: connect,
-                refresh: refresh
-            )
+            // Only the branch that exists is built: an empty branch would
+            // still take a slot, and the stack would space around it.
+            if !isExpanded, let playing {
+                CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send)
+            }
+
+            if isExpanded, let loaded {
+                PageDots(selected: page)
+                if page == .music {
+                    MusicPage(track: loaded, now: now, send: send)
+                } else {
+                    capacityDetail
+                }
+            } else {
+                capacityDetail
+            }
         }
         .frame(width: geometry.surfaceWidth(), alignment: .top)
         // The column keeps the height it wants, whoever asks. Offered the
@@ -166,6 +205,17 @@ struct SurfaceColumn: View {
         // in the strip where the menu bar row belongs — and made the panel
         // measure that squeezed height when deciding how far to open.
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var capacityDetail: some View {
+        DetailCapacityView(
+            snapshots: snapshots,
+            now: now,
+            highlighted: highlighted,
+            isExpanded: isExpanded,
+            connect: connect,
+            refresh: refresh
+        )
     }
 }
 
