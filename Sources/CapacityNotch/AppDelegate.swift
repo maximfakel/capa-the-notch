@@ -58,8 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         // The last numbers seen come back first, marked Stale, so a restart
         // does not open on nothing while the Providers are asked again.
+        // A Provider switched off does not come back with its old numbers.
+        let preferences = preferences
         store = CapacityNotchStore(
-            snapshots: UnreadCapacity.snapshots(restoring: archive.load())
+            snapshots: UnreadCapacity.snapshots(
+                restoring: archive.load(),
+                switchedOff: Set(Provider.allCases.filter { !preferences.connectsAtLaunch($0) })
+            )
         )
         super.init()
     }
@@ -198,6 +203,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func disconnectCodex() {
         preferences.setConnectsAtLaunch(.codex, false)
         stopCodex()
+        // Its last reading leaves the surface with it: the strip says "—" and
+        // the other Provider's card takes the width.
+        store.apply(UnreadCapacity.snapshot(for: .codex))
     }
 
     /// Stops reading Codex without deciding anything about the next launch —
@@ -235,6 +243,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func disconnectClaudeCode() {
         preferences.setConnectsAtLaunch(.claudeCode, false)
         stopClaudeCode()
+        store.apply(UnreadCapacity.snapshot(for: .claudeCode))
     }
 
     private func stopClaudeCode() {

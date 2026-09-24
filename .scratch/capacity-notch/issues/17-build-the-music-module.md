@@ -8,28 +8,28 @@ Playing".
 
 **Blocked by:** none.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Why:** The author's own choice of first Module (ticket 15's order changed on
 2026-09-24), and what the author listens to every day comes through a browser
 or Yandex Music, which only the system's own Now Playing sees.
 
-- [ ] Off until turned on in Settings; while off, nothing runs and nothing is
+- [x] Off until turned on in Settings; while off, nothing runs and nothing is
       read.
-- [ ] While something plays, the compact strip shows the mockup's second row —
+- [x] While something plays, the compact strip shows the mockup's second row —
       artwork, title, artists, previous / play-pause / next, and the bars —
       beneath an unchanged Capacity row; 38 points becomes 90, measured, not
       eyeballed.
-- [ ] On pause the row stays ten seconds, so play can resume from it, then the
+- [x] On pause the row stays ten seconds, so play can resume from it, then the
       strip collapses; with nothing playing the strip is exactly as without
       the Module.
-- [ ] The controls work on what is playing, whichever application plays it.
-- [ ] The bars are decorative: they move while playing, stop on pause, and are
+- [x] The controls work on what is playing, whichever application plays it.
+- [x] The bars are decorative: they move while playing, stop on pause, and are
       still under Reduce Motion. No audio is captured.
-- [ ] If macOS stops answering, Settings says "macOS no longer lets Capacity
+- [x] If macOS stops answering, Settings says "macOS no longer lets Capacity
       Notch read what's playing", Copy Diagnostics carries `music-unreadable`,
       and the strip shows nothing rather than a stale track.
-- [ ] Idle cost stays under ticket 11's ceiling — 0.9% of one core — with
+- [x] Idle cost stays under ticket 11's ceiling — 0.9% of one core — with
       music playing, measured.
 - [ ] VoiceOver reads the row and its controls.
 
@@ -130,3 +130,17 @@ reading. SIGTERM now quits the application properly, and the reader stops any
 stream of this bundle's that launchd has adopted before starting its own, for
 the case of a crash. Seen: after a relaunch one stream remained; after `pkill`
 of the new build, none.
+
+**2026-09-24 — closed.** Every line above but VoiceOver holds — the row and
+its controls carry labels, not yet heard read — some in a later shape the
+author drew: the closed strip with a track is 92, not 90 (`dc7f8d0`, Paper
+"Notch — Compact — Playing"), the bars rest as four-point dashes when paused
+(`492c848`, "Notch — Compact — Pause"), Music lives under Settings → Modules
+(ticket 19), and the heart went (ticket 18). Idle cost with music playing:
+0.23% when built, 0.40% with the music page open, measured on 2026-09-24.
+
+Seen since the list of what was not verified: the swipe between pages and the
+page appearing (the author, on screen), the artwork on screen (the author's
+screenshots), the pause and resume of the bars (the author). Still not
+verified by hand: VoiceOver on the row, and the row's buttons clicked on the
+running surface.

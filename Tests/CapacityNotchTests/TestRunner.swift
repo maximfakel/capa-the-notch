@@ -187,6 +187,14 @@ enum CapacityNotchTestRunner {
                 theAppearanceFollowsTheMacUntilChosen
             ),
             (
+                "SwitchedOffTests.aProviderSwitchedOffIsNotRestoredFromTheArchive",
+                aProviderSwitchedOffIsNotRestoredFromTheArchive
+            ),
+            (
+                "SwitchedOffTests.onlyTheProvidersSwitchedOnHaveCards",
+                onlyTheProvidersSwitchedOnHaveCards
+            ),
+            (
                 "SurfacePlacementTests.theBuiltInDisplayIsTheDefaultAndOneIsAlwaysChosen",
                 theBuiltInDisplayIsTheDefaultAndOneIsAlwaysChosen
             ),

@@ -414,8 +414,9 @@ struct DetailCapacityView: View {
                     .padding(.horizontal, 18)
             }
 
+            // A Provider switched off has no card; the other takes the width.
             HStack(spacing: 12) {
-                ForEach(snapshots, id: \.provider) { snapshot in
+                ForEach(SurfaceCards.shown(snapshots), id: \.provider) { snapshot in
                     ProviderCard(
                         snapshot: snapshot,
                         now: now,
