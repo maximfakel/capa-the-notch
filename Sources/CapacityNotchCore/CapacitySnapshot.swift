@@ -26,11 +26,11 @@ public enum CapacityStatusReason: Equatable, Sendable {
     public var guidance: String {
         switch self {
         case .providerNotInstalled:
-            "Install the Codex CLI, then connect again."
+            "Install the Codex CLI, then try again."
         case let .providerIncompatible(detail):
             "Update the Codex CLI — \(detail)"
         case .providerNotAuthenticated:
-            "Sign in with `codex login`, then connect again."
+            "Sign in with `codex login`, then try again."
         case let .providerUnavailable(detail):
             "Codex is not answering — \(detail)"
         case .providerAnswerNotUnderstood:
@@ -38,15 +38,15 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case let .providerCouldNotRead(detail):
             "Codex could not read its Capacity — \(detail.hasSuffix(".") ? detail : detail + ".") Retrying."
         case .codexDisconnected:
-            "Connect Codex from the menu bar to read its Capacity."
+            "Turn on Codex in Settings to read its Capacity."
         case .claudeDisconnected:
-            "Connect Claude Code from the menu bar to read its Capacity."
+            "Turn on Claude Code in Settings to read its Capacity."
         case .claudeStatusLineStale:
             "Run Claude Code in a terminal to update its last published Capacity."
         case .claudeStatusLineUnavailable:
             "Claude Code has not published Capacity yet. Configure the Capacity Notch status-line bridge, then run Claude Code in a terminal."
         case .claudeCodeNotInstalled:
-            "Install Claude Code, then connect again."
+            "Install Claude Code, then try again."
         case .claudeUsageFailed:
             "Claude Code did not answer. Check that it is signed in, then refresh."
         case .claudeUsageNotUnderstood:

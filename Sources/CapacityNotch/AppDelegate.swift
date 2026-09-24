@@ -70,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
+        applyAppearance(preferences.appearance)
 
         signal(SIGTERM, SIG_IGN)
         let termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
@@ -97,6 +98,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(Data((diagnosticReport() + "\n").utf8))
         }
 
+        // Settings, every section in both appearances, to hold against the
+        // Paper drawing ("Pairtask" / "Settings") without anyone squinting.
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_SETTINGS"] {
+            let model = SettingsModel(preferences: preferences, application: self, store: store)
+            for section in SettingsSection.allCases {
+                for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                    let host = NSHostingView(rootView: SettingsView(model: model, section: section))
+                    host.appearance = NSAppearance(named: appearance)
+                    host.frame = NSRect(x: 0, y: 0, width: 760, height: 560)
+                    host.layoutSubtreeIfNeeded()
+                    guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+                    host.cacheDisplay(in: host.bounds, to: rep)
+                    try? rep.representation(using: .png, properties: [:])?.write(
+                        to: URL(fileURLWithPath: folder).appendingPathComponent("settings-\(section.title.lowercased())-\(name).png")
+                    )
+                }
+            }
+        }
+
         observeCodex()
         observeClaudeCode()
 
@@ -116,12 +136,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - The surface
-
-    func hideSurfaceForAnHour() {
-        panelController?.hideForAnHour()
-    }
-
-    var hiddenUntilText: String? { panelController?.hiddenUntilText }
 
     // This and three more methods below switch on the Provider by hand. That
     // is deliberate: there are two, their services connect differently —
@@ -155,10 +169,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func openSurface() {
         panelController?.show()
         panelController?.open()
-    }
-
-    func togglePanelVisibility() {
-        panelController?.toggleVisibility()
     }
 
     /// Starts whatever the person left connected. Called once at launch and
@@ -211,9 +221,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.alertStyle = .informational
-        alert.messageText = "Connect Claude Code?"
-        alert.informativeText = "Capacity Notch reads only the local Capacity snapshot written by its Claude Code status-line bridge. It never reads Claude credentials, sessions, prompts, transcripts, or calls Anthropic. Claude Code must be running to refresh the snapshot."
-        alert.addButton(withTitle: "Connect")
+        alert.messageText = "Turn on Claude Code?"
+        alert.informativeText = "Capacity Notch asks Claude Code for its /usage — the report you see when you type /usage — and reads the Capacity in it, and the status line where Claude Code publishes one. It never reads Claude credentials, sessions, prompts or transcripts, and never talks to Anthropic itself."
+        alert.addButton(withTitle: "Turn On")
         alert.addButton(withTitle: "Cancel")
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
@@ -323,6 +333,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if enabled { music.start() } else { music.stop() }
     }
 
+    /// Light, dark, or the Mac's own, for every window the application opens.
+    /// The surface draws its own black and is not affected.
+    func applyAppearance(_ appearance: Appearance) {
+        preferences.appearance = appearance
+        NSApplication.shared.appearance = switch appearance {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+
     /// Opens the latest release in the browser. See `Releases` for why this
     /// is done by hand.
     func checkForUpdates() {
@@ -336,10 +357,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let model = SettingsModel(preferences: preferences, application: self)
-        settings = Self.window(titled: "Capacity Notch Settings", content: SettingsView(model: model))
+        let model = SettingsModel(preferences: preferences, application: self, store: store)
+        settings = Self.settingsWindow(content: SettingsView(model: model))
         settings?.window?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
+    /// The drawing's window: 760 by 560, the sidebar running to the top edge
+    /// under the traffic lights, no title — the sidebar says where you are.
+    private static func settingsWindow(content: some View) -> NSWindowController {
+        let hosting = NSHostingController(rootView: content)
+        hosting.sizingOptions = []
+        let window = NSWindow(contentViewController: hosting)
+        window.title = "Capacity Notch Settings"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.styleMask = [.titled, .closable, .fullSizeContentView]
+        window.isMovableByWindowBackground = true
+        window.setContentSize(NSSize(width: 760, height: 560))
+        window.isReleasedWhenClosed = false
+        window.center()
+        return NSWindowController(window: window)
     }
 
     private static func window(titled title: String, content: some View) -> NSWindowController {

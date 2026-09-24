@@ -183,6 +183,10 @@ enum CapacityNotchTestRunner {
                 aFailureWorthRetryingIsToldFromOneThatIsNot
             ),
             (
+                "PreferencesTests.theAppearanceFollowsTheMacUntilChosen",
+                theAppearanceFollowsTheMacUntilChosen
+            ),
+            (
                 "SurfacePlacementTests.theBuiltInDisplayIsTheDefaultAndOneIsAlwaysChosen",
                 theBuiltInDisplayIsTheDefaultAndOneIsAlwaysChosen
             ),
@@ -191,8 +195,8 @@ enum CapacityNotchTestRunner {
                 aDisplayThatIsUnpluggedDoesNotStrandTheSurface
             ),
             (
-                "SurfacePlacementTests.hidingPutsTheSurfaceAwayAndBringsItBack",
-                hidingPutsTheSurfaceAwayAndBringsItBack
+                "SurfacePlacementTests.aFullscreenApplicationIsToldApartFromAZoomedWindow",
+                aFullscreenApplicationIsToldApartFromAZoomedWindow
             ),
             (
                 "SurfacePlacementTests.aPinnedSurfaceStaysUntilItIsDismissed",

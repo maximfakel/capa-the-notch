@@ -92,6 +92,7 @@ Changed on purpose, and recorded:
 | Alert at `Capacity Pace < 0.5`, or 10% left | Capacity Pace is bands of what is left; an Alert when a window goes below 10% | ticket 05, ticket 08, `CONTEXT.md` |
 | Claude Code through a non-public first-party endpoint | Claude Code's own `/usage`, and the status-line bridge | ticket 03, ticket 13, ADR 0001 |
 | A notch that shows AI limits; music, Shelf, clipboard, calendar and dictation deferred | a Notch Surface hosting built-in Modules, Capacity the first; the deferred list ordered and decided | ticket 15, ADR 0003, `CONTEXT.md` |
+| Fullscreen supported | over a fullscreen application the closed surface is the strip alone, with no music row; opening it still works | ticket 06, `FullscreenDetection` |
 
 Not what the spec said, and not recorded until now:
 

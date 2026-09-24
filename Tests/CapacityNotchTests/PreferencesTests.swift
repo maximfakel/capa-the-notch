@@ -113,3 +113,22 @@ func theBackgroundPaceFallsBackToTheScheduleItCameFrom() throws {
         "And the schedule's own pace is one a person can choose"
     )
 }
+
+func theAppearanceFollowsTheMacUntilChosen() throws {
+    let (preferences, defaults, suite) = freshPreferences()
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    try expect(preferences.appearance == .system, "Until chosen, the windows look as the Mac does")
+
+    preferences.appearance = .dark
+    try expect(
+        Preferences(defaults: defaults).appearance == .dark,
+        "A chosen appearance outlives the launch it was chosen in"
+    )
+
+    defaults.set("sepia", forKey: "appearance")
+    try expect(
+        preferences.appearance == .system,
+        "Something stored that is not an appearance falls back to the Mac's"
+    )
+}

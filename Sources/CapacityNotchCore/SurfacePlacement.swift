@@ -30,31 +30,3 @@ public enum DisplaySelection {
         return available.first(where: \.isBuiltIn) ?? available.first
     }
 }
-
-/// A surface put away for a while.
-///
-/// Hiding is not the same as quitting: the Providers keep being read, and the
-/// surface comes back on its own. A person who hides it for an hour should not
-/// have to remember to bring it back.
-public struct SurfaceHide: Equatable, Sendable {
-    public static let defaultDuration: TimeInterval = 3600
-
-    public let until: Date
-
-    public init(until: Date) {
-        self.until = until
-    }
-
-    public init(from now: Date, lasting duration: TimeInterval = SurfaceHide.defaultDuration) {
-        until = now.addingTimeInterval(duration)
-    }
-
-    public func isOver(at now: Date) -> Bool {
-        now >= until
-    }
-
-    /// What the menu says, so the person can see when it comes back.
-    public func remainingText(at now: Date) -> String {
-        isOver(at: now) ? "moments" : ResetCountdown.text(until: until, at: now)
-    }
-}

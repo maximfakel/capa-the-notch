@@ -11,11 +11,16 @@ import Combine
 @MainActor
 final class SurfaceMetrics: ObservableObject {
     @Published private(set) var geometry: NotchGeometry
+    /// Whether the display the surface sits on shows a fullscreen application.
+    @Published private(set) var isFullscreen = false
 
     private let preferredDisplayKey = "preferredDisplayID"
+    private var observers: [NSObjectProtocol] = []
+    private var pendingChecks: [DispatchWorkItem] = []
 
     init() {
         geometry = Self.measure(on: Self.chosenScreen(preferred: Self.storedPreference()))
+        watchFullscreen()
     }
 
     var preferredDisplayID: UInt32? {
@@ -46,6 +51,74 @@ final class SurfaceMetrics: ObservableObject {
 
     func refresh() {
         geometry = Self.measure(on: screen)
+        checkFullscreen()
+    }
+
+    // MARK: - Fullscreen
+
+    /// Asked again whenever the Space or the frontmost application changes,
+    /// rather than on a timer: entering fullscreen, leaving it, and a video
+    /// taking the screen all change the Space. The window is still animating
+    /// when the notice arrives, so the question is asked again as it settles.
+    private func watchFullscreen() {
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [
+            NSWorkspace.activeSpaceDidChangeNotification,
+            NSWorkspace.didActivateApplicationNotification,
+        ] {
+            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkFullscreenAsItSettles() }
+            })
+        }
+        checkFullscreen()
+    }
+
+    private func checkFullscreenAsItSettles() {
+        pendingChecks.forEach { $0.cancel() }
+        pendingChecks = [0, 0.4, 1.2].map { delay in
+            let check = DispatchWorkItem { [weak self] in self?.checkFullscreen() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: check)
+            return check
+        }
+    }
+
+    private func checkFullscreen() {
+        let fullscreen = screen.map { Self.showsFullscreen($0, menuBarHeight: geometry.menuBarHeight) } ?? false
+        if fullscreen != isFullscreen { isFullscreen = fullscreen }
+    }
+
+    private static func showsFullscreen(_ screen: NSScreen, menuBarHeight: CGFloat) -> Bool {
+        guard
+            let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]],
+            let main = NSScreen.screens.first
+        else { return false }
+
+        let ownPID = Int(ProcessInfo.processInfo.processIdentifier)
+        let windows: [ScreenWindow] = list.compactMap { info in
+            guard
+                (info[kCGWindowOwnerPID as String] as? Int) != ownPID,
+                let level = info[kCGWindowLayer as String] as? Int,
+                let boundsInfo = info[kCGWindowBounds as String] as? NSDictionary,
+                let bounds = CGRect(dictionaryRepresentation: boundsInfo)
+            else { return nil }
+            return ScreenWindow(level: level, owner: info[kCGWindowOwnerName as String] as? String ?? "", bounds: bounds)
+        }
+
+        // AppKit counts from the bottom of the main display, the window list
+        // from its top.
+        let frame = screen.frame
+        let display = CGRect(
+            x: frame.minX,
+            y: main.frame.maxY - frame.maxY,
+            width: frame.width,
+            height: frame.height
+        )
+        return FullscreenDetection.isFullscreen(
+            windows: windows,
+            screen: display,
+            menuBarHeight: menuBarHeight,
+            desktopIconLevel: Int(CGWindowLevelForKey(.desktopIconWindow))
+        )
     }
 
     private static func storedPreference() -> UInt32? {

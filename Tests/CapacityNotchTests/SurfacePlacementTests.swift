@@ -33,29 +33,6 @@ func aDisplayThatIsUnpluggedDoesNotStrandTheSurface() throws {
     )
 }
 
-func hidingPutsTheSurfaceAwayAndBringsItBack() throws {
-    let now = Date(timeIntervalSince1970: 1_000_000)
-    let hide = SurfaceHide(from: now)
-
-    try expect(!hide.isOver(at: now), "It has only just been put away")
-    try expect(
-        !hide.isOver(at: now.addingTimeInterval(3599)),
-        "A second short of the hour it is still away"
-    )
-    try expect(
-        hide.isOver(at: now.addingTimeInterval(3600)),
-        "At the hour it comes back on its own"
-    )
-    try expect(
-        hide.remainingText(at: now.addingTimeInterval(1800)) == "30m",
-        "The menu can say how long is left, got \(hide.remainingText(at: now.addingTimeInterval(1800)))"
-    )
-    try expect(
-        hide.remainingText(at: now.addingTimeInterval(7200)) == "moments",
-        "Past the hour there is nothing left to wait for"
-    )
-}
-
 func aPinnedSurfaceStaysUntilItIsDismissed() throws {
     let store = CapacityNotchStore(snapshots: UnreadCapacity.snapshots())
 
@@ -80,4 +57,75 @@ func aPinnedSurfaceStaysUntilItIsDismissed() throws {
     store.dismiss()
     try expect(!store.isPinned, "Escape and a click elsewhere dismiss it the same way")
     try expect(store.presentation == .compact, "And close it")
+}
+
+// The windows below were read off this machine (a 2056 × 1329 display with a
+// 38-point camera housing): a test window taken fullscreen, then back.
+private let display = CGRect(x: 0, y: 0, width: 2056, height: 1329)
+private let iconLevel = -2_147_483_603
+private let menuBar = [
+    ScreenWindow(level: 24, owner: "Window Server", bounds: CGRect(x: 0, y: 0, width: 2056, height: 39)),
+    ScreenWindow(level: -2_147_483_624, owner: "Dock", bounds: display),
+    ScreenWindow(level: -2_147_483_626, owner: "Window Server", bounds: display),
+]
+private let desktop = [
+    ScreenWindow(level: -2_147_483_603, owner: "Finder", bounds: display),
+    ScreenWindow(level: -2_147_483_625, owner: "Обои", bounds: display),
+]
+
+func aFullscreenApplicationIsToldApartFromAZoomedWindow() throws {
+    let fullscreen = menuBar + [
+        ScreenWindow(level: 0, owner: "Safari", bounds: CGRect(x: 0, y: 39, width: 2056, height: 1290)),
+        ScreenWindow(level: -2_147_483_622, owner: "Dock", bounds: display),
+    ]
+    try expect(
+        FullscreenDetection.isFullscreen(windows: fullscreen, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "A window spanning the display under the camera, with no desktop behind it, is fullscreen"
+    )
+
+    let zoomed = menuBar + desktop + [
+        ScreenWindow(level: 0, owner: "Safari", bounds: CGRect(x: 0, y: 39, width: 2056, height: 1290)),
+    ]
+    try expect(
+        !FullscreenDetection.isFullscreen(windows: zoomed, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "The same window over the wallpaper is only zoomed"
+    )
+
+    let ordinary = menuBar + desktop + [
+        ScreenWindow(level: 0, owner: "Telegram", bounds: CGRect(x: 1427, y: 70, width: 509, height: 1053)),
+    ]
+    try expect(
+        !FullscreenDetection.isFullscreen(windows: ordinary, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "An ordinary Space is not fullscreen"
+    )
+
+    // Chrome, fullscreen: the tab strip, the toolbar and the page are
+    // separate windows, read off this machine and moved to the display's
+    // origin. None of them spans the display alone.
+    let chrome = menuBar + [
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 39, width: 2056, height: 41)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 80, width: 2056, height: 81)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 39, width: 2056, height: 158)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 161, width: 2056, height: 1168)),
+        ScreenWindow(level: -2_147_483_622, owner: "Dock", bounds: display),
+    ]
+    try expect(
+        FullscreenDetection.isFullscreen(windows: chrome, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "Chrome's stacked windows together span the display, so Chrome is fullscreen"
+    )
+
+    let apart = menuBar + [
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 39, width: 2056, height: 41)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 400, width: 2056, height: 929)),
+    ]
+    try expect(
+        !FullscreenDetection.isFullscreen(windows: apart, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "Windows with a gap between them do not span the display"
+    )
+
+    let elsewhere = CGRect(x: 2056, y: 0, width: 1920, height: 1080)
+    try expect(
+        !FullscreenDetection.isFullscreen(windows: fullscreen, screen: elsewhere, menuBarHeight: 24, desktopIconLevel: iconLevel),
+        "A fullscreen application on another display leaves this one alone"
+    )
 }

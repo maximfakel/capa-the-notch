@@ -6,7 +6,9 @@ import SwiftUI
 struct ProviderChoice: Identifiable {
     let provider: Provider
     let name: String
-    let note: String?
+    /// A line under the name, where onboarding needs one. Settings says what
+    /// a Provider is doing instead, on its card.
+    var note: String? = nil
 
     var id: String { provider.rawValue }
 }
@@ -21,9 +23,11 @@ final class SettingsModel: ObservableObject {
     private unowned let application: AppDelegate
     private var watching: Set<AnyCancellable> = []
 
-    init(preferences: Preferences, application: AppDelegate) {
+    init(preferences: Preferences, application: AppDelegate, store: CapacityNotchStore? = nil) {
         self.preferences = preferences
         self.application = application
+        snapshots = store?.snapshots ?? []
+        appearance = preferences.appearance
         displayID = preferences.preferredDisplayID ?? 0
         screenSharingAllowed = preferences.screenSharingAllowed
         backgroundRefresh = preferences.backgroundRefreshSeconds
@@ -35,6 +39,32 @@ final class SettingsModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] unreadable in self?.musicUnreadable = unreadable }
             .store(in: &watching)
+        // The Providers section shows each Provider's state as the surface
+        // knows it, and follows it while Settings is open.
+        store?.$snapshots
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] snapshots in self?.snapshots = snapshots }
+            .store(in: &watching)
+    }
+
+    /// What the surface currently knows about each Provider.
+    @Published private(set) var snapshots: [CapacitySnapshot]
+
+    func snapshot(for provider: Provider) -> CapacitySnapshot? {
+        snapshots.first { $0.provider == provider }
+    }
+
+    func isOn(_ provider: Provider) -> Bool {
+        preferences.connectsAtLaunch(provider)
+    }
+
+    /// Reads one Provider now, as the surface's own Refresh does.
+    func refresh(_ provider: Provider) {
+        application.refresh(provider)
+    }
+
+    var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
     }
 
     /// The Music Module. Off until asked for; off, nothing is read.
@@ -46,12 +76,8 @@ final class SettingsModel: ObservableObject {
     @Published private(set) var musicUnreadable = false
 
     let providers = [
-        ProviderChoice(provider: .codex, name: "Codex", note: nil),
-        ProviderChoice(
-            provider: .claudeCode,
-            name: "Claude Code",
-            note: "Experimental. Reads only the Capacity its status line publishes."
-        ),
+        ProviderChoice(provider: .codex, name: "Codex"),
+        ProviderChoice(provider: .claudeCode, name: "Claude Code"),
     ]
 
     func binding(for provider: Provider) -> Binding<Bool> {
@@ -70,6 +96,10 @@ final class SettingsModel: ObservableObject {
         } else {
             application.disconnect(provider)
         }
+    }
+
+    @Published var appearance: Appearance {
+        didSet { application.applyAppearance(appearance) }
     }
 
     @Published var displayID: UInt32 {

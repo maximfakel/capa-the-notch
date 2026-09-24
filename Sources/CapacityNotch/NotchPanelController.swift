@@ -15,12 +15,11 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
     private let metrics = SurfaceMetrics()
+    private let shape = SurfaceShape()
     private var observers: Set<AnyCancellable> = []
     private var pointerTimer: Timer?
-    private var hideTimer: Timer?
     private var presentTicks = 0
     private var absentTicks = 0
-    private var hide: SurfaceHide?
 
     private static let pointerInterval: TimeInterval = 0.1
     /// A pointer passing over the strip on its way somewhere else has not
@@ -66,16 +65,29 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             .stationary,
             .ignoresCycle,
         ]
-        panel.contentView = NSHostingView(
+        let host = NSHostingView(
             rootView: NotchRootView(
                 store: store,
                 metrics: metrics,
                 music: music,
                 pages: pages,
+                shape: shape,
                 connect: connect,
                 refresh: refresh
             )
         )
+        // The panel alone decides the window's size. As the window's content
+        // view, a hosting view resizes the window itself to follow a SwiftUI
+        // animation (`updateAnimatedWindowSize`) — with the shape on a spring
+        // and the panel setting the frame too, the two fought until AppKit
+        // gave up on the constraint pass and ended the application. Inside a
+        // plain container it only fills what it is given.
+        host.sizingOptions = []
+        host.autoresizingMask = [.width, .height]
+        let container = NSView()
+        container.addSubview(host)
+        panel.contentView = container
+        host.frame = container.bounds
 
         super.init(window: panel)
 
@@ -170,10 +182,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     // MARK: - Showing and hiding
 
     func show() {
-        hide = nil
-        hideTimer?.invalidate()
-        hideTimer = nil
-
         positionPanel(for: store.presentation, animated: false)
         window?.orderFrontRegardless()
         startPointerTracking()
@@ -296,6 +304,31 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 ),
                 width: geometry.surfaceWidth(), named: "expanded-playing.png"
             )
+            picture(
+                SurfaceColumn(
+                    snapshots: store.snapshots, geometry: geometry, now: Date(),
+                    isExpanded: true, loaded: track, page: .capacity,
+                    connect: { _ in }, refresh: { _ in }, toggle: {}
+                ),
+                width: geometry.surfaceWidth(), named: "expanded.png"
+            )
+            picture(
+                SurfaceColumn(
+                    snapshots: UnreadCapacity.snapshots(), geometry: geometry, now: Date(),
+                    isExpanded: true, loaded: track, page: .capacity,
+                    connect: { _ in }, refresh: { _ in }, toggle: {}
+                ),
+                width: geometry.surfaceWidth(), named: "disconnected.png"
+            )
+            picture(
+                SurfaceColumn(
+                    snapshots: store.snapshots, geometry: geometry, now: Date(),
+                    isExpanded: false, connect: { _ in }, refresh: { _ in }, toggle: {}
+                )
+                .frame(height: geometry.menuBarHeight, alignment: .top)
+                .clipped(),
+                width: geometry.surfaceWidth(), named: "compact.png"
+            )
         }
     }
 
@@ -303,41 +336,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     /// person should see is the Capacity they just connected.
     func open() {
         store.pin()
-    }
-
-    func toggleVisibility() {
-        guard let window else { return }
-
-        if window.isVisible {
-            putAway()
-        } else {
-            show()
-        }
-    }
-
-    /// Puts the surface away for a while. Providers keep being read, and it
-    /// comes back on its own — nobody should have to remember to restore it.
-    func hideForAnHour() {
-        let hide = SurfaceHide(from: Date())
-        self.hide = hide
-        putAway()
-
-        hideTimer?.invalidate()
-        let timer = Timer(fire: hide.until, interval: 0, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated { self?.show() }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        hideTimer = timer
-    }
-
-    var hiddenUntilText: String? {
-        guard let hide, !hide.isOver(at: Date()) else { return nil }
-        return hide.remainingText(at: Date())
-    }
-
-    private func putAway() {
-        store.dismiss()
-        window?.orderOut(nil)
     }
 
     // MARK: - Screen sharing
@@ -382,8 +380,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     func stopPointerTracking() {
         pointerTimer?.invalidate()
         pointerTimer = nil
-        hideTimer?.invalidate()
-        hideTimer = nil
         presentTicks = 0
         absentTicks = 0
     }
@@ -409,16 +405,28 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private func readPointer() {
         guard let panel = window, panel.isVisible else { return }
 
+        // The window is larger than the surface, and around the shape it is
+        // transparent. It lets the pointer through there, to the menu bar and
+        // whatever lies under it, and takes it only over the shape itself.
+        let top = panel.frame.maxY
+        let surface = NSRect(
+            x: panel.frame.midX - shape.size.width / 2,
+            y: top - shape.size.height,
+            width: shape.size.width,
+            height: shape.size.height
+        )
+        let overSurface = surface.contains(NSEvent.mouseLocation)
+        if panel.ignoresMouseEvents == overSurface { panel.ignoresMouseEvents = !overSurface }
+
         // Closed, the surface answers to its strip — and only the strip, so
         // a music row under it keeps its buttons within reach; open, to the
-        // whole of itself. Both are the same width, so the region only ever
-        // grows downwards and the two states cannot chase each other.
+        // whole of itself. The region is the shape's, not the window's.
         let region = store.presentation == .expanded
-            ? panel.frame
+            ? surface
             : NSRect(
-                x: panel.frame.minX,
-                y: panel.frame.maxY - metrics.geometry.menuBarHeight,
-                width: panel.frame.width,
+                x: panel.frame.midX - metrics.geometry.compactWidth() / 2,
+                y: top - metrics.geometry.menuBarHeight,
+                width: metrics.geometry.compactWidth(),
                 height: metrics.geometry.menuBarHeight
             )
         guard !region.contains(NSEvent.mouseLocation) else {
@@ -485,16 +493,19 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         guard canTurnPages, event.hasPreciseScrollingDeltas else { return false }
         guard abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) || swipe != 0 else { return false }
 
+        // Fingers moving left bring the next page in, as on a phone,
+        // whichever way the person has scrolling set.
+        let travel = { event.isDirectionInvertedFromDevice ? self.swipe : -self.swipe }
+
         switch event.phase {
         case .began:
             swipe = 0
+            pages.follow(0)
         case .changed:
             swipe += event.scrollingDeltaX
+            pages.follow(travel())
         case .ended, .cancelled:
-            // Fingers moving left bring the next page in, as on a phone,
-            // whichever way the person has scrolling set.
-            let travel = event.isDirectionInvertedFromDevice ? swipe : -swipe
-            if travel < -40 { pages.next() } else if travel > 40 { pages.previous() }
+            pages.settle(travel())
             swipe = 0
         default:
             break
@@ -516,62 +527,70 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         case .compact:
             NSSize(
                 width: geometry.compactWidth(),
-                height: geometry.menuBarHeight + (music.shown == nil ? 0 : MusicType.rowHeight)
+                height: geometry.menuBarHeight + (showsMusicRow ? MusicType.rowHeight : 0)
             )
         case .expanded:
             NSSize(width: openWidth, height: expandedHeight(on: screen, width: openWidth))
         }
-        let frame = NSRect(
+        let radius: CGFloat = presentation == .expanded ? 38 : 28
+
+        // The window keeps one size, and only the black shape inside it
+        // moves. A window resized under a SwiftUI animation left the layout
+        // a step behind it, and the shape was drawn where the old window had
+        // been — above the screen or off to one side. So the window is sized
+        // once for the open surface with room for the spring's overshoot,
+        // and grows, without animation, only if the content outgrows it.
+        let room = NSSize(
+            width: max(panel.frame.width, geometry.surfaceWidth() + Self.overshoot * 2),
+            height: max(panel.frame.height, size.height + Self.overshoot, Self.minimumRoomHeight)
+        )
+        let frame = Self.frame(of: room, on: screen)
+        if panel.frame != frame {
+            panel.setFrame(frame, display: true)
+        }
+
+        guard animated else {
+            shape.size = size
+            shape.radius = radius
+            return
+        }
+
+        let motion = SurfaceType.surfaceMotion(
+            opening: presentation == .expanded,
+            reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        )
+        withAnimation(motion) {
+            shape.size = size
+            shape.radius = radius
+        }
+    }
+
+    /// How far past its size the opening spring may carry the shape.
+    private static let overshoot: CGFloat = 24
+    /// Enough for the open surface as drawn, with a sentence of guidance in
+    /// a card, so the window rarely has to grow at all.
+    private static let minimumRoomHeight: CGFloat = 320
+
+    private static func frame(of size: NSSize, on screen: NSScreen) -> NSRect {
+        NSRect(
             x: screen.frame.midX - size.width / 2,
             y: screen.frame.maxY - size.height,
             width: size.width,
             height: size.height
         )
-
-        guard animated else {
-            panel.setFrame(frame, display: true)
-            return
-        }
-
-        let opening = presentation == .expanded
-
-        // Reduce Motion asks for the size change without the journey.
-        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.15
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                context.allowsImplicitAnimation = true
-                panel.animator().setFrame(frame, display: true)
-            }
-            return
-        }
-
-        NSAnimationContext.runAnimationGroup { context in
-            // Unfolding is the gesture worth watching, so it takes its time
-            // and decelerates into place. Folding away is not, so it is
-            // brisk: a surface that lingers on the way out feels reluctant.
-            // Half a second on the drawing's own curve, which is the same
-            // ease the designer used for the width and the height together.
-            context.duration = opening ? SurfaceType.openDuration : 0.26
-            context.timingFunction = opening
-                ? CAMediaTimingFunction(
-                    controlPoints: Float(SurfaceType.openCurve.0),
-                    Float(SurfaceType.openCurve.1),
-                    Float(SurfaceType.openCurve.2),
-                    Float(SurfaceType.openCurve.3)
-                )
-                : CAMediaTimingFunction(controlPoints: 0.4, 0, 0.7, 1)
-            context.allowsImplicitAnimation = true
-            panel.animator().setFrame(frame, display: true)
-        }
     }
 
-    /// The expanded surface follows its content. A Provider that is
-    /// disconnected explains itself in a sentence, and a fixed height would
-    /// cut that sentence in half.
-    private func expandedHeight(on screen: NSScreen, width: CGFloat) -> CGFloat {
-        let minimumHeight = metrics.geometry.menuBarHeight + 180
+    /// Closed, a track adds its row under the strip — except over a
+    /// fullscreen application, where the strip stands alone.
+    private var showsMusicRow: Bool {
+        music.shown != nil && !metrics.isFullscreen
+    }
 
+    /// The expanded surface follows its content and nothing else. A Provider
+    /// that is disconnected explains itself in a sentence, and a fixed height
+    /// would cut that sentence in half; a floor under it left the music page,
+    /// drawn at 185, standing 218 tall over 33 points of nothing.
+    private func expandedHeight(on screen: NSScreen, width: CGFloat) -> CGFloat {
         let measuring = NSHostingView(
             rootView: SurfaceColumn(
                 snapshots: store.snapshots,
@@ -588,7 +607,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         measuring.frame = NSRect(x: 0, y: 0, width: width, height: 0)
         measuring.layoutSubtreeIfNeeded()
 
-        return min(max(measuring.fittingSize.height, minimumHeight), screen.visibleFrame.height)
+        return min(measuring.fittingSize.height, screen.visibleFrame.height)
     }
 }
 

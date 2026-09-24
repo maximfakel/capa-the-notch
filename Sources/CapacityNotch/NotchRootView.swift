@@ -7,14 +7,18 @@ import SwiftUI
 /// text nodes give a width for each string; the size is whichever one renders
 /// that string at that width. Two of them disagreed with what the drawing said
 /// it was using — the card's figure measures 59 points for "69% left", which
-/// is 15 and not the 20 declared, and the strip's measures 35 for "76%", which
-/// is 17 and not 15. The widths are what the eye sees, so the widths win.
+/// is 15 and not the 20 declared. The widths are what the eye sees, so the
+/// widths win.
 enum SurfaceType {
     static let providerName = Font.system(size: 17, weight: .semibold)
     static let statusChip = Font.system(size: 11, weight: .semibold)
     static let windowLabel = Font.system(size: 15, weight: .medium)
     static let capacity = Font.system(size: 15, weight: .bold, design: .rounded)
-    static let compactCapacity = Font.system(size: 17, weight: .semibold, design: .rounded)
+    /// The strip's figures: 15 closed and 17 open, as the two drawings set
+    /// them ("76%" measures 31 points wide closed and 35 open).
+    static func compactCapacity(isExpanded: Bool) -> Font {
+        .system(size: isExpanded ? 17 : 15, weight: .semibold, design: .rounded)
+    }
     static let caption = Font.system(size: 11, weight: .regular)
     static let guidance = Font.system(size: 15, weight: .regular)
     static let refreshGlyph = Font.system(size: 17, weight: .semibold)
@@ -27,43 +31,46 @@ enum SurfaceType {
     /// half a second to open; the reading time follows it in at 200ms and the
     /// cards at 280ms, each rising a little as it arrives. Closing is brisk
     /// and undelayed — nothing is worth waiting for on the way out.
-    static let openDuration = 0.5
-    static let openCurve = (0.32, 0.72, 0.0, 1.0)
-
-    /// The same motion the window is given, so the strip widens in step with
-    /// it instead of jumping to its open width on the first frame and leaving
-    /// the figures to sit there while the window catches up.
+    /// The surface's shape moves on springs: opening with a little give at
+    /// the end, closing settled and without overshoot. The strip's width,
+    /// the page turn and the shape share them, so everything that moves with
+    /// the surface arrives with it.
     static func surfaceMotion(opening: Bool, reduced: Bool = false) -> Animation {
         if reduced { return .easeInOut(duration: 0.15) }
         return opening
-            ? .timingCurve(openCurve.0, openCurve.1, openCurve.2, openCurve.3,
-                           duration: openDuration)
-            : .timingCurve(0.4, 0, 0.7, 1, duration: 0.26)
+            ? .spring(response: 0.42, dampingFraction: 0.8)
+            : .spring(response: 0.45, dampingFraction: 1.0)
     }
 
-    /// Reduce Motion keeps the change and drops the travel: things still fade
-    /// in, in the same order, but nothing slides and nothing is held back.
-    static func provenanceMotion(opening: Bool, reduced: Bool) -> Animation {
+    /// What trades places under the strip as the surface opens and closes.
+    /// The outgoing thing leaves quickly; the incoming one arrives while the
+    /// shape is still moving, a beat behind it, so the shape uncovers it
+    /// rather than opening onto an empty black and filling in afterwards.
+    static func contentMotion(appearing: Bool, reduced: Bool) -> Animation {
         if reduced { return .easeInOut(duration: 0.15) }
-        return opening
-            ? .timingCurve(0.25, 0.1, 0.25, 1, duration: 0.25).delay(0.20)
-            : .easeIn(duration: 0.12)
-    }
-
-    static func cardsMotion(opening: Bool, reduced: Bool) -> Animation {
-        if reduced { return .easeInOut(duration: 0.15) }
-        return opening
-            ? .timingCurve(0.25, 0.1, 0.25, 1, duration: 0.27).delay(0.28)
-            : .easeIn(duration: 0.12)
+        return appearing
+            ? .easeOut(duration: 0.22).delay(0.06)
+            : .easeIn(duration: 0.1)
     }
 
     static let headerRow: CGFloat = 22
     static let windowRow: CGFloat = 18
     static let captionRow: CGFloat = 14
-    static let provenanceRow: CGFloat = 16
+    static let provenanceRow: CGFloat = 14
 
-    static let captionColour = Color.white.opacity(0.55)
-    static let trackColour = Color.white.opacity(0.15)
+    /// The drawing's own colours, spelled out. The system's named colours
+    /// follow the Mac's appearance, and in Light mode they are a shade darker
+    /// than the drawing on a surface that is black either way.
+    static let green = Color(red: 0x30 / 255, green: 0xD1 / 255, blue: 0x58 / 255)
+    static let yellow = Color(red: 0xFF / 255, green: 0xD6 / 255, blue: 0x0A / 255)
+    static let red = Color(red: 0xFF / 255, green: 0x45 / 255, blue: 0x3A / 255)
+    static let orange = Color(red: 0xFF / 255, green: 0x9F / 255, blue: 0x0A / 255)
+
+    static let captionColour = Color.white.opacity(0x8C / 255)
+    static let trackColour = Color.white.opacity(0x26 / 255)
+    static let cardColour = Color.white.opacity(0x14 / 255)
+    static let connectColour = Color.white.opacity(0x33 / 255)
+
 }
 
 /// The surface is one column: the strip that lives in the menu bar, and the
@@ -75,6 +82,7 @@ struct NotchRootView: View {
     @ObservedObject private var metrics: SurfaceMetrics
     @ObservedObject private var music: MusicReader
     @ObservedObject private var pages: SurfacePages
+    @ObservedObject private var shape: SurfaceShape
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
 
@@ -83,6 +91,7 @@ struct NotchRootView: View {
         metrics: SurfaceMetrics,
         music: MusicReader,
         pages: SurfacePages,
+        shape: SurfaceShape,
         connect: @escaping (Provider) -> Void,
         refresh: @escaping (Provider) -> Void
     ) {
@@ -90,64 +99,101 @@ struct NotchRootView: View {
         self.metrics = metrics
         self.music = music
         self.pages = pages
+        self.shape = shape
         self.connect = connect
         self.refresh = refresh
     }
 
-    /// The drawing's corners: the open surface 38, the closed strip with a
-    /// music row under it 18, and the closed strip alone as it was.
-    private var bottomRadius: CGFloat {
-        if store.presentation == .expanded { return 38 }
-        return music.shown == nil ? 38 : 18
+    /// Over a fullscreen application the closed surface is the strip alone: a
+    /// music row would sit on the tabs or the toolbar of the application the
+    /// person asked to have the whole screen. Opening it still works.
+    private var compactTrack: NowPlaying? {
+        metrics.isFullscreen ? nil : music.shown
     }
 
     var body: some View {
-        // The background decides the size and takes whatever the window
-        // gives it. The column rides on top as an overlay, which contributes
-        // nothing to that size, so it can keep its natural height without
-        // either squeezing itself or telling the window how tall to be.
-        Color.black
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(alignment: .top) {
-                // Capacity Pace and a countdown both depend on the time, so
-                // the surface is redrawn on a slow beat rather than only when
-                // a Provider answers.
-                TimelineView(.periodic(from: .now, by: 30)) { context in
-                    SurfaceColumn(
-                        snapshots: store.snapshots,
-                        geometry: metrics.geometry,
-                        now: context.date,
-                        highlighted: store.highlighted,
-                        isExpanded: store.presentation == .expanded,
-                        playing: music.shown,
-                        loaded: music.loaded,
-                        page: pages.selected,
-                        send: { music.send($0) },
-                        connect: connect,
-                        refresh: refresh
-                    ) {
-                        // A click asks for the surface to stay, and a second
-                        // one lets it go again.
-                        store.togglePin()
-                    }
-                }
-                // The second way between pages, for VoiceOver: nothing on
-                // screen, as the swipe is the only thing drawn.
-                .accessibilityActions {
-                    if store.presentation == .expanded, music.loaded != nil {
-                        Button("Next page") { pages.next() }
-                        Button("Previous page") { pages.previous() }
-                    }
+        // The column is laid out once, at the top of the window, and does
+        // not move; only the shape moves. The shape fills the black and cuts
+        // the column to itself, and it is a path — animating it redraws an
+        // outline each frame rather than laying the whole column out again,
+        // which is what made the spring stutter. The window is one size, the
+        // open surface's and a little more; around the shape it is
+        // transparent and lets the pointer through.
+        let outline = NotchOutline(size: shape.size, radius: shape.radius)
+
+        ZStack(alignment: .top) {
+            outline.fill(Color.black)
+
+            // Capacity Pace and a countdown both depend on the time, so
+            // the surface is redrawn on a slow beat rather than only when
+            // a Provider answers.
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                SurfaceColumn(
+                    snapshots: store.snapshots,
+                    geometry: metrics.geometry,
+                    now: context.date,
+                    highlighted: store.highlighted,
+                    isExpanded: store.presentation == .expanded,
+                    playing: compactTrack,
+                    loaded: music.loaded,
+                    page: pages.selected,
+                    travel: pages.travel,
+                    send: { music.send($0) },
+                    connect: connect,
+                    refresh: refresh
+                ) {
+                    // A click asks for the surface to stay, and a second
+                    // one lets it go again.
+                    store.togglePin()
                 }
             }
-            .clipShape(
-                UnevenRoundedRectangle(
-                    bottomLeadingRadius: bottomRadius,
-                    bottomTrailingRadius: bottomRadius,
-                    style: .continuous
-                )
-            )
+            // The second way between pages, for VoiceOver: nothing on
+            // screen, as the swipe is the only thing drawn.
+            .accessibilityActions {
+                if store.presentation == .expanded, music.loaded != nil {
+                    Button("Next page") { pages.next() }
+                    Button("Previous page") { pages.previous() }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .clipShape(outline)
+        .contentShape(outline)
     }
+}
+
+/// The surface's outline: square along the top, where it meets the menu bar,
+/// rounded along the bottom, centred in whatever the window is.
+struct NotchOutline: Shape {
+    var size: CGSize
+    var radius: CGFloat
+
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat> {
+        get { AnimatablePair(AnimatablePair(size.width, size.height), radius) }
+        set {
+            size = CGSize(width: newValue.first.first, height: newValue.first.second)
+            radius = newValue.second
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let frame = CGRect(x: rect.midX - size.width / 2, y: rect.minY, width: size.width, height: size.height)
+        let corner = min(radius, size.width / 2, size.height)
+        return UnevenRoundedRectangle(
+            bottomLeadingRadius: corner,
+            bottomTrailingRadius: corner,
+            style: .continuous
+        )
+        .path(in: frame)
+    }
+}
+
+/// The black shape's size and corners, set by the panel and animated by it:
+/// the drawing's 38 open and 28 closed.
+@MainActor
+final class SurfaceShape: ObservableObject {
+    @Published var size: CGSize = .zero
+    @Published var radius: CGFloat = 28
 }
 
 /// The column on its own, with the height it wants and no filling.
@@ -166,10 +212,14 @@ struct SurfaceColumn: View {
     /// Its track for the expanded page: whatever is loaded.
     var loaded: NowPlaying? = nil
     var page: SurfacePage = .capacity
+    /// A swipe under way, in points; see `SurfacePages.travel`.
+    var travel: CGFloat = 0
     var send: (MusicCommand) -> Void = { _ in }
     let connect: (Provider) -> Void
     let refresh: (Provider) -> Void
     let toggle: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -181,21 +231,24 @@ struct SurfaceColumn: View {
                 toggle: toggle
             )
 
-            // Only the branch that exists is built: an empty branch would
-            // still take a slot, and the stack would space around it.
-            if !isExpanded, let playing {
-                CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send)
-            }
+            // Under the strip, one place and two things to put in it: the
+            // music row closed, the open surface's content open. Both are
+            // always built and trade places by fading, in step with the
+            // shape — the row appearing at once over cards still on their way
+            // out, and cards arriving a quarter-second after the shape had
+            // opened on an empty black, are what made the motion look broken.
+            ZStack(alignment: .top) {
+                openContent
+                    .opacity(isExpanded ? 1 : 0)
+                    .allowsHitTesting(isExpanded)
+                    .animation(SurfaceType.contentMotion(appearing: isExpanded, reduced: reduceMotion), value: isExpanded)
 
-            if isExpanded, let loaded {
-                PageDots(selected: page)
-                if page == .music {
-                    MusicPage(track: loaded, now: now, send: send)
-                } else {
-                    capacityDetail
+                if let playing {
+                    CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send)
+                        .opacity(isExpanded ? 0 : 1)
+                        .allowsHitTesting(!isExpanded)
+                        .animation(SurfaceType.contentMotion(appearing: !isExpanded, reduced: reduceMotion), value: isExpanded)
                 }
-            } else {
-                capacityDetail
             }
         }
         .frame(width: geometry.surfaceWidth(), alignment: .top)
@@ -207,12 +260,48 @@ struct SurfaceColumn: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// Everything the open surface shows under its strip.
+    private var openContent: some View {
+        VStack(spacing: 0) {
+            // With a track loaded there are two pages, laid side by side and
+            // moved together.
+            if let loaded {
+                PageStrip(position: stripPosition, heightPosition: page == .music ? 1 : 0) {
+                    capacityDetail
+                        .accessibilityHidden(page != .capacity)
+                    MusicPage(
+                        track: loaded,
+                        now: now,
+                        isVisible: isExpanded && (page == .music || travel != 0),
+                        send: send
+                    )
+                    .accessibilityHidden(page != .music)
+                }
+                .clipped()
+            } else {
+                capacityDetail
+            }
+
+            PageDots(selected: loaded == nil ? nil : page)
+        }
+    }
+
+    /// Where the pages stand: the page chosen, moved by the fingers, and
+    /// beyond either end only a third as far, so the edge gives a little and
+    /// then holds.
+    private var stripPosition: CGFloat {
+        let width = geometry.surfaceWidth()
+        let moved = (page == .music ? 1 : 0) - travel / width
+        if moved < 0 { return moved / 3 }
+        if moved > 1 { return 1 + (moved - 1) / 3 }
+        return moved
+    }
+
     private var capacityDetail: some View {
         DetailCapacityView(
             snapshots: snapshots,
             now: now,
             highlighted: highlighted,
-            isExpanded: isExpanded,
             connect: connect,
             refresh: refresh
         )
@@ -232,15 +321,15 @@ private struct CompactCapacityView: View {
         Button(action: toggle) {
             HStack(spacing: 0) {
                 if let codex = snapshots.first(where: { $0.provider == .codex }) {
-                    CompactProviderView(snapshot: codex, now: now)
+                    CompactProviderView(snapshot: codex, now: now, isExpanded: isExpanded)
                 }
 
                 // Numbers drawn under the physical notch are numbers nobody
                 // can read.
-                Spacer(minLength: max(geometry.notchWidth, 104))
+                Spacer(minLength: max(geometry.notchWidth, 220))
 
                 if let claude = snapshots.first(where: { $0.provider == .claudeCode }) {
-                    CompactProviderView(snapshot: claude, now: now)
+                    CompactProviderView(snapshot: claude, now: now, isExpanded: isExpanded)
                 }
             }
             .padding(.horizontal, 18)
@@ -281,6 +370,7 @@ private struct PaceMark: View {
 private struct CompactProviderView: View {
     let snapshot: CapacitySnapshot
     let now: Date
+    let isExpanded: Bool
 
     var body: some View {
         HStack(spacing: 7) {
@@ -288,7 +378,7 @@ private struct CompactProviderView: View {
                 .foregroundStyle(snapshot.provider.presentation.tint)
 
             Text(snapshot.compactCapacityText(at: now))
-                .font(SurfaceType.compactCapacity)
+                .font(SurfaceType.compactCapacity(isExpanded: isExpanded))
                 .monospacedDigit()
                 .foregroundStyle(.white)
                 // A figure that wraps is not a figure. It keeps its own width
@@ -306,29 +396,23 @@ private struct CompactProviderView: View {
 }
 
 struct DetailCapacityView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     let snapshots: [CapacitySnapshot]
     let now: Date
     var highlighted: CapacityNotchStore.HighlightedWindow?
-    var isExpanded = true
     let connect: (Provider) -> Void
     let refresh: (Provider) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(CapacityProvenance.of(snapshots).headline)
-                .font(SurfaceType.caption)
-                .foregroundStyle(SurfaceType.captionColour)
-                .frame(height: SurfaceType.provenanceRow)
-                .padding(.horizontal, 18)
-                .padding(.top, 2)
-                .opacity(isExpanded ? 1 : 0)
-                .offset(y: isExpanded || reduceMotion ? 0 : 6)
-                .animation(
-                    SurfaceType.provenanceMotion(opening: isExpanded, reduced: reduceMotion),
-                    value: isExpanded
-                )
+            // With nothing connected there is no reading to date, and the
+            // drawing leaves the line out: six points and then the cards.
+            if let headline = CapacityProvenance.of(snapshots).headline {
+                Text(headline)
+                    .font(SurfaceType.caption)
+                    .foregroundStyle(SurfaceType.captionColour)
+                    .frame(height: SurfaceType.provenanceRow)
+                    .padding(.horizontal, 18)
+            }
 
             HStack(spacing: 12) {
                 ForEach(snapshots, id: \.provider) { snapshot in
@@ -343,13 +427,11 @@ struct DetailCapacityView: View {
                     )
                 }
             }
-            .padding(18)
-            .opacity(isExpanded ? 1 : 0)
-            .offset(y: isExpanded || reduceMotion ? 0 : 14)
-            .animation(
-                SurfaceType.cardsMotion(opening: isExpanded, reduced: reduceMotion),
-                value: isExpanded
-            )
+            // Both cards stand as tall as the taller one: the row takes the
+            // height its tallest card wants, and each card fills it.
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 18)
+            .padding(.top, 6)
         }
         .foregroundStyle(.white)
     }
@@ -385,7 +467,7 @@ private struct ConnectAction: View {
     let connect: () -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             if let reason, reason.needsAPersonFirst {
                 Text(reason.guidance)
                     .font(SurfaceType.guidance)
@@ -398,16 +480,16 @@ private struct ConnectAction: View {
                 Text("Connect")
                     .font(SurfaceType.windowLabel)
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 9)
-                    .background(Capsule().fill(Color.white.opacity(0.22)))
+                    .frame(height: 18)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Capsule().fill(SurfaceType.connectColour))
             }
             .buttonStyle(.plain)
             .focusable()
             .accessibilityLabel("Connect this Provider")
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 6)
     }
 }
 
@@ -454,11 +536,14 @@ struct ProviderCard: View {
             .frame(height: SurfaceType.headerRow)
 
             if case .disconnected = snapshot.connectionState {
+                // Twenty above the button and twenty under it, the card
+                // otherwise padded fourteen: "Notch — Disconnected".
                 ConnectAction(
                     reason: snapshot.statusReason,
                     connect: connect
                 )
-                .padding(.top, 12)
+                .padding(.top, 20)
+                .padding(.bottom, 6)
             } else if let reason = snapshot.statusReason, reason.repeatsTheChip == false {
                 Text(reason.guidance)
                     .font(SurfaceType.guidance)
@@ -509,16 +594,8 @@ struct ProviderCard: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        // Both cards stand the same height whatever each one holds, so a
-        // Provider offering a Connect button does not sit shorter than one
-        // showing two windows.
-        .frame(
-            maxWidth: .infinity,
-            minHeight: 154,
-            maxHeight: .infinity,
-            alignment: .topLeading
-        )
-        .background(Color.white.opacity(0.08))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(SurfaceType.cardColour)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(CapacitySpeech.provider(snapshot, at: now))
@@ -541,9 +618,9 @@ private extension Provider {
     var presentation: ProviderPresentation {
         switch self {
         case .codex:
-            ProviderPresentation(displayName: "Codex", tint: .mint)
+            ProviderPresentation(displayName: "Codex", tint: .white)
         case .claudeCode:
-            ProviderPresentation(displayName: "Claude Code", tint: .orange)
+            ProviderPresentation(displayName: "Claude Code", tint: SurfaceType.orange)
         }
     }
 }
@@ -557,16 +634,16 @@ private extension CapacityConnectionState {
     var presentation: ConnectionStatePresentation {
         switch self {
         case .mock:
-            ConnectionStatePresentation(label: "Mock", tint: .secondary)
+            ConnectionStatePresentation(label: "Mock", tint: SurfaceType.captionColour)
         case .connecting:
-            ConnectionStatePresentation(label: "Connecting", tint: .secondary)
+            ConnectionStatePresentation(label: "Connecting", tint: SurfaceType.captionColour)
         case .fresh:
-            ConnectionStatePresentation(label: "Fresh", tint: .green)
+            ConnectionStatePresentation(label: "Fresh", tint: SurfaceType.green)
         case .stale:
-            ConnectionStatePresentation(label: "Stale", tint: .yellow)
+            ConnectionStatePresentation(label: "Stale", tint: SurfaceType.yellow)
         case .disconnected:
             // A dash, not a word. The card's body says what to do about it.
-            ConnectionStatePresentation(label: "—", tint: .red)
+            ConnectionStatePresentation(label: "—", tint: SurfaceType.red)
         }
     }
 }
@@ -583,16 +660,16 @@ private extension QuotaWindow {
 private extension CapacityPace {
     var tint: Color {
         switch self {
-        case .sustainable: .green
-        case .tightening: .yellow
-        case .unsustainable: .red
+        case .sustainable: SurfaceType.green
+        case .tightening: SurfaceType.yellow
+        case .unsustainable: SurfaceType.red
         }
     }
 }
 
 
 private extension CapacityProvenance {
-    var headline: String {
+    var headline: String? {
         switch self {
         case .mock:
             "Mock capacity"
@@ -601,7 +678,7 @@ private extension CapacityProvenance {
         case let .stale(readAt):
             "Last read at \(readAt.formatted(date: .omitted, time: .shortened))"
         case .disconnected:
-            "No Provider connected"
+            nil
         }
     }
 }

@@ -54,7 +54,10 @@ struct ProviderMark: View {
         Group {
             switch provider {
             case .codex:
+                // Drawn as a template, so it takes whatever colour it is
+                // given: white on the surface, ink in light-mode Settings.
                 Image(nsImage: openAIBlossom)
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
             case .claudeCode:

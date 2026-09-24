@@ -125,6 +125,15 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "musicEnabled") }
     }
 
+    // MARK: - Windows
+
+    /// How Settings and onboarding look. The surface is black whatever this
+    /// says: it continues the menu bar, not a window.
+    public var appearance: Appearance {
+        get { defaults.string(forKey: "appearance").flatMap(Appearance.init(rawValue:)) ?? .system }
+        set { defaults.set(newValue.rawValue, forKey: "appearance") }
+    }
+
     // MARK: - Onboarding
 
     public var hasFinishedOnboarding: Bool {
@@ -150,5 +159,20 @@ public final class Preferences: @unchecked Sendable {
     public var claudeConsentGiven: Bool {
         get { defaults.bool(forKey: "claudeCodeConsentGiven") }
         set { defaults.set(newValue, forKey: "claudeCodeConsentGiven") }
+    }
+}
+
+/// Light, dark, or whatever the Mac is set to.
+public enum Appearance: String, CaseIterable, Sendable {
+    case system
+    case light
+    case dark
+
+    public var title: String {
+        switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
     }
 }

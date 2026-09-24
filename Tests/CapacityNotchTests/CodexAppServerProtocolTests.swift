@@ -273,8 +273,8 @@ func anUnreadSurfaceShowsNoNumbersAtAll() throws {
         "An unread Provider is disconnected, not mock and not empty"
     )
     try expect(
-        snapshots.compactMap(\.statusReason).allSatisfy { $0.guidance.contains("menu bar") },
-        "Each unread Provider should say how to connect it"
+        snapshots.compactMap(\.statusReason).allSatisfy { $0.guidance.contains("in Settings") },
+        "Each unread Provider should say where to turn it on — Settings, the menu no longer connects"
     )
     try expect(
         CapacityProvenance.of(snapshots) == .disconnected,

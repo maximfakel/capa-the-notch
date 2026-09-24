@@ -1,3 +1,7 @@
 .build/
 .DS_Store
 dist/
+# Agent skills, installed per machine from mattpocock/skills; not part of the product.
+.agents/
+.claude/skills/
+skills-lock.json
