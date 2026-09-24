@@ -58,6 +58,8 @@ install -m 755 "$binaries/CapacityNotch" "$app/Contents/MacOS/CapacityNotch"
 install -m 755 "$binaries/CapacityNotchClaudeBridge" "$app/Contents/MacOS/CapacityNotchClaudeBridge"
 install -m 644 Packaging/Info.plist "$app/Contents/Info.plist"
 install -m 644 Sources/CapacityNotch/Resources/OpenAIBlossom.svg "$app/Contents/Resources/OpenAIBlossom.svg"
+install -m 644 Sources/CapacityNotch/Resources/MenuBarIcon.svg "$app/Contents/Resources/MenuBarIcon.svg"
+install -m 644 Packaging/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 
 # The Music Module's reader (ADR 0004): run by /usr/bin/perl, never loaded here.
 mkdir -p "$app/Contents/Frameworks"
