@@ -48,14 +48,19 @@ notarized is checked afresh.
 Run the executable seam checks:
 
 ```sh
-swift run CapacityNotchTests
+swift run --build-system native CapacityNotchTests
 ```
 
 Build the executable:
 
 ```sh
-swift build --product CapacityNotch
+swift build --build-system native --product CapacityNotch
 ```
+
+The default build system that Swift 6.4 brings with macOS 27 does not start
+without Xcode, hence `--build-system native`; and the views declare their
+state with `State(initialValue:)` rather than `@State`, whose macro plugin
+ships only inside Xcode.
 
 Build the release archive — the same bytes from the same commit and Swift
 toolchain, with no builder's home directory inside:

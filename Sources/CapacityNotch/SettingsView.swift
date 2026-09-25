@@ -12,7 +12,12 @@ import SwiftUI
 /// keyboard treat them as they treat the system's (ticket 19).
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
-    @State private var section: SettingsSection
+    // Explicit State, not @State: its macro plugin ships only inside Xcode.
+    private let _section: State<SettingsSection>
+    private var section: SettingsSection {
+        get { _section.wrappedValue }
+        nonmutating set { _section.wrappedValue = newValue }
+    }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(model: SettingsModel, section: SettingsSection = .general) {
@@ -22,7 +27,7 @@ struct SettingsView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            SettingsSidebar(selection: $section)
+            SettingsSidebar(selection: _section.projectedValue)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -447,7 +452,11 @@ private struct SidebarItem: View {
     let highlight: Namespace.ID
     let action: () -> Void
 
-    @State private var hovering = false
+    private let _hovering = State(initialValue: false)
+    private var hovering: Bool {
+        get { _hovering.wrappedValue }
+        nonmutating set { _hovering.wrappedValue = newValue }
+    }
 
     var body: some View {
         Button(action: action) {
@@ -578,7 +587,11 @@ private struct SettingsRow<Content: View>: View {
     var hovers = true
     @ViewBuilder let content: Content
 
-    @State private var hovering = false
+    private let _hovering = State(initialValue: false)
+    private var hovering: Bool {
+        get { _hovering.wrappedValue }
+        nonmutating set { _hovering.wrappedValue = newValue }
+    }
 
     init(
         height: CGFloat = 40,
@@ -731,7 +744,11 @@ private struct SettingsIconButton: View {
     let label: String
     let action: () -> Void
 
-    @State private var hovering = false
+    private let _hovering = State(initialValue: false)
+    private var hovering: Bool {
+        get { _hovering.wrappedValue }
+        nonmutating set { _hovering.wrappedValue = newValue }
+    }
 
     var body: some View {
         Button(action: action) {

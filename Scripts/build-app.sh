@@ -9,9 +9,9 @@ if [[ -n "${CAPACITY_NOTCH_SDKROOT:-}" ]]; then
   export SDKROOT="$CAPACITY_NOTCH_SDKROOT"
 fi
 
-swift build -c release --product CapacityNotch
-swift build -c release --product CapacityNotchClaudeBridge
-binary_dir="$(swift build -c release --product CapacityNotch --show-bin-path)"
+swift build --build-system native -c release --product CapacityNotch
+swift build --build-system native -c release --product CapacityNotchClaudeBridge
+binary_dir="$(swift build --build-system native -c release --product CapacityNotch --show-bin-path)"
 
 rm -rf "$app_bundle"
 mkdir -p "$app_bundle/Contents/MacOS"

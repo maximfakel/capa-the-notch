@@ -25,8 +25,10 @@ public struct ScreenWindow: Equatable, Sendable {
 /// cannot do is take the desktop away: a fullscreen Space has no wallpaper and
 /// no desktop icons, while every ordinary Space has at least one of them. The
 /// Dock and the Window Server keep windows at desktop levels in both, so they
-/// do not count.
+/// do not count; on macOS 27 WindowManager holds what the Dock held.
 public enum FullscreenDetection {
+    private static let keepersOfDesktopLevels: Set = ["Dock", "WindowManager", "Window Server"]
+
     public static func isFullscreen(
         windows: [ScreenWindow],
         screen: CGRect,
@@ -38,11 +40,13 @@ public enum FullscreenDetection {
         // One application's full-width windows, stacked, reaching from the
         // top to the bottom. Chrome is not one window when fullscreen: its tab
         // strip, its toolbar and the page are separate windows one under
-        // another, and none of them spans the display on its own.
+        // another, and none of them spans the display on its own. Only the
+        // width is asked, not where the window stands: changing Space slides
+        // every window sideways, easing the last few points over half a
+        // second (measured on macOS 27.0), and a fullscreen window mid-slide
+        // is still fullscreen.
         let spanning = Dictionary(grouping: onScreen.filter { window in
-            window.level == 0
-                && window.bounds.minX <= screen.minX
-                && window.bounds.maxX >= screen.maxX
+            window.level == 0 && window.bounds.width >= screen.width
         }, by: \.owner)
         let covered = spanning.values.contains { windows in
             var reached = screen.minY + menuBarHeight + 1
@@ -54,10 +58,13 @@ public enum FullscreenDetection {
         }
         guard covered else { return false }
 
+        // The wallpaper and the icons slide with their Space too, and stand
+        // at the display's origin only once it has settled; one sliding away
+        // is a desktop being left, not one showing.
         let desktopShows = onScreen.contains { window in
             window.level <= desktopIconLevel
-                && window.owner != "Dock"
-                && window.owner != "Window Server"
+                && !keepersOfDesktopLevels.contains(window.owner)
+                && window.bounds.origin == screen.origin
         }
         return !desktopShows
     }

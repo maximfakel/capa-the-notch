@@ -129,3 +129,123 @@ func aFullscreenApplicationIsToldApartFromAZoomedWindow() throws {
         "A fullscreen application on another display leaves this one alone"
     )
 }
+
+// Read off this machine on macOS 27.0: the desktop-level windows the Dock held
+// on 26.6 now belong to WindowManager, in fullscreen Spaces and ordinary ones.
+func onMacOS27WindowManagerHoldsWhatTheDockHeld() throws {
+    let base = [
+        ScreenWindow(level: 24, owner: "Window Server", bounds: CGRect(x: 0, y: 0, width: 2056, height: 39)),
+        ScreenWindow(level: -2_147_483_624, owner: "WindowManager", bounds: display),
+        ScreenWindow(level: -2_147_483_626, owner: "Window Server", bounds: display),
+    ]
+    let chrome = base + [
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 39, width: 2056, height: 41)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 80, width: 2056, height: 81)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 39, width: 2056, height: 158)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: 0, y: 161, width: 2056, height: 1168)),
+        ScreenWindow(level: -2_147_483_622, owner: "WindowManager", bounds: display),
+    ]
+    try expect(
+        FullscreenDetection.isFullscreen(windows: chrome, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "Fullscreen Chrome on macOS 27 is fullscreen"
+    )
+
+    let figma = base + [
+        ScreenWindow(level: 0, owner: "Figma Beta", bounds: CGRect(x: 0, y: 39, width: 2056, height: 32)),
+        ScreenWindow(level: 0, owner: "Figma Beta", bounds: CGRect(x: 0, y: 39, width: 2056, height: 1290)),
+        ScreenWindow(level: -2_147_483_622, owner: "WindowManager", bounds: display),
+    ]
+    try expect(
+        FullscreenDetection.isFullscreen(windows: figma, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "Fullscreen Figma on macOS 27 is fullscreen"
+    )
+
+    let zoomed = base + desktop + [
+        ScreenWindow(level: 0, owner: "Figma Beta", bounds: CGRect(x: 0, y: 39, width: 2056, height: 1290)),
+    ]
+    try expect(
+        !FullscreenDetection.isFullscreen(windows: zoomed, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel),
+        "A spanning window over the wallpaper on macOS 27 is only zoomed"
+    )
+}
+
+// Read off this machine on macOS 27.0 at 20 Hz: changing Space slides the
+// windows sideways, and the slide eases out over half a second, a point or two
+// at a time. The desktop leaves the window list partway through.
+private func figma(at x: CGFloat) -> [ScreenWindow] {
+    [
+        ScreenWindow(level: 0, owner: "Figma Beta", bounds: CGRect(x: x, y: 39, width: 2056, height: 32)),
+        ScreenWindow(level: 0, owner: "Figma Beta", bounds: CGRect(x: x, y: 39, width: 2056, height: 1290)),
+    ]
+}
+
+private func chrome(at x: CGFloat) -> [ScreenWindow] {
+    [
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: x, y: 39, width: 2056, height: 41)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: x, y: 80, width: 2056, height: 81)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: x, y: 39, width: 2056, height: 158)),
+        ScreenWindow(level: 0, owner: "Google Chrome", bounds: CGRect(x: x, y: 161, width: 2056, height: 1168)),
+    ]
+}
+
+private let fullscreenSpace = [
+    ScreenWindow(level: 24, owner: "Window Server", bounds: CGRect(x: 0, y: 0, width: 2056, height: 39)),
+    ScreenWindow(level: -2_147_483_624, owner: "WindowManager", bounds: display),
+    ScreenWindow(level: -2_147_483_622, owner: "WindowManager", bounds: display),
+    ScreenWindow(level: -2_147_483_626, owner: "Window Server", bounds: display),
+]
+
+private let telegram = ScreenWindow(level: 0, owner: "Telegram", bounds: CGRect(x: 565, y: 146, width: 509, height: 1053))
+
+private func verdicts(_ frames: [[ScreenWindow]]) -> [Bool] {
+    frames.map {
+        FullscreenDetection.isFullscreen(windows: $0, screen: display, menuBarHeight: 38, desktopIconLevel: iconLevel)
+    }
+}
+
+func aSlideBetweenFullscreenSpacesStaysFullscreen() throws {
+    let frames = [2033, 1442, 989, 623, 390, 163, 102].map { fullscreenSpace + chrome(at: $0 - 2120) + figma(at: $0) }
+        + [64, 43, 27, 17, 10, 7, 4, 3, 2, 1, 0].map { fullscreenSpace + figma(at: $0) }
+    let seen = verdicts(frames)
+    try expect(!seen.contains(false), "From fullscreen Chrome to fullscreen Figma, every frame is fullscreen: \(seen)")
+}
+
+// The desktop slides too: the wallpaper and the icons leave with the Space
+// they belong to, and stand at the display's origin only once it has settled.
+private func desktop(at x: CGFloat) -> [ScreenWindow] {
+    [
+        ScreenWindow(level: -2_147_483_603, owner: "Finder", bounds: display.offsetBy(dx: x, dy: 0)),
+        ScreenWindow(level: -2_147_483_625, owner: "Обои", bounds: display.offsetBy(dx: x, dy: 0)),
+    ]
+}
+
+private func finderWindow(_ x: CGFloat) -> ScreenWindow {
+    ScreenWindow(level: 0, owner: "Finder", bounds: CGRect(x: x, y: 270, width: 1099, height: 711))
+}
+
+func enteringFullscreenIsToldFromTheFirstFrame() throws {
+    // Desktop to fullscreen Chrome, frame by frame.
+    let frames = [(1898, -222, 589), (1339, -781, 30), (856, -1264, -453), (538, -1582, -771), (210, -1910, -1300), (82, -2038, -1300)]
+        .map { chromeX, desktopX, finderX in
+            fullscreenSpace + desktop(at: CGFloat(desktopX)) + chrome(at: CGFloat(chromeX)) + [finderWindow(CGFloat(finderX))]
+        }
+        + [55, 13, 2, 0].map { fullscreenSpace + chrome(at: $0) }
+    let seen = verdicts(frames)
+    try expect(!seen.contains(false), "From the first frame of the slide, Chrome arriving is fullscreen: \(seen)")
+}
+
+func leavingFullscreenIsToldOnceTheApplicationHasGone() throws {
+    // Fullscreen Chrome back to the desktop.
+    let whileChromeShows = verdicts([(278, -1842), (1261, -859), (1979, -141)].map { chromeX, desktopX in
+        fullscreenSpace + desktop(at: CGFloat(desktopX)) + chrome(at: CGFloat(chromeX)) + [finderWindow(CGFloat(desktopX) + 811)]
+    })
+    try expect(!whileChromeShows.contains(false), "While Chrome is still sliding out, it is still fullscreen: \(whileChromeShows)")
+
+    let once = verdicts([-55, -13, -1, 0].map { fullscreenSpace + desktop(at: $0) + [finderWindow($0 + 811)] })
+    try expect(!once.contains(true), "Once Chrome has gone, it is not fullscreen: \(once)")
+}
+
+func aZoomedWindowOverASettledDesktopIsNotFullscreen() throws {
+    let zoomed = fullscreenSpace + desktop(at: 0) + chrome(at: 0)
+    try expect(!verdicts([zoomed])[0], "Chrome's windows over a desktop at rest are only zoomed")
+}

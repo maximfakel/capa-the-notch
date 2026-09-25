@@ -51,15 +51,17 @@ final class SurfaceMetrics: ObservableObject {
 
     func refresh() {
         geometry = Self.measure(on: screen)
-        checkFullscreen()
+        checkFullscreenAsItSettles()
     }
 
     // MARK: - Fullscreen
 
     /// Asked again whenever the Space or the frontmost application changes,
     /// rather than on a timer: entering fullscreen, leaving it, and a video
-    /// taking the screen all change the Space. The window is still animating
-    /// when the notice arrives, so the question is asked again as it settles.
+    /// taking the screen all change the Space. That notice arrives only once
+    /// the slide is over, so the panel also asks the moment the surface is
+    /// hidden, which is as the slide begins; either way the windows are read
+    /// every tenth of a second for a while.
     private func watchFullscreen() {
         let center = NSWorkspace.shared.notificationCenter
         for name in [
@@ -70,28 +72,39 @@ final class SurfaceMetrics: ObservableObject {
                 MainActor.assumeIsolated { self?.checkFullscreenAsItSettles() }
             })
         }
-        checkFullscreen()
+        checkFullscreenAsItSettles()
     }
 
-    private func checkFullscreenAsItSettles() {
+    func checkFullscreenAsItSettles() {
         pendingChecks.forEach { $0.cancel() }
-        pendingChecks = [0, 0.4, 1.2].map { delay in
+        pendingChecks = (0...25).map { step in
             let check = DispatchWorkItem { [weak self] in self?.checkFullscreen() }
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: check)
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(step) / 10, execute: check)
             return check
         }
     }
 
     private func checkFullscreen() {
-        let fullscreen = screen.map { Self.showsFullscreen($0, menuBarHeight: geometry.menuBarHeight) } ?? false
+        guard let screen, let (windows, display) = Self.windows(on: screen) else {
+            if isFullscreen { isFullscreen = false }
+            return
+        }
+        let fullscreen = FullscreenDetection.isFullscreen(
+            windows: windows,
+            screen: display,
+            menuBarHeight: geometry.menuBarHeight,
+            desktopIconLevel: Int(CGWindowLevelForKey(.desktopIconWindow))
+        )
         if fullscreen != isFullscreen { isFullscreen = fullscreen }
     }
 
-    private static func showsFullscreen(_ screen: NSScreen, menuBarHeight: CGFloat) -> Bool {
+    /// Every other application's window on screen, and the display's frame in
+    /// the window list's coordinates.
+    private static func windows(on screen: NSScreen) -> ([ScreenWindow], CGRect)? {
         guard
             let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]],
             let main = NSScreen.screens.first
-        else { return false }
+        else { return nil }
 
         let ownPID = Int(ProcessInfo.processInfo.processIdentifier)
         let windows: [ScreenWindow] = list.compactMap { info in
@@ -113,12 +126,7 @@ final class SurfaceMetrics: ObservableObject {
             width: frame.width,
             height: frame.height
         )
-        return FullscreenDetection.isFullscreen(
-            windows: windows,
-            screen: display,
-            menuBarHeight: menuBarHeight,
-            desktopIconLevel: Int(CGWindowLevelForKey(.desktopIconWindow))
-        )
+        return (windows, display)
     }
 
     private static func storedPreference() -> UInt32? {

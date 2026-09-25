@@ -207,6 +207,26 @@ enum CapacityNotchTestRunner {
                 aFullscreenApplicationIsToldApartFromAZoomedWindow
             ),
             (
+                "SurfacePlacementTests.onMacOS27WindowManagerHoldsWhatTheDockHeld",
+                onMacOS27WindowManagerHoldsWhatTheDockHeld
+            ),
+            (
+                "SurfacePlacementTests.aSlideBetweenFullscreenSpacesStaysFullscreen",
+                aSlideBetweenFullscreenSpacesStaysFullscreen
+            ),
+            (
+                "SurfacePlacementTests.enteringFullscreenIsToldFromTheFirstFrame",
+                enteringFullscreenIsToldFromTheFirstFrame
+            ),
+            (
+                "SurfacePlacementTests.leavingFullscreenIsToldOnceTheApplicationHasGone",
+                leavingFullscreenIsToldOnceTheApplicationHasGone
+            ),
+            (
+                "SurfacePlacementTests.aZoomedWindowOverASettledDesktopIsNotFullscreen",
+                aZoomedWindowOverASettledDesktopIsNotFullscreen
+            ),
+            (
                 "SurfacePlacementTests.aPinnedSurfaceStaysUntilItIsDismissed",
                 aPinnedSurfaceStaysUntilItIsDismissed
             ),

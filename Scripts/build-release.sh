@@ -47,7 +47,7 @@ git archive HEAD | tar -x -C "$source"
 
 cd "$source"
 for product in CapacityNotch CapacityNotchClaudeBridge; do
-  swift build -c release --scratch-path "$scratch" --product "$product" -Xswiftc -gnone
+  swift build --build-system native -c release --scratch-path "$scratch" --product "$product" -Xswiftc -gnone
 done
 binaries="$scratch/release"
 
@@ -90,7 +90,10 @@ mkdir -p "$dist"
 rm -f "$dist/$archive" "$dist/$archive.sha256"
 # Sorted entries, no extra attributes: zip's own order would follow the file
 # system, and its extended fields would carry the builder's uid and times.
-(cd "$stage" && find CapacityNotch.app | LC_ALL=C sort | zip -X -q -@ "$dist/$archive")
+# Symbolic links stored as links (-y): followed, they turned the adapter
+# framework's Versions/Current and Resources into copies and empty folders,
+# and its signature no longer held.
+(cd "$stage" && find CapacityNotch.app | LC_ALL=C sort | zip -X -y -q -@ "$dist/$archive")
 (cd "$dist" && shasum -a 256 "$archive" > "$archive.sha256")
 
 print "$dist/$archive"

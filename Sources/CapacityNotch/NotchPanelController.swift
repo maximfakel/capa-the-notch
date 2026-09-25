@@ -152,6 +152,20 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
 
         watchPageGestures()
 
+        // macOS hides the surface as a Space starts to slide, and tells the
+        // Space has changed only once the slide is over (measured on macOS
+        // 27.0): asked then, the music row folds away just as the surface
+        // comes back, in plain sight. Hidden is the first sign, so the
+        // question is asked from there, while nobody can see the answer.
+        NotificationCenter.default
+            .publisher(for: NSWindow.didChangeOcclusionStateNotification, object: panel)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.window?.occlusionState.contains(.visible) == false else { return }
+                self.metrics.checkFullscreenAsItSettles()
+            }
+            .store(in: &observers)
+
         metrics.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

@@ -329,7 +329,12 @@ private struct MusicProgress: View {
     let now: Date
     let send: (MusicCommand) -> Void
 
-    @State private var dragged: Double?
+    // Explicit State, not @State: its macro plugin ships only inside Xcode.
+    private let _dragged = State<Double?>(initialValue: nil)
+    private var dragged: Double? {
+        get { _dragged.wrappedValue }
+        nonmutating set { _dragged.wrappedValue = newValue }
+    }
 
     var body: some View {
         let duration = track.duration ?? 0
