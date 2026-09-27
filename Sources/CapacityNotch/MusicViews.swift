@@ -395,22 +395,28 @@ private struct MusicProgress: View {
 
 // MARK: - Pages
 
-enum SurfacePage: Equatable, Sendable {
-    case capacity
-    case music
-}
-
 /// Which page the expanded surface shows. The last one chosen, and Capacity
 /// the first time: it is the question the product answers.
 @MainActor
 final class SurfacePages: ObservableObject {
     @Published private(set) var selected: SurfacePage = .capacity
+    /// The pages there are now, in order (`SurfacePageOrder`).
+    @Published private(set) var available: [SurfacePage] = [.capacity]
     /// How far the fingers have carried the pages during a swipe, in points:
     /// negative towards the next page. Zero whenever no swipe is under way.
     @Published private(set) var travel: CGFloat = 0
 
-    func next() { turn(to: .music) }
-    func previous() { turn(to: .capacity) }
+    func next() { turn(to: SurfacePageOrder.step(from: selected, by: 1, in: available)) }
+    func previous() { turn(to: SurfacePageOrder.step(from: selected, by: -1, in: available)) }
+
+    /// A track loading or going, a Module switched on or off. A page that has
+    /// gone gives way to Capacity without travelling.
+    func setAvailable(_ pages: [SurfacePage]) {
+        guard pages != available else { return }
+        available = pages
+        let shown = SurfacePageOrder.shown(selected, in: pages)
+        if shown != selected { selected = shown }
+    }
 
     /// Follows the fingers. Under Reduce Motion the pages stay put until the
     /// swipe ends, and then change without travelling.
@@ -422,8 +428,8 @@ final class SurfacePages: ObservableObject {
     /// Ends a swipe: past forty points it turns the page, short of that the
     /// pages settle back where they were.
     func settle(_ travel: CGFloat) {
-        let target: SurfacePage = travel < -40 ? .music : travel > 40 ? .capacity : selected
-        turn(to: target)
+        let steps = travel < -40 ? 1 : travel > 40 ? -1 : 0
+        turn(to: SurfacePageOrder.step(from: selected, by: steps, in: available))
     }
 
     private func turn(to page: SurfacePage) {
@@ -487,13 +493,15 @@ struct PageStrip: Layout {
 /// points each in an eight-point slot, four apart — and with one page it is
 /// the same band, empty.
 struct PageDots: View {
+    var pages: [SurfacePage] = []
     let selected: SurfacePage?
 
     var body: some View {
         HStack(spacing: 4) {
-            if let selected {
-                dot(active: selected == .capacity)
-                dot(active: selected == .music)
+            if let selected, pages.count > 1 {
+                ForEach(pages, id: \.self) { page in
+                    dot(active: page == selected)
+                }
             }
         }
         .frame(maxWidth: .infinity)

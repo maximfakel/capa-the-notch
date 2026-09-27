@@ -47,7 +47,7 @@ git archive HEAD | tar -x -C "$source"
 
 cd "$source"
 for product in CapacityNotch CapacityNotchClaudeBridge; do
-  swift build --build-system native -c release --scratch-path "$scratch" --product "$product" -Xswiftc -gnone
+  swift build -c release --scratch-path "$scratch" --product "$product" -Xswiftc -gnone
 done
 binaries="$scratch/release"
 
@@ -57,6 +57,11 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 install -m 755 "$binaries/CapacityNotch" "$app/Contents/MacOS/CapacityNotch"
 install -m 755 "$binaries/CapacityNotchClaudeBridge" "$app/Contents/MacOS/CapacityNotchClaudeBridge"
 install -m 644 Packaging/Info.plist "$app/Contents/Info.plist"
+# Include SwiftPM package resources in Contents/Resources for the shipped app.
+for resource_bundle in "$binaries"/*.bundle; do
+  [[ -d "$resource_bundle" ]] || continue
+  ditto "$resource_bundle" "$app/Contents/Resources/${resource_bundle:t}"
+done
 install -m 644 Sources/CapacityNotch/Resources/OpenAIBlossom.svg "$app/Contents/Resources/OpenAIBlossom.svg"
 install -m 644 Sources/CapacityNotch/Resources/MenuBarIcon.svg "$app/Contents/Resources/MenuBarIcon.svg"
 install -m 644 Packaging/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"

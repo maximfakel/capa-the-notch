@@ -5,3 +5,9 @@ dist/
 .agents/
 .claude/skills/
 skills-lock.json
+
+# Ticket 12's spike: downloaded libraries and model, and the author's own recordings stay on this Mac.
+Spikes/*/.build/
+Spikes/Dictation/Vendor/
+Spikes/Dictation/Models/
+Spikes/Dictation/Recordings/

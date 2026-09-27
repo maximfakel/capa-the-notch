@@ -14,6 +14,89 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
 enum CapacityNotchTestRunner {
     static func main() async {
         let tests: [(String, () async throws -> Void)] = [
+            ("Dictation.replacements", dictationReplacesPhrasesWithoutSubstringsOrCascades),
+            ("Dictation.history", dictationHistoryIsOptInBoundedAndPersistent),
+            ("Dictation.session", dictationStopsOnceAndRejectsCancelledResults),
+            (
+                "TeleprompterTests.aScriptTakesAMinuteAtLeastAndRoundsToTheNearest",
+                aScriptTakesAMinuteAtLeastAndRoundsToTheNearest
+            ),
+            (
+                "TeleprompterTests.aScriptKeepsItsLineBreaksAndBlankLinesAndWrapsTheRest",
+                aScriptKeepsItsLineBreaksAndBlankLinesAndWrapsTheRest
+            ),
+            (
+                "TeleprompterTests.draggingTheProgressOfAStoppedScriptChoosesWhereItStarts",
+                draggingTheProgressOfAStoppedScriptChoosesWhereItStarts
+            ),
+            (
+                "TeleprompterTests.aScriptCountsItsWordsAcrossLinesAndSpaces",
+                aScriptCountsItsWordsAcrossLinesAndSpaces
+            ),
+            (
+                "TeleprompterTests.pastingReplacesTheScriptAndOnlyTheOneBeforeComesBack",
+                pastingReplacesTheScriptAndOnlyTheOneBeforeComesBack
+            ),
+            (
+                "TeleprompterTests.theTeleprompterIsOffWithQuietDefaults",
+                theTeleprompterIsOffWithQuietDefaults
+            ),
+            (
+                "TeleprompterTests.startingHoldsTheFirstLineThenMovesAtTheChosenSpeed",
+                startingHoldsTheFirstLineThenMovesAtTheChosenSpeed
+            ),
+            (
+                "TeleprompterTests.anEmptyScriptDoesNotStart",
+                anEmptyScriptDoesNotStart
+            ),
+            (
+                "TeleprompterTests.pauseHoldsThePlaceAndResumeGoesOnFromIt",
+                pauseHoldsThePlaceAndResumeGoesOnFromIt
+            ),
+            (
+                "TeleprompterTests.stopClearsTheRowAndStartsOver",
+                stopClearsTheRowAndStartsOver
+            ),
+            (
+                "TeleprompterTests.fasterAndSlowerChangeTheSpeedInQuarters",
+                fasterAndSlowerChangeTheSpeedInQuarters
+            ),
+            (
+                "TeleprompterTests.fingersMoveTheScriptAndPauseIt",
+                fingersMoveTheScriptAndPauseIt
+            ),
+            (
+                "TeleprompterTests.draggingTheProgressGoesAnywhereInTheScript",
+                draggingTheProgressGoesAnywhereInTheScript
+            ),
+            (
+                "TeleprompterTests.atTheEndItStopsOnTheLastLineAndTheRowLeavesAfterThreeSeconds",
+                atTheEndItStopsOnTheLastLineAndTheRowLeavesAfterThreeSeconds
+            ),
+            (
+                "TeleprompterTests.timeSpentAndLeftFollowThePlace",
+                timeSpentAndLeftFollowThePlace
+            ),
+            (
+                "TeleprompterTests.aNewLayoutKeepsThePlaceInTheScript",
+                aNewLayoutKeepsThePlaceInTheScript
+            ),
+            (
+                "TeleprompterTests.theTeleprompterRowTakesThePlaceOfTheMusicRow",
+                theTeleprompterRowTakesThePlaceOfTheMusicRow
+            ),
+            (
+                "TeleprompterTests.whileItShowsTheSurfaceStaysOutOfCaptureAndHoverDoesNotOpenIt",
+                whileItShowsTheSurfaceStaysOutOfCaptureAndHoverDoesNotOpenIt
+            ),
+            (
+                "TeleprompterTests.pagesRunCapacityMusicTeleprompter",
+                pagesRunCapacityMusicTeleprompter
+            ),
+            (
+                "TeleprompterTests.diagnosticsSayHowLongTheScriptIsAndNeverWhatItSays",
+                diagnosticsSayHowLongTheScriptIsAndNeverWhatItSays
+            ),
             (
                 "CapacitySnapshotTests.quotaWindowReportsThirtyPercentLeftAfterSeventyPercentIsUsed",
                 quotaWindowReportsThirtyPercentLeftAfterSeventyPercentIsUsed

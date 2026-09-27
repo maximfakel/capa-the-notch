@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import CapacityNotchCore
 import SwiftUI
 
@@ -7,6 +8,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let preferences = Preferences()
     /// The Music Module's reader (ticket 17); running only while the Module is on.
     let music = MusicReader()
+    /// The Teleprompter Module (ticket 16); its shortcuts registered only
+    /// while the Module is on.
+    private(set) lazy var dictation = DictationController(preferences: preferences)
+    private var dictationPreviewTask: Task<Void, Never>?
+    private var shortcutCapture: AnyCancellable?
+    private var dictationPanel: DictationPanelController?
+    private(set) lazy var teleprompter = TeleprompterController(preferences: preferences)
     /// SIGTERM — what `pkill` sends, and the install loop uses — quits the
     /// application properly, so its children are stopped rather than orphaned.
     private var termination: DispatchSourceSignal?
@@ -75,6 +83,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
+        if let state = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_PREVIEW_DICTATION"] {
+            previewDictation(state)
+            return
+        }
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_DICTATION"] {
+            drawDictation(into: folder)
+            NSApplication.shared.terminate(nil)
+            return
+        }
         applyAppearance(preferences.appearance)
 
         signal(SIGTERM, SIG_IGN)
@@ -86,12 +103,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let panelController = NotchPanelController(
             store: store,
             music: music,
+            teleprompter: teleprompter,
             connect: { [weak self] provider in self?.connect(provider) },
             refresh: { [weak self] provider in self?.refresh(provider) }
         )
         self.panelController = panelController
         panelController.show()
+        let capsule = DictationPanelController(controller: dictation)
+        dictationPanel = capsule
+        panelController.surfaceFrameChanged = { [weak capsule] frame in capsule?.anchor(to: frame) }
+        panelController.sharingTypeChanged = { [weak capsule] type in capsule?.setSharingType(type) }
+        capsule.anchor(to: panelController.surfaceFrame)
+        shortcutCapture = NotificationCenter.default.publisher(for: ModuleShortcutCapture.notification).sink { [weak self] notice in
+            MainActor.assumeIsolated {
+                guard let self, let active = notice.object as? Bool else { return }
+                self.teleprompter.suspendShortcuts(active)
+                self.dictation.suspendShortcut(active)
+            }
+        }
+        dictation.openSettings = { [weak self] in self?.showSettings(section: .modules, forDictation: true) }
         if preferences.musicEnabled { music.start() }
+        teleprompter.openSettings = { [weak self] in self?.showSettings(section: .modules) }
 
         if CapacityNotifications.isAvailable {
             notifications = CapacityNotifications { [weak self] provider, window in
@@ -108,20 +140,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_SETTINGS"] {
             let model = SettingsModel(preferences: preferences, application: self, store: store)
             for section in SettingsSection.allCases {
-                for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-                    let host = NSHostingView(rootView: SettingsView(model: model, section: section))
-                    host.appearance = NSAppearance(named: appearance)
-                    host.frame = NSRect(x: 0, y: 0, width: 760, height: 560)
-                    host.layoutSubtreeIfNeeded()
-                    guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
-                    host.cacheDisplay(in: host.bounds, to: rep)
-                    try? rep.representation(using: .png, properties: [:])?.write(
-                        to: URL(fileURLWithPath: folder).appendingPathComponent("settings-\(section.title.lowercased())-\(name).png")
-                    )
-                }
+                Self.drawSettings(model: model, section: section, height: 560, into: folder, named: "settings-\(section.title.lowercased())")
             }
         }
 
+        // The Teleprompter's row, page and Settings card, drawn from a stand-in
+        // with a sample Script — never the person's own — to hold against
+        // Paper "Notch — … — Teleprompter" and "Settings — Modules — Teleprompter".
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_TELEPROMPTER"] {
+            let suite = "capacity-notch-dump-\(UUID().uuidString)"
+            if let defaults = UserDefaults(suiteName: suite) {
+                let demo = Preferences(defaults: defaults)
+                demo.teleprompterEnabled = true
+                demo.replaceScript(with: TeleprompterController.sampleScript)
+                let standIn = TeleprompterController(preferences: demo, registersShortcuts: false)
+                standIn.toggle()
+                panelController.drawTeleprompter(standIn, to: folder)
+                let model = SettingsModel(preferences: preferences, application: self, store: store, teleprompter: standIn)
+                Self.drawSettings(model: model, section: .modules, height: 700, into: folder, named: "settings-teleprompter")
+                UserDefaults.standard.removePersistentDomain(forName: suite)
+            }
+        }
+
+        if ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_EXIT"] == "1" {
+            NSApplication.shared.terminate(nil)
+            return
+        }
         observeCodex()
         observeClaudeCode()
 
@@ -133,9 +177,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if ProcessInfo.processInfo.environment["CAPACITY_NOTCH_PREVIEW_DICTATION"] != nil || ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_DICTATION"] != nil { return }
         archive.save(store.snapshots)
         panelController?.stopPointerTracking()
         music.stop()
+        dictation.cancel()
         stopCodex()
         stopClaudeCode()
     }
@@ -359,17 +405,99 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(Releases.latest)
     }
 
-    func showSettings() {
+    /// Settings, both appearances of one section, as pictures.
+    private static func drawSettings(model: SettingsModel, section: SettingsSection, height: CGFloat, into folder: String, named name: String) {
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            let host = NSHostingView(rootView: SettingsView(model: model, section: section))
+            host.appearance = NSAppearance(named: appearance)
+            host.frame = NSRect(x: 0, y: 0, width: 760, height: height)
+            host.layoutSubtreeIfNeeded()
+            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            host.cacheDisplay(in: host.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(
+                to: URL(fileURLWithPath: folder).appendingPathComponent("\(name)-\(suffix).png")
+            )
+        }
+    }
+
+    /// Motion/CPU fixture: no microphone, hotkeys, providers or user text.
+    private func previewDictation(_ state: String) {
+        let suite = "capacity-notch-motion-\(UUID())"
+        guard let defaults = UserDefaults(suiteName: suite), let screen = NSScreen.main else { return }
+        let demo = Preferences(defaults: defaults)
+        let controller = DictationController(preferences: demo, registersShortcuts: false)
+        let capsule = DictationPanelController(controller: controller)
+        dictationPanel = capsule
+        capsule.anchor(to: NSRect(x: screen.frame.midX - 211, y: screen.frame.maxY - 38, width: 422, height: 38))
+        let states: [String: DictationController.Presentation] = ["recording": .recording, "recognizing": .recognizing, "inserted": .inserted, "copied": .copied, "error": .error]
+        controller.preview(states[state] ?? .hidden)
+        dictationPreviewTask = Task {
+            for tick in 0..<200 {
+                do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+                if state == "recording" { controller.previewLevel(Float(0.35 + sin(Double(tick) * 0.4) * 0.25)) }
+            }
+            defaults.removePersistentDomain(forName: suite)
+            NSApplication.shared.terminate(nil)
+        }
+    }
+
+    private func drawDictation(into folder: String) {
+        let suite = "capacity-notch-dictation-dump-\(UUID())"
+        guard let defaults = UserDefaults(suiteName: suite) else { return }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let demo = Preferences(defaults: defaults)
+        demo.dictationEnabled = true; demo.teleprompterEnabled = true
+        demo.replaceScript(with: TeleprompterController.sampleScript)
+        var history = DictationHistory()
+        history.append("После обновления TypeScript проверь frontend и backend. Оставь комментарий в GitHub, если сборка не пройдёт.", enabled: true)
+        history.append("Проверь pull request и добавь тесты перед deploy.", enabled: true)
+        demo.dictationHistory = history; demo.dictationKeepsHistory = true
+        let dictation = DictationController(preferences: demo, registersShortcuts: false)
+        dictation.preview(.recording)
+        let teleprompter = TeleprompterController(preferences: demo, registersShortcuts: false)
+        let model = SettingsModel(preferences: demo, application: self, teleprompter: teleprompter, dictation: dictation)
+        for module in BuiltInModule.allCases {
+            model.expandedModule = module
+            Self.drawSettings(model: model, section: .modules, height: module == .teleprompter ? 740 : 650, into: folder, named: "modules-\(module.rawValue.lowercased())")
+        }
+        for (page, name, height) in [(DictationSettingsPage.history, "history", CGFloat(620)), (.replacements, "replacements", 886), (.setup, "setup", 620)] {
+            model.dictationPage = page
+            Self.drawSettings(model: model, section: .modules, height: height, into: folder, named: name)
+        }
+        for (state, name) in [(DictationController.Presentation.recording, "recording"), (.recognizing, "recognizing"), (.inserted, "inserted"), (.copied, "copied"), (.error, "error")] {
+            dictation.preview(state)
+            let host = NSHostingView(rootView: DictationCapsule(controller: dictation).padding(16))
+            host.frame = NSRect(x: 0, y: 0, width: 112, height: 112)
+            host.layoutSubtreeIfNeeded()
+            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            host.cacheDisplay(in: host.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: folder).appendingPathComponent("capsule-\(name).png"))
+        }
+    }
+
+    /// Opens Settings; asked for a section — Edit Script asks for Modules —
+    /// it goes there even when the window is already open.
+    func showSettings(section: SettingsSection? = nil, forDictation: Bool = false) {
         if let settings {
+            if let section, let hosting = settings.contentViewController as? NSHostingController<SettingsView> {
+                if forDictation { configureDictationSettings(hosting.rootView.model) }
+                hosting.rootView = SettingsView(model: hosting.rootView.model, section: section)
+            }
             settings.window?.makeKeyAndOrderFront(nil)
             NSApplication.shared.activate(ignoringOtherApps: true)
             return
         }
 
         let model = SettingsModel(preferences: preferences, application: self, store: store)
-        settings = Self.settingsWindow(content: SettingsView(model: model))
+        if forDictation { configureDictationSettings(model) }
+        settings = Self.settingsWindow(content: SettingsView(model: model, section: section ?? .general))
         settings?.window?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
+    private func configureDictationSettings(_ model: SettingsModel) {
+        model.expandedModule = .dictation
+        model.dictationPage = dictation.modelReady && dictation.microphoneAllowed ? .overview : .setup
     }
 
     /// The drawing's window: 760 by 560, the sidebar running to the top edge
@@ -481,6 +609,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if preferences.musicEnabled, music.isUnreadable {
             observations.append(MusicModule.unreadableCode)
         }
+        observations.append(
+            TeleprompterModule.observation(enabled: preferences.teleprompterEnabled, script: preferences.script)
+        )
 
         return DiagnosticReport(
             applicationVersion: Self.applicationVersion,

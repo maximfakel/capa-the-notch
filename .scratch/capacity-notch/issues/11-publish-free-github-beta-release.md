@@ -294,3 +294,40 @@ still give the same archive (`de32e9a5…`), with the named requirement.
   nothing in `codex` or `claude`, TCC's database and logs are closed to this
   session. Removing the access itself, rather than remembering its answer,
   would need that found.
+
+**2026-09-26 — 0.1.5 published, and every archive since 0.1.3 was broken.**
+
+0.1.5 is Latest: the macOS 27 build fix (`b3e069e`), fullscreen on 27
+(`cadb946`, `02e8545`, see ticket 06), and a whole archive (`f257ea5`).
+
+The build on macOS 27: Swift 6.4's SDK makes SwiftUI's `@State` a macro whose
+plugin ships only inside Xcode (Command Line Tools 27.0 is the latest and
+has none), and SwiftPM's new default build system does not start without
+Xcode even on an empty package. The five views declare
+`State(initialValue:)` storage, and the scripts and the README pass
+`--build-system native` — deprecated, so Xcode will be needed once SwiftPM
+drops it.
+
+The archive: `zip` followed symbolic links, so from 0.1.3 on the
+`MediaRemoteAdapter` framework shipped with `Versions/Current` and
+`Resources` as empty folders and the binary as a copy. `codesign --verify
+--deep --strict` rejects that bundle, and `ditto` cannot copy a new build
+over an installed one (which is how it showed: the install loop failed on
+the copy from 2026-09-24). `zip -y` stores the links; the 0.1.5 archive
+verifies. The notes tell anyone on 0.1.3 or 0.1.4 to replace the app rather
+than copy over it.
+
+### Verified
+
+- The script built the archive from `f257ea5` and again from the snapshot,
+  byte for byte the same, then downloaded the published zip and checked it.
+- The unpacked 0.1.5 archive: version 0.1.5 (6), strict signature valid,
+  `adhoc,runtime`, the framework's links in place.
+- Installed here from `.build` and checked on screen by the author.
+
+### Not verified
+
+- 0.1.5 run from the downloaded archive, and on a clean Mac.
+- What the broken signature of 0.1.3 and 0.1.4 did to Gatekeeper on a clean
+  Mac — whether it still offered Open Anyway. The friend's filled checklist
+  would say.

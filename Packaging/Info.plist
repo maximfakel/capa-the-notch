@@ -17,13 +17,17 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.5</string>
+	<string>0.2.0</string>
 	<key>CFBundleVersion</key>
-	<string>6</string>
+	<string>7</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record your voice while you hold the Dictation shortcut. Speech is recognized on this Mac; audio is never saved.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Send the paste shortcut through System Events to insert recognised text into the focused text field.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 </dict>

@@ -10,6 +10,7 @@ enum SettingsIcon {
     case modules
     case diagnostics
     case music
+    case teleprompter
     case refresh
     case chevrons
 
@@ -25,7 +26,7 @@ enum SettingsIcon {
     fileprivate var lineWidth: CGFloat {
         switch self {
         case .chevrons: 1.2
-        case .music: 1.4
+        case .music, .teleprompter: 1.4
         default: 1.3
         }
     }
@@ -81,6 +82,12 @@ enum SettingsIcon {
             path.addLine(to: CGPoint(x: 13, y: 10.5))
             path.addEllipse(in: CGRect(x: 4.5 - 1.75, y: 12 - 1.75, width: 3.5, height: 3.5))
             path.addEllipse(in: CGRect(x: 11.5 - 1.75, y: 10.5 - 1.75, width: 3.5, height: 3.5))
+        case .teleprompter:
+            // Three lines of a Script, the last one short: the mockup's tile.
+            for (y, end) in [(4.5, 13.0), (8.0, 13.0), (11.5, 9.0)] {
+                path.move(to: CGPoint(x: 3, y: y))
+                path.addLine(to: CGPoint(x: end, y: y))
+            }
         case .refresh:
             // Most of a circle from three o'clock round to half past one,
             // and the arrowhead at its end.

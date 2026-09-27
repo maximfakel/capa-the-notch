@@ -18,7 +18,34 @@ One built-in feature the Notch Surface hosts. Every Module except the Capacity M
 _Avoid_: Plugin, widget, extension
 
 **Capacity Module**:
-The Module that shows AI-service Capacity; the one Capacity Notch started as. The terms below are its language.
+The Module that shows AI-service Capacity; the one Capacity Notch started as. The terms under Capacity are its language.
+
+### The teleprompter
+
+**Teleprompter Module**:
+The Module that scrolls a Script beside the camera, so a person can read it aloud while looking into the lens.
+_Avoid_: Prompter, autocue
+
+**Script**:
+The one text the Teleprompter Module reads out; a new one replaces it, and only the one before can be brought back.
+_Avoid_: Prompt (read as an instruction to an AI model), notes, document
+
+**Teleprompter Row**:
+The lines of the Script shown beneath the compact strip, the current line nearest the camera, while the Teleprompter Module is running or paused.
+_Avoid_: Prompter bar, overlay
+
+**Running**, **Paused**, **Finished**, **Stopped**:
+The Teleprompter Module's states. Running moves the Script on by itself; Paused holds its place; Finished holds the last line in view for a moment once the Script has been read; Stopped shows no Teleprompter Row and starts the Script over.
+
+### Dictation
+
+**Dictation Module**:
+The Module that turns speech into text for the application a person is using, with the clipboard as a fallback when insertion is unavailable.
+_Avoid_: Voice assistant, transcription service
+
+**Dictation Capsule**:
+The temporary indicator beneath the Notch Surface that shows a dictation’s recording, recognition and completion states.
+_Avoid_: Dictation Row, dictation page
 
 ### Capacity
 

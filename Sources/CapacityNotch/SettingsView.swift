@@ -31,10 +31,10 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    SectionHeading(section: section)
+                    if section != .modules { SectionHeading(section: section) }
                     content
                 }
-                .padding(.top, 52)
+                .padding(.top, section == .modules && model.dictationPage != .overview ? 28 : 52)
                 .padding(.horizontal, 40)
                 .padding(.bottom, 32)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -299,18 +299,253 @@ private struct AlertsSection: View {
     }
 }
 
-private struct ModulesSection: View {
-    @ObservedObject var model: SettingsModel
+/// Paper "Settings — Modules — Teleprompter": the Module's switch, and while
+/// it is on, the Script with Paste and Restore, the speed, the text size and
+/// the four shortcuts.
+struct TeleprompterCard: View {
+    @ObservedObject var teleprompter: TeleprompterController
+    let expanded: Bool
+    let expand: () -> Void
 
     var body: some View {
-        ModuleCard(
-            icon: .music,
-            name: "Music",
-            summary: "What's playing, with its controls, under Capacity.",
-            note: "Open, the surface has a page for it. It is read through a part of macOS that Apple does not publish, which a macOS update could close.",
-            warning: model.musicEnabled && model.musicUnreadable ? MusicModule.unreadableGuidance : nil,
-            isOn: $model.musicEnabled
-        )
+        SettingsCard {
+            ModuleHeader(module: .teleprompter, expanded: expanded, expand: expand, isOn: Binding(
+                get: { teleprompter.isEnabled }, set: { teleprompter.setEnabled($0) }
+            ))
+
+            if expanded && teleprompter.isEnabled {
+                script
+                SettingsDivider()
+                speed
+                SettingsDivider()
+                textSize
+                SettingsDivider()
+                shortcuts
+            }
+        }
+    }
+
+    private var script: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextEditor(text: Binding(get: { teleprompter.script }, set: { teleprompter.edit($0) }))
+                .font(SettingsType.caption)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 6)
+                .frame(height: 76)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(SettingsPalette.control)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(SettingsPalette.ring, lineWidth: 1)
+                )
+                // The length sits in the field's corner: beside the buttons,
+                // as drawn, the system's type leaves it no room.
+                .overlay(alignment: .bottomTrailing) {
+                    Text(length)
+                        .font(SettingsType.caption)
+                        .foregroundStyle(SettingsPalette.muted)
+                        .padding(.horizontal, 6)
+                        .background(SettingsPalette.control)
+                        .padding(8)
+                        .allowsHitTesting(false)
+                }
+                .accessibilityLabel("Script")
+
+            HStack(spacing: 8) {
+                Button("Paste from Clipboard") { teleprompter.pasteFromClipboard() }
+                    .buttonStyle(SettingsButtonStyle())
+                    .fixedSize()
+                Button("Restore Previous Script") { teleprompter.restorePreviousScript() }
+                    .buttonStyle(SettingsButtonStyle())
+                    .fixedSize()
+                    .disabled(!teleprompter.hasPreviousScript)
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.leading, 54)
+        .padding(.trailing, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 12)
+    }
+
+    private var length: String {
+        let words = teleprompter.wordCount
+        let minutes = TeleprompterScript.minutes(words: words, wordsPerMinute: teleprompter.playback.wordsPerMinute)
+        return "\(words) words · \(minutes) min"
+    }
+
+    private var speed: some View {
+        SettingsRow(indent: 44, hovers: false) {
+            Text("Speed")
+            Spacer()
+            // The same speed the surface turns, and shown as it shows it.
+            Text(String(format: "%.2fx", teleprompter.playback.multiplier))
+                .monospacedDigit()
+            VStack(spacing: 0) {
+                stepButton("chevron.up", label: "Faster") { teleprompter.faster() }
+                stepButton("chevron.down", label: "Slower") { teleprompter.slower() }
+            }
+            .frame(width: 16, height: 24)
+            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(SettingsPalette.control))
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(SettingsPalette.ring, lineWidth: 1))
+        }
+    }
+
+    private func stepButton(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(SettingsPalette.muted)
+                .frame(width: 16, height: 12)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private var textSize: some View {
+        SettingsRow(indent: 44, hovers: false) {
+            Text("Text size")
+            Spacer()
+            SettingsPicker(
+                selection: Binding(get: { teleprompter.textSize }, set: { teleprompter.setTextSize($0) }),
+                label: teleprompter.textSize.title
+            ) {
+                ForEach(TeleprompterTextSize.allCases, id: \.self) { size in
+                    Button(size.title) { teleprompter.setTextSize(size) }
+                }
+            }
+        }
+    }
+
+    private var shortcuts: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Shortcuts")
+            ForEach(TeleprompterAction.allCases, id: \.self) { action in
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(action.title)
+                            .font(SettingsType.caption)
+                            .foregroundStyle(SettingsPalette.muted)
+                        if teleprompter.unavailableShortcuts.contains(action) {
+                            Text("Another app already uses this shortcut.")
+                                .font(SettingsType.caption)
+                                .foregroundStyle(SettingsPalette.red)
+                        }
+                    }
+                    Spacer()
+                    ShortcutRecorder(teleprompter: teleprompter, action: action)
+                }
+            }
+        }
+        .padding(.leading, 54)
+        .padding(.trailing, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+    }
+}
+
+/// A shortcut's keycaps, and a click to record another: the next key pressed
+/// with Control, Option or Command becomes the shortcut; Escape alone cancels.
+private struct ShortcutRecorder: View {
+    @Environment(\.moduleEditing) private var editing
+    @ObservedObject var teleprompter: TeleprompterController
+    let action: TeleprompterAction
+
+    private let _recording = State(initialValue: false)
+    private var recording: Bool {
+        get { _recording.wrappedValue }
+        nonmutating set { _recording.wrappedValue = newValue }
+    }
+    private let _monitor = State<Any?>(initialValue: nil)
+    private var monitor: Any? {
+        get { _monitor.wrappedValue }
+        nonmutating set { _monitor.wrappedValue = newValue }
+    }
+
+    var body: some View {
+        Button(action: toggleRecording) {
+            HStack(spacing: 2) {
+                if recording {
+                    keycap("Type a shortcut", wide: true)
+                } else {
+                    let caps = teleprompter.shortcut(for: action)?.keycaps ?? ["—"]
+                    ForEach(Array(caps.enumerated()), id: \.offset) { index, cap in
+                        keycap(cap, wide: index == caps.count - 1)
+                    }
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(action.title) shortcut")
+        .accessibilityValue(teleprompter.shortcut(for: action)?.display ?? "None")
+        .onDisappear { finish() }
+    }
+
+    /// The last cap is the key and takes a fixed width, so the modifier caps
+    /// line up in a column down the card.
+    private func keycap(_ text: String, wide: Bool) -> some View {
+        Text(text)
+            .font(SettingsType.keycap)
+            .foregroundStyle(SettingsPalette.muted)
+            .lineLimit(1)
+            .padding(.horizontal, 4)
+            .frame(minWidth: wide ? 48 : 20)
+            .frame(height: 20)
+            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(SettingsPalette.keycap))
+    }
+
+    private func toggleRecording() {
+        if recording { finish(); return }
+        recording = true
+        editing.wrappedValue = true
+        ModuleShortcutCapture.setActive(true)
+        teleprompter.suspendShortcuts(true)
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if event.keyCode == 53, flags.isDisjoint(with: [.control, .option, .command]) {
+                finish()
+                return nil
+            }
+            var modifiers: KeyShortcut.Modifiers = []
+            if flags.contains(.control) { modifiers.insert(.control) }
+            if flags.contains(.option) { modifiers.insert(.option) }
+            if flags.contains(.shift) { modifiers.insert(.shift) }
+            if flags.contains(.command) { modifiers.insert(.command) }
+            guard !modifiers.isDisjoint(with: [.control, .option, .command]) else { return nil }
+            teleprompter.setShortcut(
+                KeyShortcut(keyCode: UInt32(event.keyCode), modifiers: modifiers, keyLabel: Self.label(event)),
+                for: action
+            )
+            finish()
+            return nil
+        }
+    }
+
+    private func finish() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+        if recording { ModuleShortcutCapture.setActive(false); teleprompter.suspendShortcuts(false) }
+        recording = false
+        editing.wrappedValue = false
+    }
+
+    private static func label(_ event: NSEvent) -> String {
+        switch event.keyCode {
+        case 49: "Space"
+        case 53: "Esc"
+        case 36: "Return"
+        case 48: "Tab"
+        case 51: "Delete"
+        case 123: "←"
+        case 124: "→"
+        case 125: "↓"
+        case 126: "↑"
+        default: event.charactersIgnoringModifiers?.uppercased() ?? "Key \(event.keyCode)"
+        }
     }
 }
 
@@ -516,7 +751,7 @@ private struct KeyCaps: View {
     }
 }
 
-private struct SectionHeading: View {
+struct SectionHeading: View {
     let section: SettingsSection
 
     var body: some View {
@@ -561,7 +796,7 @@ private struct SettingsGroup<Content: View>: View {
     }
 }
 
-private struct SettingsCard<Content: View>: View {
+struct SettingsCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -580,7 +815,7 @@ private struct SettingsCard<Content: View>: View {
 }
 
 /// A row that lights up under the pointer before it is clicked.
-private struct SettingsRow<Content: View>: View {
+struct SettingsRow<Content: View>: View {
     var height: CGFloat = 40
     var spacing: CGFloat = 8
     var indent: CGFloat = 0
@@ -621,7 +856,7 @@ private struct SettingsRow<Content: View>: View {
     }
 }
 
-private struct SettingsToggleRow: View {
+struct SettingsToggleRow: View {
     let title: String
     @Binding var isOn: Bool
     var indent: CGFloat = 0
@@ -640,7 +875,7 @@ private struct SettingsToggleRow: View {
     }
 }
 
-private struct SettingsDivider: View {
+struct SettingsDivider: View {
     var body: some View {
         Rectangle()
             .fill(SettingsPalette.ring)
@@ -717,7 +952,7 @@ private struct SettingsSwitch: View {
     }
 }
 
-private struct SettingsButtonStyle: ButtonStyle {
+struct SettingsButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -829,6 +1064,8 @@ enum SettingsPalette {
     })
 
     static let accent = Color(red: 0x6B / 255, green: 0x97 / 255, blue: 0xFF / 255)
+    static let positive = dynamic(light: 0x21834A, dark: 0x56DF9A)
+    static let destructive = dynamic(light: 0xC5332A, dark: 0xFF625D)
     static let green = SurfaceType.green
     static let yellow = SurfaceType.yellow
     static let red = SurfaceType.red

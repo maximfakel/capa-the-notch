@@ -12,12 +12,23 @@ let package = Package(
         .executable(name: "CapacityNotchClaudeBridge", targets: ["CapacityNotchClaudeBridge"]),
         .executable(name: "CapacityNotchTests", targets: ["CapacityNotchTests"]),
     ],
+    dependencies: [
+        .package(path: "Vendor/Murmur"),
+    ],
     targets: [
         .target(name: "CapacityNotchCore"),
+        .binaryTarget(name: "SherpaOnnxC", path: "Vendor/Dictation/sherpa-onnx.xcframework"),
+        .binaryTarget(name: "onnxruntime", path: "Vendor/Dictation/onnxruntime.xcframework"),
         .executableTarget(
             name: "CapacityNotch",
-            dependencies: ["CapacityNotchCore"],
-            resources: [.process("Resources")]
+            dependencies: [
+                "CapacityNotchCore",
+                "SherpaOnnxC",
+                "onnxruntime",
+                .product(name: "Murmur", package: "murmur"),
+            ],
+            resources: [.process("Resources")],
+            linkerSettings: [.linkedLibrary("c++")]
         ),
         .executableTarget(name: "CapacityNotchClaudeBridge", dependencies: ["CapacityNotchCore"]),
         .executableTarget(

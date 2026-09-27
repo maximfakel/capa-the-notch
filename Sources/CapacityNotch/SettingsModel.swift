@@ -19,13 +19,25 @@ struct ProviderChoice: Identifiable {
 /// switch flicked here takes effect at once rather than at the next launch.
 @MainActor
 final class SettingsModel: ObservableObject {
+    @Published var expandedModule: BuiltInModule = .music
+    @Published var dictationPage: DictationSettingsPage = .overview
+    private let dictationOverride: DictationController?
+    var dictation: DictationController { dictationOverride ?? application.dictation }
     private let preferences: Preferences
     private unowned let application: AppDelegate
     private var watching: Set<AnyCancellable> = []
 
-    init(preferences: Preferences, application: AppDelegate, store: CapacityNotchStore? = nil) {
+    init(
+        preferences: Preferences,
+        application: AppDelegate,
+        store: CapacityNotchStore? = nil,
+        teleprompter: TeleprompterController? = nil,
+        dictation: DictationController? = nil
+    ) {
         self.preferences = preferences
         self.application = application
+        teleprompterOverride = teleprompter
+        dictationOverride = dictation
         snapshots = store?.snapshots ?? []
         appearance = preferences.appearance
         displayID = preferences.preferredDisplayID ?? 0
@@ -74,6 +86,13 @@ final class SettingsModel: ObservableObject {
 
     /// macOS stopped telling Capacity Notch what is playing (ADR 0004).
     @Published private(set) var musicUnreadable = false
+
+    /// The Teleprompter Module, observed directly: its Script, speed and
+    /// shortcuts are the controller's, and the card follows them live.
+    var teleprompter: TeleprompterController { teleprompterOverride ?? application.teleprompter }
+    /// A stand-in for the pictures Settings renders of itself, so drawing the
+    /// Teleprompter card never touches the person's own Script.
+    private let teleprompterOverride: TeleprompterController?
 
     let providers = [
         ProviderChoice(provider: .codex, name: "Codex"),

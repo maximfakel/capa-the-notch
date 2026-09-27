@@ -79,3 +79,53 @@ The pointer dwell and the animation are AppKit behaviour and are not covered by
 the suite; they were checked by hand. Making them testable would mean a seam
 between the panel and the pointer, which is worth doing when something else
 needs it, not for its own sake.
+
+## Comments
+
+**2026-09-26 — fullscreen told apart again on macOS 27, and without a flash.**
+
+On macOS 27.0 (26A428) the closed surface kept the music row over every
+fullscreen application. Read off this Mac, never assumed: a probe applied
+`FullscreenDetection` to the live window list at 20 Hz while the author
+switched Spaces, and the app logged its notices and verdicts under a
+temporary tag, since removed.
+
+- **Nothing was ever fullscreen** (`cadb946`). The desktop-level windows the
+  Dock held on 26.6 belong to `WindowManager` on 27, in fullscreen Spaces and
+  ordinary ones alike, and counted as the desktop showing. It joins the Dock
+  and the Window Server.
+- **The row flashed on the way in** (`02e8545`). Three things: changing Space
+  slides every window sideways, easing the last points over half a second,
+  so a fullscreen window mid-slide did not start at the display's edge; the
+  wallpaper and the icons slide with their Space too, so a desktop being left
+  counted as one showing; and `activeSpaceDidChange` arrives only once the
+  slide is over — the row folded away just as the surface came back. Now a
+  spanning window is told by its width, the desktop counts only standing at
+  the display's origin, and the check also starts when the panel stops being
+  visible (`didChangeOcclusionState`), which is as the slide begins; the
+  windows are read every 0.1 s for 2.5 s. The verdict now comes 0.01 s after
+  the surface is hidden and ~0.8 s before the notice.
+- A first attempt waited for the windows to stop moving; it moved the flash
+  from fullscreen-to-fullscreen to desktop-to-fullscreen, and was replaced.
+
+Polling the window list all the time was measured and declined: 0.55 % CPU at
+10 Hz, 0.30 % at 5 Hz, against the 0.9 % ceiling.
+
+### Verified
+
+- By the author on screen: nothing flashes entering fullscreen Chrome from
+  the desktop, nor between fullscreen Chrome and Figma; the strip stands
+  alone over both, and the row returns on the desktop.
+- Tests replay frames read off this Mac: the slide between fullscreen Spaces,
+  entering from the desktop, leaving to it, and a zoomed window over a
+  settled desktop. 114 checks pass.
+
+### Not verified
+
+- The surface vanishing for the length of a slide is macOS's own — its window
+  stays on screen with alpha 1 throughout — and the author says 26 did the
+  same. Left alone.
+- A slide longer than 2.5 s, or two displays: the verdict may lag until the
+  next Space or application change.
+- A zoomed window over the wallpaper while two ordinary Spaces slide counts as
+  fullscreen for the slide; the row may hide for that moment.

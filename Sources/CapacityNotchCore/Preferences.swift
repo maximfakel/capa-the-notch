@@ -125,6 +125,70 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "musicEnabled") }
     }
 
+    /// The Teleprompter Module. Off until asked for (ADR 0003): while off, no
+    /// shortcut is registered and nothing is shown.
+    public var teleprompterEnabled: Bool {
+        get { defaults.bool(forKey: "teleprompterEnabled") }
+        set { defaults.set(newValue, forKey: "teleprompterEnabled") }
+    }
+
+    /// The Script, kept on this Mac. It never reaches diagnostics or a log.
+    public var script: String {
+        get { defaults.string(forKey: "teleprompterScript") ?? "" }
+        set { defaults.set(newValue, forKey: "teleprompterScript") }
+    }
+
+    /// The Script before the last one given — one step back, no more.
+    public private(set) var previousScript: String? {
+        get { defaults.string(forKey: "teleprompterPreviousScript") }
+        set { defaults.set(newValue, forKey: "teleprompterPreviousScript") }
+    }
+
+    /// Paste from Clipboard: the new Script replaces the current one, which is
+    /// kept as the one before.
+    public func replaceScript(with text: String) {
+        guard text != script else { return }
+        previousScript = script.isEmpty ? previousScript : script
+        script = text
+    }
+
+    /// Restore Previous Script: the two trade places, so a second restore
+    /// undoes the first.
+    public func restorePreviousScript() {
+        guard let previous = previousScript else { return }
+        previousScript = script.isEmpty ? nil : script
+        script = previous
+    }
+
+    /// The Teleprompter's speed, as last turned on the page or in Settings.
+    public var teleprompterMultiplier: Double {
+        get {
+            let stored = defaults.double(forKey: "teleprompterMultiplier")
+            return stored > 0 ? stored : 1
+        }
+        set { defaults.set(TeleprompterPlayback.clampedMultiplier(newValue), forKey: "teleprompterMultiplier") }
+    }
+
+    public var teleprompterTextSize: TeleprompterTextSize {
+        get { defaults.string(forKey: "teleprompterTextSize").flatMap(TeleprompterTextSize.init(rawValue:)) ?? .medium }
+        set { defaults.set(newValue.rawValue, forKey: "teleprompterTextSize") }
+    }
+
+    public func teleprompterShortcut(for action: TeleprompterAction) -> KeyShortcut? {
+        let key = Self.shortcutKey(action)
+        guard let data = defaults.data(forKey: key) else { return TeleprompterShortcuts.standard[action] }
+        return try? JSONDecoder().decode(KeyShortcut.self, from: data)
+    }
+
+    public func setTeleprompterShortcut(_ shortcut: KeyShortcut, for action: TeleprompterAction) {
+        guard let data = try? JSONEncoder().encode(shortcut) else { return }
+        defaults.set(data, forKey: Self.shortcutKey(action))
+    }
+
+    private static func shortcutKey(_ action: TeleprompterAction) -> String {
+        "teleprompterShortcut.\(action.rawValue)"
+    }
+
     // MARK: - Windows
 
     /// How Settings and onboarding look. The surface is black whatever this
@@ -174,5 +238,34 @@ public enum Appearance: String, CaseIterable, Sendable {
         case .light: "Light"
         case .dark: "Dark"
         }
+    }
+}
+
+extension Preferences {
+    public var dictationEnabled: Bool {
+        get { defaults.bool(forKey: "dictation.enabled") }
+        set { defaults.set(newValue, forKey: "dictation.enabled") }
+    }
+    public var dictationKeepsHistory: Bool {
+        get { defaults.bool(forKey: "dictation.keepsHistory") }
+        set { defaults.set(newValue, forKey: "dictation.keepsHistory") }
+    }
+    public var dictationShortcut: KeyShortcut {
+        get { dictationValue("shortcut") ?? KeyShortcut(keyCode: 2, modifiers: [.control, .option], keyLabel: "D") }
+        set { setDictationValue(newValue, "shortcut") }
+    }
+    public var dictationReplacements: [DictationReplacement] {
+        get { dictationValue("replacements") ?? DictationReplacement.defaults }
+        set { setDictationValue(newValue, "replacements") }
+    }
+    public var dictationHistory: DictationHistory {
+        get { dictationValue("history") ?? DictationHistory() }
+        set { setDictationValue(newValue, "history") }
+    }
+    private func dictationValue<T: Decodable>(_ name: String) -> T? {
+        defaults.data(forKey: "dictation." + name).flatMap { try? JSONDecoder().decode(T.self, from: $0) }
+    }
+    private func setDictationValue<T: Encodable>(_ value: T, _ name: String) {
+        if let data = try? JSONEncoder().encode(value) { defaults.set(data, forKey: "dictation." + name) }
     }
 }

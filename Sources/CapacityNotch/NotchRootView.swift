@@ -81,6 +81,7 @@ struct NotchRootView: View {
     @StateObject private var store: CapacityNotchStore
     @ObservedObject private var metrics: SurfaceMetrics
     @ObservedObject private var music: MusicReader
+    @ObservedObject private var teleprompter: TeleprompterController
     @ObservedObject private var pages: SurfacePages
     @ObservedObject private var shape: SurfaceShape
     private let connect: (Provider) -> Void
@@ -90,6 +91,7 @@ struct NotchRootView: View {
         store: CapacityNotchStore,
         metrics: SurfaceMetrics,
         music: MusicReader,
+        teleprompter: TeleprompterController,
         pages: SurfacePages,
         shape: SurfaceShape,
         connect: @escaping (Provider) -> Void,
@@ -98,6 +100,7 @@ struct NotchRootView: View {
         _store = StateObject(wrappedValue: store)
         self.metrics = metrics
         self.music = music
+        self.teleprompter = teleprompter
         self.pages = pages
         self.shape = shape
         self.connect = connect
@@ -136,6 +139,7 @@ struct NotchRootView: View {
                     isExpanded: store.presentation == .expanded,
                     playing: compactTrack,
                     loaded: music.loaded,
+                    teleprompter: teleprompter,
                     page: pages.selected,
                     travel: pages.travel,
                     send: { music.send($0) },
@@ -150,7 +154,7 @@ struct NotchRootView: View {
             // The second way between pages, for VoiceOver: nothing on
             // screen, as the swipe is the only thing drawn.
             .accessibilityActions {
-                if store.presentation == .expanded, music.loaded != nil {
+                if store.presentation == .expanded, pages.available.count > 1 {
                     Button("Next page") { pages.next() }
                     Button("Previous page") { pages.previous() }
                 }
@@ -211,6 +215,8 @@ struct SurfaceColumn: View {
     var playing: NowPlaying? = nil
     /// Its track for the expanded page: whatever is loaded.
     var loaded: NowPlaying? = nil
+    /// The Teleprompter Module, for its row and its page; nil or off, neither.
+    var teleprompter: TeleprompterController? = nil
     var page: SurfacePage = .capacity
     /// A swipe under way, in points; see `SurfacePages.travel`.
     var travel: CGFloat = 0
@@ -228,6 +234,7 @@ struct SurfaceColumn: View {
                 geometry: geometry,
                 now: now,
                 isExpanded: isExpanded,
+                isWide: compactRow == .teleprompter,
                 toggle: toggle
             )
 
@@ -243,12 +250,19 @@ struct SurfaceColumn: View {
                     .allowsHitTesting(isExpanded)
                     .animation(SurfaceType.contentMotion(appearing: isExpanded, reduced: reduceMotion), value: isExpanded)
 
-                if let playing {
-                    CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send)
-                        .opacity(isExpanded ? 0 : 1)
-                        .allowsHitTesting(!isExpanded)
-                        .animation(SurfaceType.contentMotion(appearing: !isExpanded, reduced: reduceMotion), value: isExpanded)
+                Group {
+                    switch compactRow {
+                    case .teleprompter:
+                        if let teleprompter { TeleprompterRow(teleprompter: teleprompter) }
+                    case .music:
+                        if let playing { CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send) }
+                    case .none:
+                        EmptyView()
+                    }
                 }
+                .opacity(isExpanded ? 0 : 1)
+                .allowsHitTesting(!isExpanded)
+                .animation(SurfaceType.contentMotion(appearing: !isExpanded, reduced: reduceMotion), value: isExpanded)
             }
         }
         .frame(width: geometry.surfaceWidth(), alignment: .top)
@@ -260,29 +274,57 @@ struct SurfaceColumn: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// What sits under the compact strip. Music has already been left out
+    /// over a fullscreen application; the Teleprompter Row is not.
+    private var compactRow: TeleprompterSurface.CompactRow {
+        TeleprompterSurface.compactRow(
+            teleprompterShowing: teleprompter?.isShowingRow == true,
+            musicShown: playing != nil,
+            fullscreen: false
+        )
+    }
+
+    private var pages: [SurfacePage] {
+        SurfacePageOrder.pages(musicLoaded: loaded != nil, teleprompter: teleprompter?.isEnabled == true)
+    }
+
+    private var shownPage: SurfacePage { SurfacePageOrder.shown(page, in: pages) }
+
     /// Everything the open surface shows under its strip.
     private var openContent: some View {
         VStack(spacing: 0) {
-            // With a track loaded there are two pages, laid side by side and
-            // moved together.
-            if let loaded {
-                PageStrip(position: stripPosition, heightPosition: page == .music ? 1 : 0) {
-                    capacityDetail
-                        .accessibilityHidden(page != .capacity)
-                    MusicPage(
-                        track: loaded,
-                        now: now,
-                        isVisible: isExpanded && (page == .music || travel != 0),
-                        send: send
-                    )
-                    .accessibilityHidden(page != .music)
+            // With more than one page they are laid side by side and moved
+            // together.
+            if pages.count > 1 {
+                PageStrip(position: stripPosition, heightPosition: CGFloat(pages.firstIndex(of: shownPage) ?? 0)) {
+                    ForEach(pages, id: \.self) { candidate in
+                        pageView(candidate)
+                            .accessibilityHidden(candidate != shownPage)
+                    }
                 }
                 .clipped()
             } else {
                 capacityDetail
             }
 
-            PageDots(selected: loaded == nil ? nil : page)
+            PageDots(pages: pages, selected: pages.count > 1 ? shownPage : nil)
+        }
+    }
+
+    @ViewBuilder
+    private func pageView(_ candidate: SurfacePage) -> some View {
+        let visible = isExpanded && (candidate == shownPage || travel != 0)
+        switch candidate {
+        case .capacity:
+            capacityDetail
+        case .music:
+            if let loaded {
+                MusicPage(track: loaded, now: now, isVisible: visible, send: send)
+            }
+        case .teleprompter:
+            if let teleprompter {
+                TeleprompterPage(teleprompter: teleprompter, isVisible: visible)
+            }
         }
     }
 
@@ -291,9 +333,10 @@ struct SurfaceColumn: View {
     /// then holds.
     private var stripPosition: CGFloat {
         let width = geometry.surfaceWidth()
-        let moved = (page == .music ? 1 : 0) - travel / width
+        let last = CGFloat(max(pages.count - 1, 0))
+        let moved = CGFloat(pages.firstIndex(of: shownPage) ?? 0) - travel / width
         if moved < 0 { return moved / 3 }
-        if moved > 1 { return 1 + (moved - 1) / 3 }
+        if moved > last { return last + (moved - last) / 3 }
         return moved
     }
 
@@ -315,6 +358,9 @@ private struct CompactCapacityView: View {
     let geometry: NotchGeometry
     let now: Date
     let isExpanded: Bool
+    /// The Teleprompter Row is as wide as the open surface, and the strip
+    /// above it widens with it.
+    var isWide = false
     let toggle: () -> Void
 
     var body: some View {
@@ -334,7 +380,7 @@ private struct CompactCapacityView: View {
             }
             .padding(.horizontal, 18)
             .frame(
-                width: isExpanded ? geometry.surfaceWidth() : geometry.compactWidth(),
+                width: isExpanded || isWide ? geometry.surfaceWidth() : geometry.compactWidth(),
                 height: geometry.menuBarHeight,
                 alignment: .center
             )

@@ -48,19 +48,19 @@ notarized is checked afresh.
 Run the executable seam checks:
 
 ```sh
-swift run --build-system native CapacityNotchTests
+swift run CapacityNotchTests
 ```
 
 Build the executable:
 
 ```sh
-swift build --build-system native --product CapacityNotch
+swift build --product CapacityNotch
 ```
 
-The default build system that Swift 6.4 brings with macOS 27 does not start
-without Xcode, hence `--build-system native`; and the views declare their
-state with `State(initialValue:)` rather than `@State`, whose macro plugin
-ships only inside Xcode.
+The package includes Metal shaders from Murmur, so builds require Xcode with
+the Metal Toolchain installed. The views declare their state with
+`State(initialValue:)` rather than `@State`, whose macro plugin ships inside
+Xcode.
 
 Build the release archive — the same bytes from the same commit and Swift
 toolchain, with no builder's home directory inside:
