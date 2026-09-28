@@ -59,3 +59,72 @@ public enum SurfaceCards {
         return on.isEmpty ? snapshots : on
     }
 }
+
+public extension SurfaceCards {
+    /// Every Provider switched off: the surface stays open on its two
+    /// Connect cards, since a closed strip would have nothing to show
+    /// ("Notch — Disconnected").
+    static func nothingConnected(_ snapshots: [CapacitySnapshot]) -> Bool {
+        !snapshots.isEmpty && snapshots.allSatisfy(\.isSwitchedOff)
+    }
+}
+
+/// Which window each Provider shows in the closed strip while both are on.
+public enum CompactWindowChoice: String, CaseIterable, Sendable {
+    case fiveHour
+    case weekly
+    case leastLeft
+
+    /// The words in Settings, as drawn.
+    public var title: String {
+        switch self {
+        case .fiveHour: Localization.text("Five-hour")
+        case .weekly: Localization.text("Weekly")
+        case .leastLeft: Localization.text("Least left")
+        }
+    }
+}
+
+/// What the closed strip shows either side of the notch.
+///
+/// Two Providers on: each the window chosen in Settings — its five hours
+/// unless asked otherwise — Codex left and Claude Code right. One on: that Provider alone, its shortest window left and its
+/// longest right — "5 ч" and "Неделя" ("Notch — Compact — One provider").
+/// None on: nothing, as the surface is open anyway.
+public enum CompactStrip {
+    public enum Side: Equatable, Sendable {
+        /// A Provider's Headline Window, or a dash while it has none.
+        case provider(CapacitySnapshot)
+        /// One window of the only Provider on.
+        case window(Provider, QuotaWindow)
+    }
+
+    public static func sides(_ snapshots: [CapacitySnapshot], showing choice: CompactWindowChoice = .fiveHour) -> (left: Side?, right: Side?) {
+        let on = snapshots.filter { !$0.isSwitchedOff }
+        guard on.count == 1, let only = on.first else {
+            guard !on.isEmpty else { return (nil, nil) }
+            func chosen(_ provider: Provider) -> Side? {
+                guard let snapshot = on.first(where: { $0.provider == provider }) else { return nil }
+                let windows = byDuration(snapshot.windows)
+                let window = switch choice {
+                case .fiveHour: windows.first
+                case .weekly: windows.last
+                case .leastLeft: snapshot.headlineWindow
+                }
+                return window.map { .window(provider, $0) } ?? .provider(snapshot)
+            }
+            return (chosen(.codex), chosen(.claudeCode))
+        }
+        let windows = byDuration(only.windows)
+        guard let shortest = windows.first else {
+            // Nothing read yet: the Provider keeps its own side, with a dash.
+            return only.provider == .codex ? (.provider(only), nil) : (nil, .provider(only))
+        }
+        guard windows.count > 1, let longest = windows.last else { return (.window(only.provider, shortest), nil) }
+        return (.window(only.provider, shortest), .window(only.provider, longest))
+    }
+
+    private static func byDuration(_ windows: [QuotaWindow]) -> [QuotaWindow] {
+        windows.sorted { ($0.durationMinutes ?? .max) < ($1.durationMinutes ?? .max) }
+    }
+}

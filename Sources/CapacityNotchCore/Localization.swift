@@ -111,6 +111,10 @@ public enum Localization {
 
         // Providers
         "While the surface is closed": "Обновлять данные",
+        "Shown in the closed strip": "Лимиты в компактной шторке",
+        "Five-hour": "5-ти часовые",
+        "Weekly": "Недельные",
+        "Least left": "Меньший остаток",
         "Every %d minutes": "Каждые %d мин",
         "Every hour": "Каждый час",
         "Refresh %@": "Обновить %@",
@@ -254,7 +258,7 @@ public enum Localization {
         "Connect this Provider": "Подключить провайдера",
         "Refresh %@ Capacity": "Обновить лимиты %@",
         "%d%% left": "Осталось %d%%",
-        "%d%% used": "Использовано %d%%",
+        "%d%% used": "Исп %d%%",
         "Fresh": "Свежие",
         "Stale": "Устарели",
         "reset time not reported": "время сброса неизвестно",

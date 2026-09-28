@@ -204,6 +204,15 @@ private struct ProvidersSection: View {
 
         SettingsGroup {
             SettingsRow {
+                Text(L("Shown in the closed strip"))
+                Spacer()
+                SettingsPicker(selection: $model.compactWindow, label: model.compactWindow.title) {
+                    ForEach(CompactWindowChoice.allCases, id: \.self) { choice in
+                        Button(choice.title) { model.compactWindow = choice }
+                    }
+                }
+            }
+            SettingsRow {
                 Text(L("While the surface is closed"))
                 Spacer()
                 SettingsPicker(

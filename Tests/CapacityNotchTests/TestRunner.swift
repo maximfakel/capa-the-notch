@@ -22,6 +22,10 @@ enum CapacityNotchTestRunner {
             ("Localization.missingFallsBackToEnglish", aSentenceWithoutATranslationIsShownAsWritten),
             ("Localization.choiceIsRemembered", theLanguageChoiceIsRemembered),
             ("Localization.russianAlert", aRussianAlertSaysItAllInRussian),
+            ("CompactStrip.oneProvider", theStripShowsTheOnlyProvidersShortWindowLeftAndLongRight),
+            ("CompactStrip.bothProviders", theStripShowsEachProvidersFiveHoursWhenBothAreOn),
+            ("CompactStrip.nothingConnected", nothingConnectedLeavesTheStripEmptyAndTheSurfaceOpen),
+            ("CompactStrip.choice", theStripShowsTheWindowChosenInSettings),
             ("Diagnostics.dictationStatesReachTheReport", dictationStatesReachTheReportWhole),
             ("Diagnostics.logLinesCarryCodes", aLogLineCarriesCodesAndNeverDescriptions),
             (

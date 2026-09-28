@@ -179,6 +179,14 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             }
             .store(in: &observers)
 
+        // Every Provider switched off: open, and it stays so until one is on.
+        store.$snapshots
+            .map(SurfaceCards.nothingConnected)
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] nothing in if nothing { self?.store.expand() } }
+            .store(in: &observers)
+
         // A pinned surface has to be able to hear Escape and notice a click
         // elsewhere, and a borderless panel hears neither until it is key.
         store.$isPinned
@@ -306,6 +314,28 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             let geometry = metrics.geometry
             // A card with windows in it, which a fresh launch has not read yet.
             picture(ProviderCard(snapshot: sample, now: Date(), connect: {}, refresh: {}), width: 256, named: "card.png")
+            // One Provider on, the other off: "Notch — Compact/Expanded — One provider".
+            let one = [
+                UnreadCapacity.snapshot(for: .codex),
+                CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: sample.windows, connectionState: .fresh),
+            ]
+            picture(
+                SurfaceColumn(snapshots: one, geometry: geometry, now: Date(), isExpanded: false,
+                              connect: { _ in }, refresh: { _ in }, toggle: {})
+                    .frame(height: geometry.menuBarHeight, alignment: .top).clipped(),
+                width: geometry.surfaceWidth(), named: "compact-one-provider.png"
+            )
+            picture(
+                SurfaceColumn(snapshots: one, geometry: geometry, now: Date(), isExpanded: true,
+                              connect: { _ in }, refresh: { _ in }, toggle: {}),
+                width: geometry.surfaceWidth(), named: "expanded-one-provider.png"
+            )
+            picture(
+                SurfaceColumn(snapshots: [sample, one[1]], geometry: geometry, now: Date(), isExpanded: false,
+                              connect: { _ in }, refresh: { _ in }, toggle: {})
+                    .frame(height: geometry.menuBarHeight, alignment: .top).clipped(),
+                width: geometry.surfaceWidth(), named: "compact-two-providers.png"
+            )
             picture(
                 VStack(spacing: 0) {
                     SurfaceColumn(
@@ -603,8 +633,9 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
 
         presentTicks = 0
 
-        // A pinned surface was asked for. It waits to be dismissed.
-        guard store.presentation == .expanded, !store.isPinned else {
+        // A pinned surface was asked for. It waits to be dismissed. With no
+        // Provider on it stays open, on the cards that connect one.
+        guard store.presentation == .expanded, !store.isPinned, !SurfaceCards.nothingConnected(store.snapshots) else {
             absentTicks = 0
             return
         }

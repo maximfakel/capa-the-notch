@@ -108,6 +108,12 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "keepsDiagnosticLog") }
     }
 
+    /// Which window the closed strip shows for each Provider while both are on.
+    public var compactWindow: CompactWindowChoice {
+        get { defaults.string(forKey: "compactWindow").flatMap(CompactWindowChoice.init(rawValue:)) ?? .fiveHour }
+        set { defaults.set(newValue.rawValue, forKey: "compactWindow") }
+    }
+
     /// The language Settings speak. The Mac's own until chosen.
     public var language: AppLanguage {
         get { defaults.string(forKey: "language").flatMap(AppLanguage.init(rawValue:)) ?? .system }

@@ -47,6 +47,7 @@ final class SettingsModel: ObservableObject {
         alertsEnabled = preferences.alertsEnabled
         keepsDiagnosticLog = preferences.keepsDiagnosticLog
         language = preferences.language
+        compactWindow = preferences.compactWindow
         musicEnabled = preferences.musicEnabled
         application.music.$isUnreadable
             .receive(on: DispatchQueue.main)
@@ -142,6 +143,10 @@ final class SettingsModel: ObservableObject {
 
     @Published var screenSharingAllowed: Bool {
         didSet { application.setSharingAllowed(screenSharingAllowed) }
+    }
+
+    @Published var compactWindow: CompactWindowChoice {
+        didSet { preferences.compactWindow = compactWindow }
     }
 
     @Published var backgroundRefresh: TimeInterval {

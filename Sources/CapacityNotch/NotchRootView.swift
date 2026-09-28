@@ -353,6 +353,8 @@ struct SurfaceColumn: View {
 
 private struct CompactCapacityView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Chosen in Settings → Providers; read here so the strip follows at once.
+    @AppStorage("compactWindow") private var choice = CompactWindowChoice.fiveHour.rawValue
 
     let snapshots: [CapacitySnapshot]
     let geometry: NotchGeometry
@@ -366,17 +368,14 @@ private struct CompactCapacityView: View {
     var body: some View {
         Button(action: toggle) {
             HStack(spacing: 0) {
-                if let codex = snapshots.first(where: { $0.provider == .codex }) {
-                    CompactProviderView(snapshot: codex, now: now, isExpanded: isExpanded)
-                }
+                let sides = CompactStrip.sides(snapshots, showing: CompactWindowChoice(rawValue: choice) ?? .fiveHour)
+                if let left = sides.left { CompactSideView(side: left, now: now, isExpanded: isExpanded) }
 
                 // Numbers drawn under the physical notch are numbers nobody
                 // can read.
                 Spacer(minLength: max(geometry.notchWidth, 220))
 
-                if let claude = snapshots.first(where: { $0.provider == .claudeCode }) {
-                    CompactProviderView(snapshot: claude, now: now, isExpanded: isExpanded)
-                }
+                if let right = sides.right { CompactSideView(side: right, now: now, isExpanded: isExpanded) }
             }
             .padding(.horizontal, 18)
             .frame(
@@ -413,17 +412,18 @@ private struct PaceMark: View {
     }
 }
 
-private struct CompactProviderView: View {
-    let snapshot: CapacitySnapshot
+/// One side of the strip: a Provider's mark, a figure and its pace.
+private struct CompactSideView: View {
+    let side: CompactStrip.Side
     let now: Date
     let isExpanded: Bool
 
     var body: some View {
         HStack(spacing: 7) {
-            ProviderMark(provider: snapshot.provider, size: 15)
-                .foregroundStyle(snapshot.provider.presentation.tint)
+            ProviderMark(provider: provider, size: 15)
+                .foregroundStyle(provider.presentation.tint)
 
-            Text(snapshot.compactCapacityText(at: now))
+            Text(figure)
                 .font(SurfaceType.compactCapacity(isExpanded: isExpanded))
                 .monospacedDigit()
                 .foregroundStyle(.white)
@@ -432,12 +432,40 @@ private struct CompactProviderView: View {
                 .lineLimit(1)
                 .fixedSize()
 
-            if let pace = snapshot.headlineWindow?.pace {
+            if let pace {
                 PaceMark(pace: pace)
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(CapacitySpeech.compact(snapshot, at: now))
+        .accessibilityLabel(spoken)
+    }
+
+    private var provider: Provider {
+        switch side {
+        case let .provider(snapshot): snapshot.provider
+        case let .window(provider, _): provider
+        }
+    }
+
+    private var figure: String {
+        switch side {
+        case let .provider(snapshot): snapshot.compactCapacityText(at: now)
+        case let .window(_, window): "\(Int(window.remainingPercentage))%"
+        }
+    }
+
+    private var pace: CapacityPace? {
+        switch side {
+        case let .provider(snapshot): snapshot.headlineWindow?.pace
+        case let .window(_, window): window.pace
+        }
+    }
+
+    private var spoken: String {
+        switch side {
+        case let .provider(snapshot): CapacitySpeech.compact(snapshot, at: now)
+        case let .window(provider, window): CapacitySpeech.compact(provider, window)
+        }
     }
 }
 

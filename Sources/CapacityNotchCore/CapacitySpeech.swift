@@ -75,6 +75,16 @@ public enum CapacitySpeech {
         ].joined(separator: ", ")
     }
 
+    /// One window of the only Provider on, as the strip shows it.
+    public static func compact(_ provider: Provider, _ window: QuotaWindow) -> String {
+        [
+            provider.spokenName,
+            Localization.format("%@ window", Localization.windowLabel(window.label)),
+            Localization.format("%d percent left", Int(window.remainingPercentage)),
+            window.pace.spoken,
+        ].joined(separator: ", ")
+    }
+
     public static let clock: DateFormatter = {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
