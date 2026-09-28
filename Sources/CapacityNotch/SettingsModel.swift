@@ -46,6 +46,7 @@ final class SettingsModel: ObservableObject {
         launchAtLogin = LaunchAtLogin.isEnabled
         alertsEnabled = preferences.alertsEnabled
         keepsDiagnosticLog = preferences.keepsDiagnosticLog
+        language = preferences.language
         musicEnabled = preferences.musicEnabled
         application.music.$isUnreadable
             .receive(on: DispatchQueue.main)
@@ -117,6 +118,15 @@ final class SettingsModel: ObservableObject {
         }
     }
 
+    /// The language Settings speak; changing it redraws them at once.
+    @Published var language: AppLanguage {
+        didSet {
+            preferences.language = language
+            Localization.current = language
+            application.applyLanguage()
+        }
+    }
+
     @Published var appearance: Appearance {
         didSet { application.applyAppearance(appearance) }
     }
@@ -182,8 +192,8 @@ final class SettingsModel: ObservableObject {
 
     func refreshLabel(_ seconds: TimeInterval) -> String {
         seconds < 3600
-            ? "Every \(Int(seconds / 60)) minutes"
-            : "Every hour"
+            ? L("Every %d minutes", Int(seconds / 60))
+            : L("Every hour")
     }
 
     func checkForUpdates() {

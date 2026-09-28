@@ -331,3 +331,24 @@ than copy over it.
 - What the broken signature of 0.1.3 and 0.1.4 did to Gatekeeper on a clean
   Mac — whether it still offered Open Anyway. The friend's filled checklist
   would say.
+
+**2026-09-27 — 0.2.0 published: the Teleprompter and Dictation Modules.**
+
+https://github.com/maximfakel/capacity-notch/releases/tag/v0.2.0, latest.
+Checked by hand before publishing — ticket 16 and 21's runtime checks, the
+last by the author.
+
+### Verified
+
+- The script built the archive from `77f78fb` and again from the snapshot,
+  byte for byte the same (SHA-256 `d056adbc…bc53`), then downloaded the
+  published zip and checked it.
+- The unpacked 0.2.0 archive: version 0.2.0 (7), strict signature valid,
+  `adhoc,runtime`.
+- GitHub warned on the push that the static onnxruntime library is 93.9 MB,
+  over its recommended 50 MB; the limit is 100 MB. A newer ONNX Runtime that
+  grows past it would need Git LFS or a download at build time.
+
+### Not verified
+
+- 0.2.0 run from the downloaded archive, and on a clean Mac.

@@ -56,6 +56,21 @@ public enum CapacityStatusReason: Equatable, Sendable {
         }
     }
 
+    /// The guidance in the language Settings speak. A Provider's own detail
+    /// stays as it came: it is the Provider's words, not ours to translate.
+    public var localizedGuidance: String {
+        switch self {
+        case let .providerIncompatible(detail):
+            Localization.format("Update the Codex CLI — %@", detail)
+        case let .providerUnavailable(detail):
+            Localization.format("Codex is not answering — %@", detail)
+        case let .providerCouldNotRead(detail):
+            Localization.format("Codex could not read its Capacity — %@ Retrying.", detail.hasSuffix(".") ? detail : detail + ".")
+        default:
+            Localization.text(guidance)
+        }
+    }
+
     /// Whether the card's chip already carries this, so spelling it out in a
     /// sentence underneath would only repeat it.
     public var repeatsTheChip: Bool {

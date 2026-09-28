@@ -83,6 +83,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
+        Localization.current = preferences.language
+        SettingsType.registerFont()
         if let state = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_PREVIEW_DICTATION"] {
             previewDictation(state)
             return
@@ -93,6 +95,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         applyAppearance(preferences.appearance)
+        DiagnosticLog.record(.launched(version: Self.applicationVersion, system: ProcessInfo.processInfo.operatingSystemVersionString))
+        DiagnosticLog.record(.dictation(dictation.observation))
 
         signal(SIGTERM, SIG_IGN)
         let termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
@@ -140,7 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_SETTINGS"] {
             let model = SettingsModel(preferences: preferences, application: self, store: store)
             for section in SettingsSection.allCases {
-                Self.drawSettings(model: model, section: section, height: 560, into: folder, named: "settings-\(section.title.lowercased())")
+                Self.drawSettings(model: model, section: section, height: 560, into: folder, named: "settings-\(section)")
             }
         }
 
@@ -388,6 +392,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if enabled { music.start() } else { music.stop() }
     }
 
+    /// Settings redraw themselves; only the window's own title is AppKit's.
+    func applyLanguage() {
+        settings?.window?.title = L("Capacity Notch Settings")
+    }
+
     /// Light, dark, or the Mac's own, for every window the application opens.
     /// The surface draws its own black and is not affected.
     func applyAppearance(_ appearance: Appearance) {
@@ -429,12 +438,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let capsule = DictationPanelController(controller: controller)
         dictationPanel = capsule
         capsule.anchor(to: NSRect(x: screen.frame.midX - 211, y: screen.frame.maxY - 38, width: 422, height: 38))
+        // One state, or a sequence such as "recording:3,recognizing:0.8,inserted:1.6"
+        // (seconds each), so a recording of the orb moves between them without
+        // the capsule leaving in between.
         let states: [String: DictationController.Presentation] = ["recording": .recording, "recognizing": .recognizing, "inserted": .inserted, "copied": .copied, "error": .error]
-        controller.preview(states[state] ?? .hidden)
+        let steps: [(DictationController.Presentation, Double)] = state.split(separator: ",").map { part in
+            let pieces = part.split(separator: ":")
+            return (states[String(pieces[0])] ?? .hidden, pieces.count > 1 ? Double(pieces[1]) ?? 20 : 20)
+        }
         dictationPreviewTask = Task {
-            for tick in 0..<200 {
-                do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
-                if state == "recording" { controller.previewLevel(Float(0.35 + sin(Double(tick) * 0.4) * 0.25)) }
+            var tick = 0
+            for (presentation, seconds) in steps {
+                controller.preview(presentation)
+                for _ in 0..<Int(seconds * 10) {
+                    do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+                    tick += 1
+                    if presentation == .recording { controller.previewLevel(Float(0.35 + sin(Double(tick) * 0.4) * 0.25)) }
+                }
             }
             defaults.removePersistentDomain(forName: suite)
             NSApplication.shared.terminate(nil)
@@ -506,7 +526,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingController(rootView: content)
         hosting.sizingOptions = []
         let window = NSWindow(contentViewController: hosting)
-        window.title = "Capacity Notch Settings"
+        window.title = L("Capacity Notch Settings")
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.styleMask = [.titled, .closable, .fullSizeContentView]
@@ -609,6 +629,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if preferences.musicEnabled, music.isUnreadable {
             observations.append(MusicModule.unreadableCode)
         }
+        observations.append(contentsOf: dictation.observation.observations)
         observations.append(
             TeleprompterModule.observation(enabled: preferences.teleprompterEnabled, script: preferences.script)
         )

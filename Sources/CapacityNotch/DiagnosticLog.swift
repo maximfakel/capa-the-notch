@@ -1,4 +1,6 @@
+import CapacityNotchCore
 import Foundation
+import Security
 
 /// Where a Provider's own output is kept, when the person has asked for it.
 ///
@@ -22,5 +24,27 @@ enum DiagnosticLog {
             FileManager.default.createFile(atPath: url.path, contents: nil)
         }
         return url
+    }
+
+    private static let queue = DispatchQueue(label: "CapacityNotch.DiagnosticLog")
+
+    /// The application's own line, beside the Provider's output, and only
+    /// while the log is on. Written in order, off the caller's thread.
+    static func record(_ event: DiagnosticEvent) {
+        guard Preferences().keepsDiagnosticLog else { return }
+        let line = event.entry(at: Date()) + "\n"
+        queue.async {
+            guard let url = prepare(), let handle = try? FileHandle(forWritingTo: url) else { return }
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: Data(line.utf8))
+        }
+    }
+
+    /// Whether this build is signed so macOS could ever ask for the microphone.
+    /// Under the Hardened Runtime, without the entitlement, it never asks.
+    static var microphoneEntitled: Bool {
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
+        return SecTaskCopyValueForEntitlement(task, "com.apple.security.device.audio-input" as CFString, nil) as? Bool == true
     }
 }

@@ -51,6 +51,9 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(SettingsPalette.window)
         }
+        // A new language draws every word again, not only the views that
+        // happen to observe the model.
+        .id(model.language)
         // The whole window, title bar included: a fixed 560 left the strip
         // under the title bar's height uncovered at the bottom.
         .frame(minWidth: 760, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity)
@@ -84,7 +87,9 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
 
     var id: Int { rawValue }
 
-    var title: String {
+    var title: String { L(englishTitle) }
+
+    private var englishTitle: String {
         switch self {
         case .general: "General"
         case .providers: "Providers"
@@ -94,7 +99,9 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         }
     }
 
-    var subtitle: String {
+    var subtitle: String { L(englishSubtitle) }
+
+    private var englishSubtitle: String {
         switch self {
         case .general: "Where Capacity Notch appears, and how it starts and updates."
         case .providers: "Where Capacity comes from, and whether it is being read."
@@ -119,48 +126,59 @@ private struct GeneralSection: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
-        SettingsGroup(footnote: "macOS keeps Capacity Notch out of the capture it controls. It cannot promise anything about a camera pointed at the screen.") {
+        SettingsGroup(footnote: L("macOS keeps Capacity Notch out of the capture it controls. It cannot promise anything about a camera pointed at the screen.")) {
+            // Settings and the menu follow it; the notch and notifications
+            // stay in English for now.
             SettingsRow {
-                Text("Appearance")
+                Text(L("Language"))
                 Spacer()
-                SettingsPicker(selection: $model.appearance, label: model.appearance.title) {
-                    ForEach(Appearance.allCases, id: \.self) { choice in
-                        Button(choice.title) { model.appearance = choice }
+                SettingsPicker(selection: $model.language, label: model.language.title) {
+                    ForEach(AppLanguage.allCases, id: \.self) { choice in
+                        Button(choice.title) { model.language = choice }
                     }
                 }
             }
-            SettingsToggleRow("Launch at login", isOn: $model.launchAtLogin)
             SettingsRow {
-                Text("Show on")
+                Text(L("Appearance"))
+                Spacer()
+                SettingsPicker(selection: $model.appearance, label: L(model.appearance.title)) {
+                    ForEach(Appearance.allCases, id: \.self) { choice in
+                        Button(L(choice.title)) { model.appearance = choice }
+                    }
+                }
+            }
+            SettingsToggleRow(L("Launch at login"), isOn: $model.launchAtLogin)
+            SettingsRow {
+                Text(L("Show on"))
                 Spacer()
                 SettingsPicker(selection: $model.displayID, label: displayName) {
-                    Button("Built-in display") { model.displayID = 0 }
+                    Button(L("Built-in display")) { model.displayID = 0 }
                     ForEach(model.displays) { display in
                         Button(display.name) { model.displayID = display.id }
                     }
                 }
             }
-            SettingsToggleRow("Appear in screen sharing and recordings", isOn: $model.screenSharingAllowed)
+            SettingsToggleRow(L("Appear in screen sharing and recordings"), isOn: $model.screenSharingAllowed)
         }
 
-        SettingsGroup(footnote: "Opens the latest release on GitHub. Capacity Notch does not check on its own.") {
+        SettingsGroup(footnote: L("Opens the latest release on GitHub. Capacity Notch does not check on its own.")) {
             SettingsRow {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("Capacity Notch")
-                    Text("Version \(model.version)")
+                    Text(L("Version %@", model.version))
                         .font(SettingsType.caption)
                         .foregroundStyle(SettingsPalette.muted)
                 }
                 Spacer()
-                Button("Check for Updates…") { model.checkForUpdates() }
+                Button(L("Check for Updates…")) { model.checkForUpdates() }
                     .buttonStyle(SettingsButtonStyle())
             }
         }
     }
 
     private var displayName: String {
-        guard model.displayID != 0 else { return "Built-in display" }
-        return model.displays.first { $0.id == model.displayID }?.name ?? "Built-in display"
+        guard model.displayID != 0 else { return L("Built-in display") }
+        return model.displays.first { $0.id == model.displayID }?.name ?? L("Built-in display")
     }
 }
 
@@ -184,9 +202,9 @@ private struct ProvidersSection: View {
             }
         }
 
-        SettingsGroup(footnote: "An open surface is read every minute; that is not a choice, because an open surface is being watched.") {
+        SettingsGroup {
             SettingsRow {
-                Text("While the surface is closed")
+                Text(L("While the surface is closed"))
                 Spacer()
                 SettingsPicker(
                     selection: $model.backgroundRefresh,
@@ -229,7 +247,7 @@ private struct ProviderSettingsCard: View {
 
                 Spacer(minLength: 0)
 
-                SettingsIconButton(icon: .refresh, label: "Refresh \(choice.name)", action: refresh)
+                SettingsIconButton(icon: .refresh, label: L("Refresh %@", choice.name), action: refresh)
                     .disabled(!isOn)
                     .opacity(isOn ? 1 : 0.4)
 
@@ -251,19 +269,19 @@ private struct ProviderSettingsCard: View {
     }
 
     private var state: (tint: Color, line: String) {
-        guard isOn else { return (SettingsPalette.muted, "Off") }
+        guard isOn else { return (SettingsPalette.muted, L("Off")) }
         switch snapshot?.connectionState {
         case .fresh:
-            return (SettingsPalette.green, "Fresh · read \(Self.ago(snapshot!.capturedAt, now: now))")
+            return (SettingsPalette.green, L("Fresh · read %@", Self.ago(snapshot!.capturedAt, now: now)))
         case .stale:
-            let clock = snapshot!.capturedAt.formatted(date: .omitted, time: .shortened)
-            return (SettingsPalette.yellow, "Stale · last read at \(clock)")
+            let clock = snapshot!.capturedAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))
+            return (SettingsPalette.yellow, L("Stale · last read at %@", clock))
         case .disconnected:
-            return (SettingsPalette.red, "Disconnected")
+            return (SettingsPalette.red, L("Disconnected"))
         case .connecting, nil:
-            return (SettingsPalette.muted, "Connecting")
+            return (SettingsPalette.muted, L("Connecting"))
         case .mock:
-            return (SettingsPalette.muted, "Mock")
+            return (SettingsPalette.muted, L("Mock"))
         }
     }
 
@@ -271,15 +289,17 @@ private struct ProviderSettingsCard: View {
     private var reason: String? {
         guard isOn, let snapshot, let reason = snapshot.statusReason else { return nil }
         switch snapshot.connectionState {
-        case .stale, .disconnected: return reason.guidance
+        case .stale, .disconnected: return reason.localizedGuidance
         default: return nil
         }
     }
 
     private static func ago(_ date: Date, now: Date) -> String {
-        guard now.timeIntervalSince(date) >= 60 else { return "just now" }
+        guard now.timeIntervalSince(date) >= 60 else { return L("just now") }
         let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
+        formatter.locale = Localization.current.locale
+        // Russian Settings read "2 мин. назад", as drawn; English keeps words.
+        formatter.unitsStyle = Localization.current == .russian ? .short : .full
         return formatter.localizedString(for: date, relativeTo: now)
     }
 }
@@ -288,8 +308,8 @@ private struct AlertsSection: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
-        SettingsGroup(footnote: "One warning per window, when it first drops below a tenth left, and nothing more until it recovers or resets.") {
-            SettingsToggleRow("Warn me when a window is about to run out", isOn: $model.alertsEnabled)
+        SettingsGroup(footnote: L("One warning per window, when it first drops below a tenth left, and nothing more until it recovers or resets.")) {
+            SettingsToggleRow(L("Warn me when a window is about to run out"), isOn: $model.alertsEnabled)
             SettingsDivider()
             ForEach(model.providers) { choice in
                 SettingsToggleRow(choice.name, isOn: model.alertBinding(for: choice.provider), indent: 18)
@@ -352,13 +372,13 @@ struct TeleprompterCard: View {
                         .padding(8)
                         .allowsHitTesting(false)
                 }
-                .accessibilityLabel("Script")
+                .accessibilityLabel(L("Script"))
 
             HStack(spacing: 8) {
-                Button("Paste from Clipboard") { teleprompter.pasteFromClipboard() }
+                Button(L("Paste from Clipboard")) { teleprompter.pasteFromClipboard() }
                     .buttonStyle(SettingsButtonStyle())
                     .fixedSize()
-                Button("Restore Previous Script") { teleprompter.restorePreviousScript() }
+                Button(L("Restore Previous Script")) { teleprompter.restorePreviousScript() }
                     .buttonStyle(SettingsButtonStyle())
                     .fixedSize()
                     .disabled(!teleprompter.hasPreviousScript)
@@ -374,19 +394,19 @@ struct TeleprompterCard: View {
     private var length: String {
         let words = teleprompter.wordCount
         let minutes = TeleprompterScript.minutes(words: words, wordsPerMinute: teleprompter.playback.wordsPerMinute)
-        return "\(words) words · \(minutes) min"
+        return L("%d words · %d min", words, minutes)
     }
 
     private var speed: some View {
         SettingsRow(indent: 44, hovers: false) {
-            Text("Speed")
+            Text(L("Speed"))
             Spacer()
             // The same speed the surface turns, and shown as it shows it.
             Text(String(format: "%.2fx", teleprompter.playback.multiplier))
                 .monospacedDigit()
             VStack(spacing: 0) {
-                stepButton("chevron.up", label: "Faster") { teleprompter.faster() }
-                stepButton("chevron.down", label: "Slower") { teleprompter.slower() }
+                stepButton("chevron.up", label: L("Faster")) { teleprompter.faster() }
+                stepButton("chevron.down", label: L("Slower")) { teleprompter.slower() }
             }
             .frame(width: 16, height: 24)
             .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(SettingsPalette.control))
@@ -408,14 +428,14 @@ struct TeleprompterCard: View {
 
     private var textSize: some View {
         SettingsRow(indent: 44, hovers: false) {
-            Text("Text size")
+            Text(L("Text size"))
             Spacer()
             SettingsPicker(
                 selection: Binding(get: { teleprompter.textSize }, set: { teleprompter.setTextSize($0) }),
-                label: teleprompter.textSize.title
+                label: L(teleprompter.textSize.title)
             ) {
                 ForEach(TeleprompterTextSize.allCases, id: \.self) { size in
-                    Button(size.title) { teleprompter.setTextSize(size) }
+                    Button(L(size.title)) { teleprompter.setTextSize(size) }
                 }
             }
         }
@@ -423,15 +443,15 @@ struct TeleprompterCard: View {
 
     private var shortcuts: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Shortcuts")
+            Text(L("Shortcuts"))
             ForEach(TeleprompterAction.allCases, id: \.self) { action in
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(action.title)
+                        Text(L(action.title))
                             .font(SettingsType.caption)
                             .foregroundStyle(SettingsPalette.muted)
                         if teleprompter.unavailableShortcuts.contains(action) {
-                            Text("Another app already uses this shortcut.")
+                            Text(L("Another app already uses this shortcut."))
                                 .font(SettingsType.caption)
                                 .foregroundStyle(SettingsPalette.red)
                         }
@@ -470,7 +490,7 @@ private struct ShortcutRecorder: View {
         Button(action: toggleRecording) {
             HStack(spacing: 2) {
                 if recording {
-                    keycap("Type a shortcut", wide: true)
+                    keycap(L("Type a shortcut"), wide: true)
                 } else {
                     let caps = teleprompter.shortcut(for: action)?.keycaps ?? ["—"]
                     ForEach(Array(caps.enumerated()), id: \.offset) { index, cap in
@@ -480,8 +500,8 @@ private struct ShortcutRecorder: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(action.title) shortcut")
-        .accessibilityValue(teleprompter.shortcut(for: action)?.display ?? "None")
+        .accessibilityLabel(L("%@ shortcut", L(action.title)))
+        .accessibilityValue(teleprompter.shortcut(for: action)?.display ?? L("None"))
         .onDisappear { finish() }
     }
 
@@ -602,17 +622,17 @@ private struct DiagnosticsSection: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
-        SettingsGroup(footnote: "Copied text carries versions, Provider states and timings. It carries no credential, address, identifier or Provider message — those cannot reach it.") {
-            SettingsToggleRow("Keep a log for bug reports", isOn: $model.keepsDiagnosticLog)
+        SettingsGroup(footnote: L("Copied text carries versions, the states of Providers and Dictation, and timings. It carries no credential, address, identifier, Provider message or dictated text — those cannot reach it.")) {
+            SettingsToggleRow(L("Keep a log for bug reports"), isOn: $model.keepsDiagnosticLog)
             SettingsDivider()
             SettingsRow(height: 48, spacing: 8, hovers: false) {
-                Button("Copy Diagnostics") { model.copyDiagnostics() }
+                Button(L("Copy Diagnostics")) { model.copyDiagnostics() }
                     .buttonStyle(SettingsButtonStyle())
-                Button("Reveal Log") { model.revealLog() }
+                Button(L("Reveal Log")) { model.revealLog() }
                     .buttonStyle(SettingsButtonStyle())
                     .disabled(!model.keepsDiagnosticLog)
                 Spacer()
-                Button("Run Onboarding Again") { model.restartOnboarding() }
+                Button(L("Run Onboarding Again")) { model.restartOnboarding() }
                     .buttonStyle(SettingsButtonStyle())
             }
 
@@ -672,7 +692,7 @@ private struct SettingsSidebar: View {
         }
         .animation(SettingsMotion.spring(reduced: reduceMotion), value: selection)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Settings sections")
+        .accessibilityLabel(L("Settings sections"))
     }
 
     private func step(by offset: Int) {
@@ -947,7 +967,7 @@ private struct SettingsSwitch: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isToggle)
-        .accessibilityValue(configuration.isOn ? "On" : "Off")
+        .accessibilityValue(configuration.isOn ? L("On") : L("Off"))
         .accessibilityAction { configuration.isOn.toggle() }
     }
 }
@@ -1078,12 +1098,27 @@ enum SettingsPalette {
     }
 }
 
+/// Geist, the variable font under the SIL Open Font License that ships in
+/// Resources beside its licence. Keycaps stay in the system's font: Geist has
+/// no ⌘, ⌥ or ⌃.
 enum SettingsType {
-    static let title = Font.system(size: 22, weight: .semibold)
-    static let body = Font.system(size: 13)
-    static let bodyMedium = Font.system(size: 13, weight: .medium)
-    static let caption = Font.system(size: 12)
+    static let title = geist(22, .semibold)
+    static let step = geist(14, .semibold)
+    static let body = geist(13)
+    static let bodyMedium = geist(13, .medium)
+    static let caption = geist(12)
     static let keycap = Font.system(size: 11)
+
+    private static func geist(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        Font.custom("Geist", fixedSize: size).weight(weight)
+    }
+
+    /// For this process only; nothing is installed on the Mac.
+    static func registerFont() {
+        guard let url = Bundle.main.url(forResource: "Geist", withExtension: "ttf")
+            ?? Bundle.module.url(forResource: "Geist", withExtension: "ttf") else { return }
+        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+    }
 }
 
 enum SettingsMotion {

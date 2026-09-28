@@ -65,6 +65,10 @@ done
 install -m 644 Sources/CapacityNotch/Resources/OpenAIBlossom.svg "$app/Contents/Resources/OpenAIBlossom.svg"
 install -m 644 Sources/CapacityNotch/Resources/MenuBarIcon.svg "$app/Contents/Resources/MenuBarIcon.svg"
 install -m 644 Packaging/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
+install -m 644 Sources/CapacityNotch/Resources/DictationLicenses.txt "$app/Contents/Resources/DictationLicenses.txt"
+# Geist travels with its licence (SIL OFL 1.1), as the licence asks.
+install -m 644 Sources/CapacityNotch/Resources/Geist.ttf "$app/Contents/Resources/Geist.ttf"
+install -m 644 Sources/CapacityNotch/Resources/Geist-OFL.txt "$app/Contents/Resources/Geist-OFL.txt"
 
 # The Music Module's reader (ADR 0004): run by /usr/bin/perl, never loaded here.
 mkdir -p "$app/Contents/Frameworks"
@@ -81,12 +85,15 @@ for binary in "$app"/Contents/MacOS/* "$app"/Contents/Helpers/* "$app"/Contents/
   fi
 done
 
-# Hardened Runtime, with no entitlements; the bridge first and on its own,
-# because signing the bundle marks only its main executable.
+# Hardened Runtime, with the same entitlements as build-app.sh; the bridge
+# first and on its own, because signing the bundle marks only its main
+# executable. Without audio-input, macOS refuses the microphone silently: no
+# prompt, no entry in Privacy & Security, and requestAccess answers false.
 codesign --force --options runtime --sign - "$app/Contents/MacOS/CapacityNotchClaudeBridge"
 # A named designated requirement, so an update keeps what macOS granted the
 # last version; see build-app.sh.
 codesign --force --options runtime --sign - \
+  --entitlements Packaging/CapacityNotch.entitlements \
   -r='designated => identifier "app.capacitynotch.CapacityNotch"' "$app"
 find "$app" -exec touch -h -t "$stamp" {} +
 

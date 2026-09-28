@@ -108,6 +108,12 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "keepsDiagnosticLog") }
     }
 
+    /// The language Settings speak. The Mac's own until chosen.
+    public var language: AppLanguage {
+        get { defaults.string(forKey: "language").flatMap(AppLanguage.init(rawValue:)) ?? .system }
+        set { defaults.set(newValue.rawValue, forKey: "language") }
+    }
+
     /// Ticket 11 owns the updater. The choice is remembered until it exists.
     /// Off until asked for, like every other default here: checking would be
     /// the application's first network request of its own.

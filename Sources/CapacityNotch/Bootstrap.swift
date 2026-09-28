@@ -1,29 +1,33 @@
 import AppKit
+import CapacityNotchCore
 import SwiftUI
 
 @main
 struct CapacityNotchApplication: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    /// The language chosen in Settings, read here so the menu redraws the
+    /// moment it changes. Its own font stays the system's.
+    @AppStorage("language") private var language = AppLanguage.system.rawValue
 
     var body: some Scene {
         // Three things, the ones a menu bar menu is for. Everything else it
         // used to offer is in Settings, or went (ticket 19).
         MenuBarExtra {
-            Button("Refresh Now") {
+            Button(word("Refresh Now")) {
                 appDelegate.refreshNow()
             }
             .keyboardShortcut("r")
 
             Divider()
 
-            Button("Settings…") {
+            Button(word("Settings…")) {
                 appDelegate.showSettings()
             }
             .keyboardShortcut(",")
 
             Divider()
 
-            Button("Quit Capacity Notch") {
+            Button(word("Quit Capacity Notch")) {
                 appDelegate.quit()
             }
             .keyboardShortcut("q")
@@ -34,6 +38,10 @@ struct CapacityNotchApplication: App {
                 .accessibilityLabel("Capacity Notch")
         }
         .menuBarExtraStyle(.menu)
+    }
+
+    private func word(_ english: String) -> String {
+        Localization.text(english, in: AppLanguage(rawValue: language) ?? .system)
     }
 }
 

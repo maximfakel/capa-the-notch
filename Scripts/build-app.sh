@@ -30,6 +30,9 @@ install -m 644 "$project_root/Sources/CapacityNotch/Resources/MenuBarIcon.svg" "
 install -m 644 "$project_root/Packaging/AppIcon.icns" "$app_bundle/Contents/Resources/AppIcon.icns"
 
 install -m 644 "$project_root/Sources/CapacityNotch/Resources/DictationLicenses.txt" "$app_bundle/Contents/Resources/DictationLicenses.txt"
+# Geist travels with its licence (SIL OFL 1.1), as the licence asks.
+install -m 644 "$project_root/Sources/CapacityNotch/Resources/Geist.ttf" "$app_bundle/Contents/Resources/Geist.ttf"
+install -m 644 "$project_root/Sources/CapacityNotch/Resources/Geist-OFL.txt" "$app_bundle/Contents/Resources/Geist-OFL.txt"
 
 # The Music Module's reader (ADR 0004): run by /usr/bin/perl, never loaded here.
 mkdir -p "$app_bundle/Contents/Frameworks"

@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Capacity Notch includes the following third-party code and assets: Murmur (MIT), mediaremote-adapter (BSD 3-Clause), sherpa-onnx (Apache-2.0) and ONNX Runtime (MIT). The optional GigaAM model (MIT) is downloaded separately. No GPL-licensed implementation code is included.
+Capacity Notch includes the following third-party code and assets: Murmur (MIT), mediaremote-adapter (BSD 3-Clause), sherpa-onnx (Apache-2.0), ONNX Runtime (MIT) and the Geist typeface (SIL Open Font License 1.1). The optional GigaAM model (MIT) is downloaded separately. No GPL-licensed implementation code is included.
 
 ## Murmur
 
@@ -10,6 +10,14 @@ https://github.com/krispuckett/murmur. The app uses its SwiftUI presence orb
 and Metal shaders. A small local change resolves its shader bundle from the
 standard macOS app Resources directory so the signed app can load `default.metallib`.
 The MIT license is included at `Vendor/Murmur/LICENSE`.
+
+## Geist
+
+The variable font `Geist[wght].ttf` from release v1.7.2 of
+https://github.com/vercel/geist-font, unmodified, shipped as
+`Sources/CapacityNotch/Resources/Geist.ttf` and used for Settings.
+Copyright 2024 The Geist Project Authors. The SIL Open Font License 1.1
+travels with it as `Geist-OFL.txt`, in the source and in the application.
 
 ## mediaremote-adapter
 

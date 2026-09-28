@@ -121,11 +121,51 @@ enum DictationModelFiles {
     }
 }
 
-final class DictationDownloadProgress: NSObject, URLSessionDownloadDelegate, Sendable {
-    let changed: @Sendable (Double) -> Void
-    init(changed: @escaping @Sendable (Double) -> Void) { self.changed = changed }
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
+/// The session's own delegate, not a task delegate: URLSession's async
+/// `download(from:delegate:)` never reports progress to that delegate, so the
+/// setup stayed at 0% for the whole download.
+final class DictationDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    private let changed: @Sendable (Double) -> Void
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<(URL, URLResponse), Error>?
+    private var archive: Result<URL, Error>?
+
+    private init(changed: @escaping @Sendable (Double) -> Void) { self.changed = changed }
+
+    /// The archive is the caller's to remove.
+    static func download(_ url: URL, progress: @escaping @Sendable (Double) -> Void) async throws -> (URL, URLResponse) {
+        let downloader = DictationDownloader(changed: progress)
+        let session = URLSession(configuration: .default, delegate: downloader, delegateQueue: nil)
+        defer { session.finishTasksAndInvalidate() }
+        let task = session.downloadTask(with: url)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                downloader.lock.withLock { downloader.continuation = continuation }
+                task.resume()
+            }
+        } onCancel: { task.cancel() }
+    }
+
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         if totalBytesExpectedToWrite > 0 { changed(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)) }
+    }
+    /// The file at `location` is gone once this returns, so it moves now.
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        let kept = FileManager.default.temporaryDirectory.appendingPathComponent("dictation-\(UUID()).tar.bz2")
+        let result = Result { try FileManager.default.moveItem(at: location, to: kept); return kept }
+        lock.withLock { archive = result }
+    }
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        let (continuation, archive) = lock.withLock { () -> (CheckedContinuation<(URL, URLResponse), Error>?, Result<URL, Error>?) in
+            defer { self.continuation = nil }
+            return (self.continuation, self.archive)
+        }
+        if let error {
+            continuation?.resume(throwing: (error as? URLError)?.code == .cancelled ? CancellationError() : error)
+        } else if let archive, let response = task.response {
+            continuation?.resume(with: archive.map { ($0, response) })
+        } else {
+            continuation?.resume(throwing: URLError(.badServerResponse))
+        }
     }
 }

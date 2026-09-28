@@ -36,6 +36,8 @@ final class DictationController: ObservableObject {
     private var clock: Task<Void, Never>?
     private var recognition: Task<Void, Never>?
     private var download: Task<Void, Never>?
+    /// The log hears a download a quarter at a time, so one that stalls shows where.
+    private var loggedQuarter = 0
     private var dismiss: Task<Void, Never>?
     private var observing: AnyCancellable?
     private var systemObservers: Set<AnyCancellable> = []
@@ -78,11 +80,34 @@ final class DictationController: ObservableObject {
         microphoneAllowed = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
         insertionAllowed = AXIsProcessTrusted()
     }
+    /// What a bug report and the log say about Dictation.
+    var observation: DictationObservation {
+        DictationObservation(
+            enabled: isEnabled, modelReady: modelReady, microphone: Self.microphoneStatus,
+            microphoneEntitled: DiagnosticLog.microphoneEntitled, insertionAllowed: AXIsProcessTrusted()
+        )
+    }
+    private static var microphoneStatus: MicrophoneAuthorization {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized: .authorized
+        case .denied: .denied
+        case .restricted: .restricted
+        default: .notDetermined
+        }
+    }
     func requestMicrophone() {
         guard isEnabled, modelReady else { return }
-        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
-            Task { microphoneAllowed = await AVCaptureDevice.requestAccess(for: .audio) }
-        } else { openPrivacy("Microphone") }
+        let status = Self.microphoneStatus
+        if status == .notDetermined {
+            DiagnosticLog.record(.microphoneRequested(status))
+            Task {
+                microphoneAllowed = await AVCaptureDevice.requestAccess(for: .audio)
+                DiagnosticLog.record(.microphoneAnswered(granted: microphoneAllowed, now: Self.microphoneStatus))
+            }
+        } else {
+            DiagnosticLog.record(.microphoneSettingsOpened(status))
+            openPrivacy("Microphone")
+        }
     }
     func requestInsertion() {
         guard isEnabled else { return }
@@ -98,23 +123,39 @@ final class DictationController: ObservableObject {
         download = Task { [weak self] in
             guard let self else { return }
             defer { download = nil; downloadProgress = nil }
+            DiagnosticLog.record(.dictationDownloadStarted)
+            var installing = false
             do {
-                let progress = DictationDownloadProgress { [weak self] fraction in
-                    Task { @MainActor in if self?.download != nil { self?.downloadProgress = fraction } }
+                loggedQuarter = 0
+                let (archive, response) = try await DictationDownloader.download(DictationModelFiles.source) { [weak self] fraction in
+                    Task { @MainActor in self?.downloaded(fraction) }
                 }
-                let (archive, response) = try await URLSession.shared.download(from: DictationModelFiles.source, delegate: progress)
                 defer { try? FileManager.default.removeItem(at: archive) }
-                guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw DictationFailure("Download failed. Check your connection and try again.") }
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                let bytes = (try? archive.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
+                DiagnosticLog.record(.dictationDownloadAnswered(status: status, bytes: bytes))
+                guard status == 200 else { throw DictationFailure("Download failed. Check your connection and try again.") }
                 try Task.checkCancellation()
+                installing = true
                 // Installation and hashing do not block the main actor.
                 let worker = Task.detached { try DictationModelFiles.install(archive) }
                 try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
                 try Task.checkCancellation()
                 modelReady = true
-            } catch is CancellationError {} catch {
+                DiagnosticLog.record(.dictationModelInstalled)
+            } catch is CancellationError {
+                DiagnosticLog.record(.dictationDownloadCancelled)
+            } catch {
+                DiagnosticLog.record(installing ? .dictationInstallFailed(DiagnosticError(error)) : .dictationDownloadFailed(DiagnosticError(error)))
                 if !Task.isCancelled { self.error = "Download failed. Check your connection and free disk space, then try again." }
             }
         }
+    }
+    private func downloaded(_ fraction: Double) {
+        guard download != nil else { return }
+        downloadProgress = fraction
+        let quarter = Int(fraction * 4) * 25
+        if quarter > loggedQuarter, quarter < 100 { loggedQuarter = quarter; DiagnosticLog.record(.dictationDownloadProgress(percent: quarter)) }
     }
     func cancelDownload() { download?.cancel() }
     func setShortcut(_ shortcut: KeyShortcut) {
@@ -142,8 +183,8 @@ final class DictationController: ObservableObject {
     func begin() {
         guard isEnabled, session.phase == .idle else { return }
         refreshPermissions()
-        guard modelReady else { fail("Download the speech model in Dictation settings before recording."); return }
-        guard microphoneAllowed else { fail("Microphone access is required. Allow Capacity Notch in System Settings → Privacy & Security → Microphone."); return }
+        guard modelReady else { DiagnosticLog.record(.recordingRefused(reason: "model-missing")); fail("Download the speech model in Dictation settings before recording."); return }
+        guard microphoneAllowed else { DiagnosticLog.record(.recordingRefused(reason: "mic-\(Self.microphoneStatus.rawValue)")); fail("Microphone access is required. Allow Capacity Notch in System Settings → Privacy & Security → Microphone."); return }
         guard let id = session.begin() else { return }
         sessionReplacements = replacements
         dismiss?.cancel(); target = DictationDelivery.capture(); error = nil; deliveryMessage = nil; remaining = 60
@@ -158,6 +199,7 @@ final class DictationController: ObservableObject {
                 self?.finishRecording()
             } })
             presentation = .recording; hotKey?.captureEscape(true)
+            DiagnosticLog.record(.recordingStarted)
             clock = Task { [weak self] in
                 let start = ContinuousClock.now
                 for _ in 0..<60 {
@@ -168,7 +210,9 @@ final class DictationController: ObservableObject {
                     if remaining == 0 { finishRecording(); return }
                 }
             }
-        } catch { session.cancel(); fail("The microphone could not start. Check microphone access and your input device in System Settings.") }
+        } catch {
+            DiagnosticLog.record(.microphoneStartFailed(DiagnosticError(error)))
+            session.cancel(); fail("The microphone could not start. Check microphone access and your input device in System Settings.") }
     }
     func finishRecording() {
         guard let id = session.stop() else { return }
@@ -180,12 +224,14 @@ final class DictationController: ObservableObject {
                 let raw = try await engine.recognize(samples, folder: DictationModelFiles.directory)
                 guard let self, !Task.isCancelled, session.complete(id) else { return }
                 let result = DictationReplacement.apply(sessionReplacements, to: raw)
+                DiagnosticLog.record(.recognitionFinished(samples: samples.count, empty: result.isEmpty))
                 // Nothing to fix, only to try again, so it does not wait for Escape.
                 guard !result.isEmpty else { fail("No speech was recognised. Check your microphone and try again.", hidesAfter: .seconds(2.5)); return }
                 NSPasteboard.general.clearContents(); NSPasteboard.general.setString(result, forType: .string)
                 let delivery = target; target = nil
                 deliveryMessage = await delivery?.insert(result) ?? DictationDelivery.lastCaptureFailure ?? "No external application was captured when recording began."
                 presentation = deliveryMessage == nil ? .inserted : .copied
+                DiagnosticLog.record(.delivered(inserted: deliveryMessage == nil))
                 hotKey?.captureEscape(false)
                 history.append(result, enabled: keepsHistory); preferences.dictationHistory = history
                 let dismissDelay: Duration = .seconds(1.4)
@@ -195,6 +241,7 @@ final class DictationController: ObservableObject {
                 }
             } catch {
                 guard let self, !Task.isCancelled, session.complete(id) else { return }
+                DiagnosticLog.record(.recognitionFailed(DiagnosticError(error)))
                 fail(error.localizedDescription)
             }
         }

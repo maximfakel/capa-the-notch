@@ -17,6 +17,12 @@ enum CapacityNotchTestRunner {
             ("Dictation.replacements", dictationReplacesPhrasesWithoutSubstringsOrCascades),
             ("Dictation.history", dictationHistoryIsOptInBoundedAndPersistent),
             ("Dictation.session", dictationStopsOnceAndRejectsCancelledResults),
+            ("Localization.translationsKeepTheirArguments", everyTranslationKeepsItsSentencesNumbersAndNames),
+            ("Localization.systemFollowsTheMac", systemLanguageFollowsTheMacsFirstLanguage),
+            ("Localization.missingFallsBackToEnglish", aSentenceWithoutATranslationIsShownAsWritten),
+            ("Localization.choiceIsRemembered", theLanguageChoiceIsRemembered),
+            ("Diagnostics.dictationStatesReachTheReport", dictationStatesReachTheReportWhole),
+            ("Diagnostics.logLinesCarryCodes", aLogLineCarriesCodesAndNeverDescriptions),
             (
                 "TeleprompterTests.aScriptTakesAMinuteAtLeastAndRoundsToTheNearest",
                 aScriptTakesAMinuteAtLeastAndRoundsToTheNearest
