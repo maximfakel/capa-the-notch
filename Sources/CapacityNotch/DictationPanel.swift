@@ -11,7 +11,7 @@ final class DictationPanelController {
 
     init(controller: DictationController) {
         panel = Self.makePanel()
-        panel.contentView = NSHostingView(rootView: DictationCapsule(controller: controller).frame(width: 100, height: 100).padding(16))
+        panel.contentView = NSHostingView(rootView: FollowsLanguage { DictationCapsule(controller: controller).frame(width: 100, height: 100).padding(16) })
         observation = controller.$presentation.receive(on: DispatchQueue.main).sink { [weak self] state in
             guard let self else { return }
             if state == .hidden { panel.orderOut(nil) }
@@ -109,14 +109,14 @@ struct DictationCapsule: View {
         .onReceive(controller.audioLevel) { _audioLevel.wrappedValue = $0 }
         .popover(isPresented: _details.projectedValue, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: 12) {
-                Text(controller.presentation == .copied ? "Text copied, not inserted" : "Dictation stopped").font(.headline)
-                Text(controller.presentation == .copied ? (controller.deliveryMessage ?? "Insertion was unavailable.") : (controller.error ?? "Try again."))
+                Text(controller.presentation == .copied ? L("Text copied, not inserted") : L("Dictation stopped")).font(.headline)
+                Text(L(controller.presentation == .copied ? (controller.deliveryMessage ?? "Insertion was unavailable.") : (controller.error ?? "Try again.")))
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     if controller.presentation == .error {
-                        Button("Open Dictation Settings") { _details.wrappedValue = false; controller.cancel(); controller.openSettings() }
+                        Button(L("Open Dictation Settings")) { _details.wrappedValue = false; controller.cancel(); controller.openSettings() }
                     }
-                    Button("Dismiss") { _details.wrappedValue = false; controller.cancel() }
+                    Button(L("Dismiss")) { _details.wrappedValue = false; controller.cancel() }
                 }
             }.padding(18).frame(width: 310)
         }
@@ -124,12 +124,12 @@ struct DictationCapsule: View {
 
     private var accessibilityLabel: String {
         switch controller.presentation {
-        case .recording: "Recording. Release the shortcut to recognise. Escape cancels."
-        case .recognizing: "Recognising speech. Escape cancels."
-        case .inserted: "Text inserted and copied"
-        case .copied: "Text copied to clipboard. Tap for insertion details."
-        case .error: "Dictation error. Show details."
-        case .hidden: "Dictation"
+        case .recording: L("Recording. Release the shortcut to recognise. Escape cancels.")
+        case .recognizing: L("Recognising speech. Escape cancels.")
+        case .inserted: L("Text inserted and copied")
+        case .copied: L("Text copied to clipboard. Tap for insertion details.")
+        case .error: L("Dictation error. Show details.")
+        case .hidden: L("Dictation")
         }
     }
 }

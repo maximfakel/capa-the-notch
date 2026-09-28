@@ -89,6 +89,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             previewDictation(state)
             return
         }
+        // Hears the default input for a few seconds and says what came back,
+        // so a microphone can be checked without holding the shortcut.
+        if let seconds = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_MIC_TEST"].flatMap(Double.init) {
+            testMicrophone(for: seconds)
+            return
+        }
         if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_DICTATION"] {
             drawDictation(into: folder)
             NSApplication.shared.terminate(nil)
@@ -461,6 +467,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func testMicrophone(for seconds: Double) {
+        let microphone = DictationMicrophone()
+        let peak = LockedPeak()
+        let say = { (line: String) in FileHandle.standardError.write(Data((line + "\n").utf8)) }
+        microphone.inputChanged = { input in say("input changed: \(input.map { "\($0.sampleRate) Hz, \($0.channels) ch" } ?? "could not restart")") }
+        do {
+            let input = try microphone.start(level: { peak.note($0) }, limit: {})
+            say("input: \(input.sampleRate) Hz, \(input.channels) ch")
+        } catch {
+            say("start failed: \(error.localizedDescription)"); NSApplication.shared.terminate(nil); return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+            let samples = microphone.stop()
+            say("samples: \(samples.count) (\(String(format: "%.1f", Double(samples.count) / 16_000)) s), peak level: \(String(format: "%.2f", peak.value))")
+            NSApplication.shared.terminate(nil)
+        }
+    }
+
     private func drawDictation(into folder: String) {
         let suite = "capacity-notch-dictation-dump-\(UUID())"
         guard let defaults = UserDefaults(suiteName: suite) else { return }
@@ -703,4 +727,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+}
+
+/// The loudest level heard, for the microphone check.
+private final class LockedPeak: @unchecked Sendable {
+    private let lock = NSLock()
+    private var peak: Float = 0
+    func note(_ level: Float) { lock.withLock { peak = max(peak, level) } }
+    var value: Float { lock.withLock { peak } }
 }

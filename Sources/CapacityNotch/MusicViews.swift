@@ -199,11 +199,11 @@ struct MusicControls: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            control("backward.fill", size: small, label: "Previous track") { send(.previous) }
-            control(isPlaying ? "pause.fill" : "play.fill", size: large, label: isPlaying ? "Pause" : "Play") {
+            control("backward.fill", size: small, label: L("Previous track")) { send(.previous) }
+            control(isPlaying ? "pause.fill" : "play.fill", size: large, label: isPlaying ? L("Pause") : L("Play")) {
                 send(.togglePlayPause)
             }
-            control("forward.fill", size: small, label: "Next track") { send(.next) }
+            control("forward.fill", size: small, label: L("Next track")) { send(.next) }
         }
         .foregroundStyle(.white)
     }
@@ -274,7 +274,7 @@ struct CompactMusicRow: View {
     }
 
     static func spoken(_ track: NowPlaying) -> String {
-        let state = track.isPlaying ? "Now playing" : "Paused"
+        let state = track.isPlaying ? L("Now playing") : L("Paused")
         return [state, track.title, track.artist].compactMap(\.self).joined(separator: ", ")
     }
 }
@@ -383,8 +383,8 @@ private struct MusicProgress: View {
             .frame(height: 14)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Position")
-        .accessibilityValue("\(Self.clock(position)) of \(Self.clock(duration))")
+        .accessibilityLabel(L("Position"))
+        .accessibilityValue(L("%@ of %@", Self.clock(position), Self.clock(duration)))
     }
 
     static func clock(_ seconds: TimeInterval) -> String {

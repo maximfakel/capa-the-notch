@@ -121,8 +121,10 @@ final class SettingsModel: ObservableObject {
     /// The language Settings speak; changing it redraws them at once.
     @Published var language: AppLanguage {
         didSet {
-            preferences.language = language
+            // The language first: the defaults write below is what the
+            // notch and the menu watch, and they must redraw in the new one.
             Localization.current = language
+            preferences.language = language
             application.applyLanguage()
         }
     }

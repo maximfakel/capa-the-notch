@@ -53,11 +53,14 @@ final class DictationController: ObservableObject {
                 .sink { [weak self] _ in Task { @MainActor in self?.refreshPermissions() } }
             NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.willSleepNotification)
                 .sink { [weak self] _ in Task { @MainActor in self?.keyHeld = false; self?.cancel() } }.store(in: &systemObservers)
-            NotificationCenter.default.publisher(for: .AVAudioEngineConfigurationChange)
-                .sink { [weak self] _ in Task { @MainActor in
-                    guard let self, self.presentation == .recording else { return }
-                    self.cancel(); self.fail("The microphone changed. Select your input device and try again.")
-                } }.store(in: &systemObservers)
+            // A headset connecting or leaving mid-recording: capture goes on
+            // with the new input, keeping what was already heard.
+            microphone.inputChanged = { [weak self] input in
+                guard let self, presentation == .recording else { return }
+                DiagnosticLog.record(.microphoneInputChanged(input.map { .init(sampleRate: $0.sampleRate, channels: $0.channels) }))
+                guard input == nil else { return }
+                cancel(); fail("The microphone changed. Select your input device and try again.")
+            }
             register()
         }
     }
@@ -189,7 +192,7 @@ final class DictationController: ObservableObject {
         sessionReplacements = replacements
         dismiss?.cancel(); target = DictationDelivery.capture(); error = nil; deliveryMessage = nil; remaining = 60
         do {
-            try microphone.start(level: { [weak self] value in
+            let input = try microphone.start(level: { [weak self] value in
                 Task { @MainActor in
                     guard self?.session.phase == .recording(id) else { return }
                     self?.audioLevel.send(value)
@@ -199,7 +202,7 @@ final class DictationController: ObservableObject {
                 self?.finishRecording()
             } })
             presentation = .recording; hotKey?.captureEscape(true)
-            DiagnosticLog.record(.recordingStarted)
+            DiagnosticLog.record(.recordingStarted(.init(sampleRate: input.sampleRate, channels: input.channels)))
             clock = Task { [weak self] in
                 let start = ContinuousClock.now
                 for _ in 0..<60 {
@@ -218,6 +221,7 @@ final class DictationController: ObservableObject {
         guard let id = session.stop() else { return }
         clock?.cancel(); clock = nil
         let samples = microphone.stop()
+        DiagnosticLog.record(.recordingStopped(samples: samples.count))
         presentation = .recognizing; audioLevel.send(0)
         recognition = Task { [weak self, engine] in
             do {

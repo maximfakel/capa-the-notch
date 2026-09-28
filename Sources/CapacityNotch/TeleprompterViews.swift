@@ -33,7 +33,7 @@ struct TeleprompterRow: View {
                         .frame(width: TeleprompterLayout.controlsWidth, height: TeleprompterLayout.lineHeight(size))
                         .contentShape(Rectangle())
                 }
-                .accessibilityLabel(teleprompter.playback.state == .running ? "Pause" : "Start")
+                .accessibilityLabel(teleprompter.playback.state == .running ? L("Pause") : L("Start"))
                 Button { teleprompter.stop() } label: {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 14, weight: .semibold))
@@ -41,7 +41,7 @@ struct TeleprompterRow: View {
                         .frame(width: TeleprompterLayout.controlsWidth, height: TeleprompterLayout.lineHeight(size))
                         .contentShape(Rectangle())
                 }
-                .accessibilityLabel("Stop")
+                .accessibilityLabel(L("Stop"))
             }
             .buttonStyle(.plain)
             .padding(.top, TeleprompterLayout.topInset)
@@ -258,10 +258,10 @@ private extension TeleprompterPlayback.State {
 
     var spoken: String {
         switch self {
-        case .running: "Teleprompter, running"
-        case .paused: "Teleprompter, paused"
-        case .finished: "Teleprompter, finished"
-        case .stopped: "Teleprompter, stopped"
+        case .running: L("Teleprompter, running")
+        case .paused: L("Teleprompter, paused")
+        case .finished: L("Teleprompter, finished")
+        case .stopped: L("Teleprompter, stopped")
         }
     }
 }
@@ -296,7 +296,7 @@ struct TeleprompterPage: View {
         return VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: TeleprompterLayout.lineGap) {
                 if teleprompter.lines.isEmpty {
-                    Text("Paste a Script, or write one in Settings.")
+                    Text(L("Paste a Script, or write one in Settings."))
                         .font(font)
                         .foregroundStyle(SurfaceType.captionColour)
                         .frame(height: lineHeight)
@@ -324,7 +324,7 @@ struct TeleprompterPage: View {
                         .contentShape(Rectangle())
                 }
                 .disabled(teleprompter.lines.isEmpty)
-                .accessibilityLabel(playback.state == .running ? "Pause" : "Start")
+                .accessibilityLabel(playback.state == .running ? L("Pause") : L("Start"))
 
                 Button { teleprompter.stop() } label: {
                     Image(systemName: "stop.fill")
@@ -333,33 +333,33 @@ struct TeleprompterPage: View {
                         .frame(height: 18)
                         .contentShape(Rectangle())
                 }
-                .accessibilityLabel("Stop")
+                .accessibilityLabel(L("Stop"))
 
                 HStack(spacing: 10) {
                     Button { teleprompter.slower() } label: {
                         Image(systemName: "minus").font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(SurfaceType.captionColour)
                     }
-                    .accessibilityLabel("Slower")
+                    .accessibilityLabel(L("Slower"))
 
                     Text(String(format: "%.2fx", playback.multiplier))
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .monospacedDigit()
-                        .accessibilityLabel("Speed")
-                        .accessibilityValue(String(format: "%.2f times", playback.multiplier))
+                        .accessibilityLabel(L("Speed"))
+                        .accessibilityValue(L("%.2f times", playback.multiplier))
 
                     Button { teleprompter.faster() } label: {
                         Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(SurfaceType.captionColour)
                     }
-                    .accessibilityLabel("Faster")
+                    .accessibilityLabel(L("Faster"))
                 }
 
                 Spacer()
 
                 HStack(spacing: 16) {
-                    Button("Paste") { teleprompter.pasteFromClipboard() }
-                    Button("Edit Script") { teleprompter.openSettings() }
+                    Button(L("Paste")) { teleprompter.pasteFromClipboard() }
+                    Button(L("Edit Script")) { teleprompter.openSettings() }
                 }
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(SurfaceType.captionColour)
@@ -434,8 +434,8 @@ private struct ScriptProgress: View {
             .frame(height: 14)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Progress through the Script")
-        .accessibilityValue("\(Int((fraction * 100).rounded())) percent")
+        .accessibilityLabel(L("Progress through the Script"))
+        .accessibilityValue(L("%d percent", Int((fraction * 100).rounded())))
     }
 
     static func clock(_ seconds: TimeInterval) -> String {

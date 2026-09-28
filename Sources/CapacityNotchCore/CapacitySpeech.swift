@@ -5,9 +5,9 @@ public extension CapacityPace {
     /// tell the three colours apart.
     var spoken: String {
         switch self {
-        case .sustainable: "on pace"
-        case .tightening: "tightening"
-        case .unsustainable: "running out"
+        case .sustainable: Localization.text("on pace")
+        case .tightening: Localization.text("tightening")
+        case .unsustainable: Localization.text("running out")
         }
     }
 
@@ -30,18 +30,18 @@ public enum CapacitySpeech {
         formatter: DateFormatter = CapacitySpeech.clock
     ) -> String {
         var parts = [
-            "\(window.label) window",
-            "\(Int(window.remainingPercentage)) percent left",
+            Localization.format("%@ window", Localization.windowLabel(window.label)),
+            Localization.format("%d percent left", Int(window.remainingPercentage)),
             window.pace.spoken,
-            "\(Int((window.usedFraction * 100).rounded())) percent used",
+            Localization.format("%d percent used", Int((window.usedFraction * 100).rounded())),
         ]
 
         if let resetsAt = window.resetsAt {
             parts.append(
-                "resets in \(ResetCountdown.text(until: resetsAt, at: now)), at \(formatter.string(from: resetsAt))"
+                Localization.format("resets in %@, at %@", ResetCountdown.text(until: resetsAt, at: now), formatter.string(from: resetsAt))
             )
         } else {
-            parts.append("reset time not reported")
+            parts.append(Localization.text("reset time not reported"))
         }
 
         return parts.joined(separator: ", ")
@@ -53,7 +53,7 @@ public enum CapacitySpeech {
         var parts = [snapshot.provider.spokenName, snapshot.connectionState.spoken]
 
         if let reason = snapshot.statusReason, snapshot.connectionState != .fresh {
-            parts.append(reason.guidance)
+            parts.append(reason.localizedGuidance)
         }
 
         parts.append(contentsOf: snapshot.windows.map { window($0, at: now) })
@@ -63,14 +63,14 @@ public enum CapacitySpeech {
     /// The closed strip's figure for one Provider.
     public static func compact(_ snapshot: CapacitySnapshot, at now: Date) -> String {
         guard let headline = snapshot.headlineWindow else {
-            let reason = snapshot.statusReason?.guidance ?? "no Capacity read"
+            let reason = snapshot.statusReason?.localizedGuidance ?? Localization.text("no Capacity read")
             return "\(snapshot.provider.spokenName), \(reason)"
         }
 
         return [
             snapshot.provider.spokenName,
-            "\(headline.label) window",
-            "\(Int(headline.remainingPercentage)) percent left",
+            Localization.format("%@ window", Localization.windowLabel(headline.label)),
+            Localization.format("%d percent left", Int(headline.remainingPercentage)),
             headline.pace.spoken,
         ].joined(separator: ", ")
     }
@@ -95,11 +95,11 @@ public extension Provider {
 public extension CapacityConnectionState {
     var spoken: String {
         switch self {
-        case .mock: "mock Capacity"
-        case .connecting: "connecting"
-        case .fresh: "Fresh Capacity"
-        case .stale: "Stale Capacity"
-        case .disconnected: "disconnected"
+        case .mock: Localization.text("mock Capacity")
+        case .connecting: Localization.text("connecting")
+        case .fresh: Localization.text("Fresh Capacity")
+        case .stale: Localization.text("Stale Capacity")
+        case .disconnected: Localization.text("disconnected")
         }
     }
 }

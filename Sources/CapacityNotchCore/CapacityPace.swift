@@ -84,7 +84,7 @@ public extension CapacitySnapshot {
 public enum ResetCountdown {
     public static func text(until resetsAt: Date, at now: Date) -> String {
         let remaining = Int(resetsAt.timeIntervalSince(now).rounded())
-        guard remaining > 0 else { return "moments" }
+        guard remaining > 0 else { return Localization.text("moments") }
 
         let hours = remaining / 3600
         let minutes = (remaining % 3600) / 60
@@ -92,11 +92,11 @@ public enum ResetCountdown {
         if hours >= 24 {
             let days = hours / 24
             let spareHours = hours % 24
-            return spareHours > 0 ? "\(days)d \(spareHours)h" : "\(days)d"
+            return spareHours > 0 ? Localization.format("%dd %dh", days, spareHours) : Localization.format("%dd", days)
         }
         if hours > 0 {
-            return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
+            return minutes > 0 ? Localization.format("%dh %dm", hours, minutes) : Localization.format("%dh", hours)
         }
-        return remaining >= 60 ? "\(minutes)m" : "under a minute"
+        return remaining >= 60 ? Localization.format("%dm", minutes) : Localization.text("under a minute")
     }
 }

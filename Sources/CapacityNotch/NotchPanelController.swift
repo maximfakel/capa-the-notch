@@ -44,18 +44,17 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         self.refresh = refresh
 
         let panel = Self.makePanel()
-        let host = SurfaceHostingView(
-            rootView: NotchRootView(
-                store: store,
-                metrics: metrics,
-                music: music,
-                teleprompter: teleprompter,
-                pages: pages,
-                shape: shape,
-                connect: connect,
-                refresh: refresh
-            )
+        let root = NotchRootView(
+            store: store,
+            metrics: metrics,
+            music: music,
+            teleprompter: teleprompter,
+            pages: pages,
+            shape: shape,
+            connect: connect,
+            refresh: refresh
         )
+        let host = SurfaceHostingView(rootView: FollowsLanguage { root })
         // The panel alone decides the window's size. As the window's content
         // view, a hosting view resizes the window itself to follow a SwiftUI
         // animation (`updateAnimatedWindowSize`) — with the shape on a spring
@@ -305,6 +304,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                     .write(to: URL(fileURLWithPath: folder).appendingPathComponent(name))
             }
             let geometry = metrics.geometry
+            // A card with windows in it, which a fresh launch has not read yet.
+            picture(ProviderCard(snapshot: sample, now: Date(), connect: {}, refresh: {}), width: 256, named: "card.png")
             picture(
                 VStack(spacing: 0) {
                     SurfaceColumn(

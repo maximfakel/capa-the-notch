@@ -1,7 +1,7 @@
 import Foundation
 
-/// The language Settings and the menu speak. The notch and notifications stay
-/// in English for now; Settings are where a person reads whole sentences.
+/// The language Capacity Notch speaks: Settings, the menu, the notch and its
+/// notifications. Onboarding stays in English for now.
 public enum AppLanguage: String, CaseIterable, Sendable {
     case system
     case english
@@ -52,6 +52,26 @@ public enum Localization {
 
     public static func format(_ english: String, _ arguments: CVarArg..., in language: AppLanguage = current) -> String {
         String(format: text(english, in: language), locale: language.locale, arguments: arguments)
+    }
+
+    /// A Provider's window names arrive as English data ("5 hour", "Weekly");
+    /// Russian says them itself, shortly, as the notch has little room.
+    public static func windowLabel(_ label: String, in language: AppLanguage = current) -> String {
+        guard language.resolved() == .russian else { return label }
+        switch label {
+        case "Weekly": return "Неделя"
+        case "Daily": return "День"
+        case "Quota": return "Лимит"
+        default: break
+        }
+        let parts = label.split(separator: " ")
+        guard parts.count == 2, let count = Int(parts[0]) else { return label }
+        switch parts[1] {
+        case "hour": return "\(count) ч"
+        case "minute": return "\(count) мин"
+        case "day": return "\(count) дн."
+        default: return label
+        }
     }
 
     public static let russian: [String: String] = [
@@ -218,12 +238,94 @@ public enum Localization {
         "Download the speech model in Dictation settings before recording.": "Перед записью загрузите языковую модель в настройках диктовки.",
         "Microphone access is required. Allow Capacity Notch in System Settings → Privacy & Security → Microphone.": "Нужен доступ к микрофону. Разрешите Capacity Notch в Системных настройках → Конфиденциальность и безопасность → Микрофон.",
         "The microphone could not start. Check microphone access and your input device in System Settings.": "Микрофон не запустился. Проверьте доступ к микрофону и устройство ввода в Системных настройках.",
+        "No speech was recorded. Hold the shortcut while speaking.": "Речь не записана. Удерживайте сочетание, пока говорите.",
         "No speech was recognised. Check your microphone and try again.": "Речь не распознана. Проверьте микрофон и попробуйте снова.",
         "The microphone changed. Select your input device and try again.": "Микрофон сменился. Выберите устройство ввода и попробуйте снова.",
         "No microphone is available. Connect one and try again.": "Микрофон не найден. Подключите его и попробуйте снова.",
         "The speech model could not load. Download it again in Dictation settings.": "Языковая модель не загрузилась. Загрузите её заново в настройках диктовки.",
         "The speech model is missing or damaged. Download it again in Dictation settings.": "Языковая модель отсутствует или повреждена. Загрузите её заново в настройках диктовки.",
         "The download could not be unpacked. Check free disk space and try again.": "Загрузку не удалось распаковать. Проверьте свободное место и попробуйте снова.",
+
+        // The notch
+        "Next page": "Следующая страница",
+        "Previous page": "Предыдущая страница",
+        "Show or hide Capacity details": "Показать или скрыть лимиты",
+        "Connect": "Подключить",
+        "Connect this Provider": "Подключить провайдера",
+        "Refresh %@ Capacity": "Обновить лимиты %@",
+        "%d%% left": "Осталось %d%%",
+        "%d%% used": "Использовано %d%%",
+        "Fresh": "Свежие",
+        "Stale": "Устарели",
+        "reset time not reported": "время сброса неизвестно",
+        "resets in %@ · %@": "сброс через %@ · %@",
+        "Mock capacity": "Демо-лимиты",
+        "Read at %@": "Обновлено в %@",
+        "Last read at %@": "Последнее обновление в %@",
+        "moments": "мгновение",
+        "under a minute": "меньше минуты",
+        "%dd %dh": "%d д %d ч",
+        "%dd": "%d д",
+        "%dh %dm": "%d ч %d мин",
+        "%dh": "%d ч",
+        "%dm": "%d мин",
+        "Previous track": "Предыдущий трек",
+        "Next track": "Следующий трек",
+        "Play": "Воспроизвести",
+        "Pause": "Пауза",
+        "Start": "Старт",
+        "Now playing": "Сейчас играет",
+        "Paused": "На паузе",
+        "Position": "Позиция",
+        "%@ of %@": "%@ из %@",
+        "Teleprompter, running": "Телесуфлёр, идёт",
+        "Teleprompter, paused": "Телесуфлёр, на паузе",
+        "Teleprompter, finished": "Телесуфлёр, закончен",
+        "Teleprompter, stopped": "Телесуфлёр, остановлен",
+        "Paste a Script, or write one in Settings.": "Вставьте текст или напишите его в настройках.",
+        "%.2f times": "%.2f×",
+        "Paste": "Вставить",
+        "Edit Script": "Изменить текст",
+        "Progress through the Script": "Прогресс текста",
+        "%d percent": "%d%%",
+        "Text copied, not inserted": "Текст скопирован, но не вставлен",
+        "Dictation stopped": "Диктовка остановлена",
+        "Insertion was unavailable.": "Вставка недоступна.",
+        "Try again.": "Попробуйте снова.",
+        "Open Dictation Settings": "Открыть настройки диктовки",
+        "Dismiss": "Закрыть",
+        "Recording. Release the shortcut to recognise. Escape cancels.": "Запись. Отпустите сочетание, чтобы распознать. Esc отменяет.",
+        "Recognising speech. Escape cancels.": "Распознаём речь. Esc отменяет.",
+        "Text inserted and copied": "Текст вставлен и скопирован",
+        "Text copied to clipboard. Tap for insertion details.": "Текст скопирован в буфер. Нажмите, чтобы узнать подробности.",
+        "Dictation error. Show details.": "Ошибка диктовки. Показать подробности.",
+        "No external application was captured when recording began.": "Когда началась запись, не было приложения, куда вставить текст.",
+        "The target application stopped being active before insertion.": "Приложение перестало быть активным до вставки.",
+        "The field changed during Accessibility insertion; paste was skipped to avoid duplicating text.": "Поле изменилось во время вставки; вставка пропущена, чтобы не задвоить текст.",
+        "The captured field lost focus before insertion.": "Поле потеряло фокус до вставки.",
+        "The target application or text field changed before insertion.": "Приложение или поле изменилось до вставки.",
+        "Recognition could not start. Try again.": "Распознавание не запустилось. Попробуйте снова.",
+        "Recognition failed. Try again.": "Распознавание не удалось. Попробуйте снова.",
+
+        // Notifications
+        "%@ is running out": "У %@ заканчиваются лимиты",
+        "%@: %d%% left": "%@: осталось %d%%",
+        "%@, resets in %@": "%@, сброс через %@",
+
+        // VoiceOver
+        "on pace": "в норме",
+        "tightening": "сокращаются",
+        "running out": "заканчиваются",
+        "%@ window": "окно %@",
+        "%d percent left": "осталось %d%%",
+        "%d percent used": "использовано %d%%",
+        "resets in %@, at %@": "сброс через %@, в %@",
+        "no Capacity read": "лимиты не прочитаны",
+        "mock Capacity": "демо-лимиты",
+        "connecting": "подключение",
+        "Fresh Capacity": "свежие лимиты",
+        "Stale Capacity": "устаревшие лимиты",
+        "disconnected": "нет данных",
 
         // Diagnostics
         "Keep a log for bug reports": "Вести журнал для отчётов об ошибках",

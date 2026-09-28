@@ -155,8 +155,8 @@ struct NotchRootView: View {
             // screen, as the swipe is the only thing drawn.
             .accessibilityActions {
                 if store.presentation == .expanded, pages.available.count > 1 {
-                    Button("Next page") { pages.next() }
-                    Button("Previous page") { pages.previous() }
+                    Button(L("Next page")) { pages.next() }
+                    Button(L("Previous page")) { pages.previous() }
                 }
             }
         }
@@ -391,7 +391,7 @@ private struct CompactCapacityView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Show or hide Capacity details")
+        .accessibilityLabel(L("Show or hide Capacity details"))
     }
 }
 
@@ -516,7 +516,7 @@ private struct ConnectAction: View {
     var body: some View {
         VStack(spacing: 12) {
             if let reason, reason.needsAPersonFirst {
-                Text(reason.guidance)
+                Text(reason.localizedGuidance)
                     .font(SurfaceType.guidance)
                     .foregroundStyle(SurfaceType.captionColour)
                     .fixedSize(horizontal: false, vertical: true)
@@ -524,7 +524,7 @@ private struct ConnectAction: View {
             }
 
             Button(action: connect) {
-                Text("Connect")
+                Text(L("Connect"))
                     .font(SurfaceType.windowLabel)
                     .foregroundStyle(.white)
                     .frame(height: 18)
@@ -534,7 +534,7 @@ private struct ConnectAction: View {
             }
             .buttonStyle(.plain)
             .focusable()
-            .accessibilityLabel("Connect this Provider")
+            .accessibilityLabel(L("Connect this Provider"))
         }
         .frame(maxWidth: .infinity)
     }
@@ -577,7 +577,7 @@ struct ProviderCard: View {
                 .buttonStyle(.plain)
                 .focusable()
                 .accessibilityLabel(
-                    "Refresh \(snapshot.provider.presentation.displayName) Capacity"
+                    L("Refresh %@ Capacity", snapshot.provider.presentation.displayName)
                 )
             }
             .frame(height: SurfaceType.headerRow)
@@ -592,7 +592,7 @@ struct ProviderCard: View {
                 .padding(.top, 20)
                 .padding(.bottom, 6)
             } else if let reason = snapshot.statusReason, reason.repeatsTheChip == false {
-                Text(reason.guidance)
+                Text(reason.localizedGuidance)
                     .font(SurfaceType.guidance)
                     .foregroundStyle(SurfaceType.captionColour)
                     .fixedSize(horizontal: false, vertical: true)
@@ -602,10 +602,10 @@ struct ProviderCard: View {
             ForEach(snapshot.windows, id: \.id) { window in
                 VStack(alignment: .leading, spacing: 7) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(window.label)
+                        Text(Localization.windowLabel(window.label))
                             .font(SurfaceType.windowLabel)
                         Spacer()
-                        Text("\(Int(window.remainingPercentage))% left")
+                        Text(L("%d%% left", Int(window.remainingPercentage)))
                             .font(SurfaceType.capacity)
                             .monospacedDigit()
                             .foregroundStyle(window.pace.tint)
@@ -618,7 +618,7 @@ struct ProviderCard: View {
                     )
 
                     HStack(spacing: 5) {
-                        Text("\(Int((window.usedFraction * 100).rounded()))% used")
+                        Text(L("%d%% used", Int((window.usedFraction * 100).rounded())))
                         Text("·")
                         Text(window.resetText(at: now))
                     }
@@ -681,13 +681,13 @@ private extension CapacityConnectionState {
     var presentation: ConnectionStatePresentation {
         switch self {
         case .mock:
-            ConnectionStatePresentation(label: "Mock", tint: SurfaceType.captionColour)
+            ConnectionStatePresentation(label: L("Mock"), tint: SurfaceType.captionColour)
         case .connecting:
-            ConnectionStatePresentation(label: "Connecting", tint: SurfaceType.captionColour)
+            ConnectionStatePresentation(label: L("Connecting"), tint: SurfaceType.captionColour)
         case .fresh:
-            ConnectionStatePresentation(label: "Fresh", tint: SurfaceType.green)
+            ConnectionStatePresentation(label: L("Fresh"), tint: SurfaceType.green)
         case .stale:
-            ConnectionStatePresentation(label: "Stale", tint: SurfaceType.yellow)
+            ConnectionStatePresentation(label: L("Stale"), tint: SurfaceType.yellow)
         case .disconnected:
             // A dash, not a word. The card's body says what to do about it.
             ConnectionStatePresentation(label: "—", tint: SurfaceType.red)
@@ -698,9 +698,9 @@ private extension CapacityConnectionState {
 
 private extension QuotaWindow {
     func resetText(at now: Date) -> String {
-        guard let resetsAt else { return "reset time not reported" }
-        let clock = resetsAt.formatted(date: .omitted, time: .shortened)
-        return "resets in \(ResetCountdown.text(until: resetsAt, at: now)) · \(clock)"
+        guard let resetsAt else { return L("reset time not reported") }
+        let clock = resetsAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))
+        return L("resets in %@ · %@", ResetCountdown.text(until: resetsAt, at: now), clock)
     }
 }
 
@@ -719,11 +719,11 @@ private extension CapacityProvenance {
     var headline: String? {
         switch self {
         case .mock:
-            "Mock capacity"
+            L("Mock capacity")
         case let .fresh(readAt):
-            "Read at \(readAt.formatted(date: .omitted, time: .shortened))"
+            L("Read at %@", readAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale)))
         case let .stale(readAt):
-            "Last read at \(readAt.formatted(date: .omitted, time: .shortened))"
+            L("Last read at %@", readAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale)))
         case .disconnected:
             nil
         }

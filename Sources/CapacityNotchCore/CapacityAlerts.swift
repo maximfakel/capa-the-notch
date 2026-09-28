@@ -88,7 +88,7 @@ public struct CapacityAlertDecider: Sendable {
                 CapacityAlert(
                     provider: snapshot.provider,
                     windowID: window.id,
-                    title: "\(snapshot.provider.spokenName) is running out",
+                    title: Localization.format("%@ is running out", snapshot.provider.spokenName),
                     body: Self.body(for: window, at: now)
                 )
             )
@@ -98,9 +98,9 @@ public struct CapacityAlertDecider: Sendable {
     }
 
     private static func body(for window: QuotaWindow, at now: Date) -> String {
-        let left = "\(window.label): \(Int(window.remainingPercentage))% left"
+        let left = Localization.format("%@: %d%% left", Localization.windowLabel(window.label), Int(window.remainingPercentage))
         guard let resetsAt = window.resetsAt else { return left }
-        return "\(left), resets in \(ResetCountdown.text(until: resetsAt, at: now))"
+        return Localization.format("%@, resets in %@", left, ResetCountdown.text(until: resetsAt, at: now))
     }
 
     /// Forgets everything said, for a Provider that has been disconnected on

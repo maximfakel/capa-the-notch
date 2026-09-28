@@ -21,6 +21,7 @@ enum CapacityNotchTestRunner {
             ("Localization.systemFollowsTheMac", systemLanguageFollowsTheMacsFirstLanguage),
             ("Localization.missingFallsBackToEnglish", aSentenceWithoutATranslationIsShownAsWritten),
             ("Localization.choiceIsRemembered", theLanguageChoiceIsRemembered),
+            ("Localization.russianAlert", aRussianAlertSaysItAllInRussian),
             ("Diagnostics.dictationStatesReachTheReport", dictationStatesReachTheReportWhole),
             ("Diagnostics.logLinesCarryCodes", aLogLineCarriesCodesAndNeverDescriptions),
             (

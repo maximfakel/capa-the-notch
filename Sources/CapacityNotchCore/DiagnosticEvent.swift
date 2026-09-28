@@ -19,7 +19,9 @@ public enum DiagnosticEvent: Equatable, Sendable {
     case microphoneAnswered(granted: Bool, now: MicrophoneAuthorization)
     case microphoneSettingsOpened(MicrophoneAuthorization)
     case microphoneStartFailed(DiagnosticError)
-    case recordingStarted
+    case recordingStarted(AudioInput)
+    case microphoneInputChanged(AudioInput?)
+    case recordingStopped(samples: Int)
     case recordingRefused(reason: String)
     case recognitionFinished(samples: Int, empty: Bool)
     case recognitionFailed(DiagnosticError)
@@ -40,7 +42,9 @@ public enum DiagnosticEvent: Equatable, Sendable {
         case let .microphoneAnswered(granted, now): "microphone answered \(granted ? "granted" : "refused") now \(now.rawValue)"
         case let .microphoneSettingsOpened(status): "microphone settings opened at \(status.rawValue)"
         case let .microphoneStartFailed(error): "microphone start failed \(error.code)"
-        case .recordingStarted: "recording started"
+        case let .recordingStarted(input): "recording started \(input.code)"
+        case let .microphoneInputChanged(input): "microphone input changed \(input?.code ?? "and could not restart")"
+        case let .recordingStopped(samples): "recording stopped samples \(samples)"
         case let .recordingRefused(reason): "recording refused \(reason)"
         case let .recognitionFinished(samples, empty): "recognition finished samples \(samples)\(empty ? " empty" : "")"
         case let .recognitionFailed(error): "recognition failed \(error.code)"
@@ -70,6 +74,15 @@ public struct DiagnosticError: Equatable, Sendable {
     }
 
     public var code: String { "\(domain) \(number)" }
+}
+
+/// The input's shape, which tells a Bluetooth headset (16 kHz, one channel)
+/// from the Mac's microphones without naming any device.
+public struct AudioInput: Equatable, Sendable {
+    public let sampleRate: Int
+    public let channels: Int
+    public init(sampleRate: Int, channels: Int) { self.sampleRate = sampleRate; self.channels = channels }
+    public var code: String { "\(sampleRate)Hz \(channels)ch" }
 }
 
 public enum MicrophoneAuthorization: String, Sendable {

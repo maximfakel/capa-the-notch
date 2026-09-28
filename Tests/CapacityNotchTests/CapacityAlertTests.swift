@@ -134,3 +134,17 @@ func disconnectingAProviderForgetsWhatWasSaid() throws {
         "Forgetting Codex keeps what Claude Code has already said"
     )
 }
+
+func aRussianAlertSaysItAllInRussian() throws {
+    Localization.current = .russian
+    defer { Localization.current = .english }
+    var decider = CapacityAlertDecider()
+    let raised = decider.alerts(for: snapshot(used: 0.96), at: alertAt, isEnabled: always)
+    try expect(raised.count == 1, "Four percent left is news in Russian too")
+    try expect(raised[0].title == "У Codex заканчиваются лимиты", "The title, got \(raised[0].title)")
+    try expect(raised[0].body.contains("осталось 4%"), "What is left, got \(raised[0].body)")
+    try expect(raised[0].body.contains("сброс через"), "And how long it has, got \(raised[0].body)")
+    try expect(!raised[0].body.contains("hour"), "The window's name is said in Russian, got \(raised[0].body)")
+    try expect(ResetCountdown.text(until: alertAt.addingTimeInterval(187_200), at: alertAt) == "2 д 4 ч", "Days and hours, shortly")
+    try expect(ResetCountdown.text(until: alertAt.addingTimeInterval(30), at: alertAt) == "меньше минуты", "Under a minute")
+}

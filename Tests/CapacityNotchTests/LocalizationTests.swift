@@ -2,7 +2,8 @@ import CapacityNotchCore
 import Foundation
 
 private func specifiers(_ text: String) -> [String] {
-    let regex = try! NSRegularExpression(pattern: "%(?:%|@|d)")
+    // Arguments only: a literal "%%" is a percent sign either language may write.
+    let regex = try! NSRegularExpression(pattern: "%(?:\\.\\d)?[@df]")
     return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).map { (text as NSString).substring(with: $0.range) }
 }
 
@@ -60,4 +61,8 @@ func aLogLineCarriesCodesAndNeverDescriptions() throws {
     try expect(line == "1970-01-01T00:00:00Z capacity-notch dictation download failed NSURLErrorDomain -1001", "An error is its domain and code: \(line)")
     let answered = DiagnosticEvent.microphoneAnswered(granted: false, now: .notDetermined).line
     try expect(answered == "microphone answered refused now not-determined", "A refusal without a prompt is visible: \(answered)")
+    let headset = AudioInput(sampleRate: 16_000, channels: 1)
+    try expect(DiagnosticEvent.recordingStarted(headset).line == "recording started 16000Hz 1ch", "The input's shape, not its name")
+    try expect(DiagnosticEvent.microphoneInputChanged(nil).line == "microphone input changed and could not restart", "A lost input says so")
+    try expect(DiagnosticEvent.recordingStopped(samples: 0).line == "recording stopped samples 0", "Silence is visible before recognition")
 }
