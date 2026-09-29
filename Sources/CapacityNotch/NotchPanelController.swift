@@ -312,6 +312,30 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                     .write(to: URL(fileURLWithPath: folder).appendingPathComponent(name))
             }
             let geometry = metrics.geometry
+            // The shape itself, shoulders and all, over a menu bar, at both
+            // scalings a MacBook Pro draws its notch at.
+            for (name, notch, bar) in [("shape-default", CGFloat(185), CGFloat(32)), ("shape-more-space", 220, 38)] {
+                let drawn = NotchGeometry(menuBarHeight: bar, notchWidth: notch)
+                let full = [sample, CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: sample.windows, connectionState: .fresh)]
+                for (state, expanded) in [("compact", false), ("expanded", true)] {
+                    let width = expanded ? drawn.surfaceWidth() : drawn.compactWidth()
+                    let height = expanded ? CGFloat(252 - 38) + bar : bar
+                    let outline = NotchOutline(size: CGSize(width: width, height: height), radius: expanded ? 38 : 22)
+                    picture(
+                        ZStack(alignment: .top) {
+                            Color(white: 0.63)
+                            Rectangle().fill(Color(white: 0.56)).frame(height: bar)
+                            outline.fill(Color.black)
+                            SurfaceColumn(snapshots: full, geometry: drawn, now: Date(), isExpanded: expanded,
+                                          connect: { _ in }, refresh: { _ in }, toggle: {})
+                                .frame(width: drawn.surfaceWidth(), height: height, alignment: .top)
+                                .clipShape(outline)
+                        }
+                        .frame(width: drawn.surfaceWidth() + 60, height: height + 30),
+                        width: drawn.surfaceWidth() + 60, named: "\(name)-\(state).png"
+                    )
+                }
+            }
             // A card with windows in it, which a fresh launch has not read yet.
             picture(ProviderCard(snapshot: sample, now: Date(), connect: {}, refresh: {}), width: 256, named: "card.png")
             // One Provider on, the other off: "Notch — Compact/Expanded — One provider".
@@ -772,7 +796,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         }
         surfaceFrame = Self.frame(of: size, on: screen)
         surfaceFrameChanged?(surfaceFrame)
-        let radius: CGFloat = presentation == .expanded ? 38 : 28
+        let radius: CGFloat = presentation == .expanded ? 38 : 22
 
         // The window keeps one size, and only the black shape inside it
         // moves. A window resized under a SwiftUI animation left the layout

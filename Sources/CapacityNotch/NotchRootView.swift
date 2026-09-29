@@ -180,15 +180,34 @@ struct NotchOutline: Shape {
         }
     }
 
+    /// The inside curve where the shape meets the menu bar either side
+    /// ("Screen — 14″ default — Compact"): twelve points, drawn outside it.
+    static let shoulder: CGFloat = 12
+
     func path(in rect: CGRect) -> Path {
         let frame = CGRect(x: rect.midX - size.width / 2, y: rect.minY, width: size.width, height: size.height)
         let corner = min(radius, size.width / 2, size.height)
-        return UnevenRoundedRectangle(
+        var path = UnevenRoundedRectangle(
             bottomLeadingRadius: corner,
             bottomTrailingRadius: corner,
             style: .continuous
         )
         .path(in: frame)
+        guard size.width > 0, size.height >= Self.shoulder else { return path }
+        // The drawing's own curve, flat along the menu bar and steep down the
+        // side, mirrored for the left.
+        let r = Self.shoulder, unit = r / 12, top = frame.minY
+        for (edge, outward) in [(frame.minX, -1.0), (frame.maxX, 1.0)] {
+            path.move(to: CGPoint(x: edge + outward * r, y: top))
+            path.addCurve(
+                to: CGPoint(x: edge, y: top + r),
+                control1: CGPoint(x: edge + outward * 0.529 * unit, y: top),
+                control2: CGPoint(x: edge + outward * 0.211 * unit, y: top + 7.2 * unit)
+            )
+            path.addLine(to: CGPoint(x: edge, y: top))
+            path.closeSubpath()
+        }
+        return path
     }
 }
 
@@ -372,12 +391,12 @@ private struct CompactCapacityView: View {
                 if let left = sides.left { CompactSideView(side: left, now: now, isExpanded: isExpanded) }
 
                 // Numbers drawn under the physical notch are numbers nobody
-                // can read.
-                Spacer(minLength: max(geometry.notchWidth, 220))
+                // can read; the notch itself is the gap, and no more.
+                Spacer(minLength: geometry.notchWidth)
 
                 if let right = sides.right { CompactSideView(side: right, now: now, isExpanded: isExpanded) }
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, isExpanded || isWide ? 18 : 12)
             .frame(
                 width: isExpanded || isWide ? geometry.surfaceWidth() : geometry.compactWidth(),
                 height: geometry.menuBarHeight,

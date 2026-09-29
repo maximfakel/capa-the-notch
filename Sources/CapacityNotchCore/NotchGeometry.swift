@@ -48,16 +48,18 @@ public struct NotchGeometry: Equatable, Sendable {
         max(notchWidth + providerWidth * 2, Self.minimumSurfaceWidth)
     }
 
-    /// The closed surface: the notch, with room for one Provider's figure on
-    /// each side and no more. It is narrower than the open one, so opening
-    /// widens as well as lengthens — the content is laid out at the open
-    /// width throughout and centred, so nothing is re-flowed by the motion.
-    public static let minimumCompactWidth: CGFloat = 422
+    /// The closed surface, as "Screen — … — Compact" draws it: 370 points
+    /// over the 185-point notch a MacBook Pro has at its default scaling, and
+    /// 410 over the 220-point one it has at More Space — the notch, one
+    /// Provider's figure each side, twelve points to the edge. Without a notch
+    /// it is the narrower. It is narrower than the open surface, so opening
+    /// widens as well as lengthens — the content is laid out at the open width
+    /// throughout and centred, so nothing is re-flowed by the motion.
+    public static let compactWidths: (defaultScaling: CGFloat, moreSpace: CGFloat) = (370, 410)
 
-    public func compactWidth(providerWidth: CGFloat = 101) -> CGFloat {
-        min(
-            max(notchWidth + providerWidth * 2, Self.minimumCompactWidth),
-            surfaceWidth()
-        )
+    public func compactWidth() -> CGFloat {
+        let drawn = notchWidth > 200 ? Self.compactWidths.moreSpace : Self.compactWidths.defaultScaling
+        // A notch wider than either drawing still leaves a figure each side.
+        return min(max(drawn, notchWidth + 185), surfaceWidth())
     }
 }

@@ -217,16 +217,21 @@ func theCompactSurfaceTakesItsHeightFromTheMenuBar() throws {
         "A wider Provider column widens the surface, got \(notched.surfaceWidth(providerWidth: 240))"
     )
     try expect(
-        notched.compactWidth() == 422,
-        "Closed, the surface holds the notch and one figure each side, got \(notched.compactWidth())"
+        notched.compactWidth() == 410,
+        "Closed over More Space's 220-point notch, the surface is 410 wide as drawn, got \(notched.compactWidth())"
+    )
+    try expect(
+        NotchGeometry(menuBarHeight: 32, notchWidth: 185).compactWidth() == 370,
+        "Over the default scaling's 185-point notch it is 370"
     )
     try expect(
         notched.compactWidth() < notched.surfaceWidth(),
         "The closed surface is the narrower of the two, so opening widens as well as lengthens"
     )
+    let vast = NotchGeometry(menuBarHeight: 38, notchWidth: 520)
     try expect(
-        notched.compactWidth(providerWidth: 400) == notched.surfaceWidth(),
-        "And it never grows past the open one, got \(notched.compactWidth(providerWidth: 400))"
+        vast.compactWidth() == 705 && vast.compactWidth() < vast.surfaceWidth(),
+        "A notch wider than either drawing still leaves a figure each side, got \(vast.compactWidth())"
     )
 
     let plain = NotchGeometry.measure(
