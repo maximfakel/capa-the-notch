@@ -159,6 +159,7 @@ struct NotchRootView: View {
                     Button(L("Previous page")) { pages.previous() }
                 }
             }
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .clipShape(outline)
@@ -180,33 +181,38 @@ struct NotchOutline: Shape {
         }
     }
 
-    /// The inside curve where the shape meets the menu bar either side
-    /// ("Screen — 14″ default — Compact"): twelve points, drawn outside it.
-    static let shoulder: CGFloat = 12
+    /// The inside curve where the shape meets the menu bar either side, part
+    /// of the shape itself: twenty points, drawn outside it.
+    static let shoulder: CGFloat = 20
 
     func path(in rect: CGRect) -> Path {
-        let frame = CGRect(x: rect.midX - size.width / 2, y: rect.minY, width: size.width, height: size.height)
-        let corner = min(radius, size.width / 2, size.height)
-        var path = UnevenRoundedRectangle(
-            bottomLeadingRadius: corner,
-            bottomTrailingRadius: corner,
-            style: .continuous
-        )
-        .path(in: frame)
-        guard size.width > 0, size.height >= Self.shoulder else { return path }
-        // The drawing's own curve, flat along the menu bar and steep down the
-        // side, mirrored for the left.
-        let r = Self.shoulder, unit = r / 12, top = frame.minY
-        for (edge, outward) in [(frame.minX, -1.0), (frame.maxX, 1.0)] {
-            path.move(to: CGPoint(x: edge + outward * r, y: top))
-            path.addCurve(
-                to: CGPoint(x: edge, y: top + r),
-                control1: CGPoint(x: edge + outward * 0.529 * unit, y: top),
-                control2: CGPoint(x: edge + outward * 0.211 * unit, y: top + 7.2 * unit)
-            )
-            path.addLine(to: CGPoint(x: edge, y: top))
-            path.closeSubpath()
-        }
+        var path = Path()
+        guard size.width > 0, size.height > 0 else { return path }
+        let x0 = rect.midX - size.width / 2, x1 = x0 + size.width
+        let top = rect.minY, bottom = top + size.height
+        let r = min(Self.shoulder, size.height, size.width / 2)
+        // A shoulder and a corner share the side: on a strip too short for
+        // both, the corner gives way and the side is one curve.
+        let corner = max(0, min(radius, size.width / 2, size.height - r))
+        let unit = r / 12, arc = corner * 0.552
+        path.move(to: CGPoint(x: x0 - r, y: top))
+        // The drawing's own curve, flat along the menu bar and steep down the side.
+        path.addCurve(to: CGPoint(x: x0, y: top + r),
+                      control1: CGPoint(x: x0 - 0.529 * unit, y: top),
+                      control2: CGPoint(x: x0 - 0.211 * unit, y: top + 7.2 * unit))
+        path.addLine(to: CGPoint(x: x0, y: bottom - corner))
+        path.addCurve(to: CGPoint(x: x0 + corner, y: bottom),
+                      control1: CGPoint(x: x0, y: bottom - corner + arc),
+                      control2: CGPoint(x: x0 + corner - arc, y: bottom))
+        path.addLine(to: CGPoint(x: x1 - corner, y: bottom))
+        path.addCurve(to: CGPoint(x: x1, y: bottom - corner),
+                      control1: CGPoint(x: x1 - corner + arc, y: bottom),
+                      control2: CGPoint(x: x1, y: bottom - corner + arc))
+        path.addLine(to: CGPoint(x: x1, y: top + r))
+        path.addCurve(to: CGPoint(x: x1 + r, y: top),
+                      control1: CGPoint(x: x1 + 0.211 * unit, y: top + 7.2 * unit),
+                      control2: CGPoint(x: x1 + 0.529 * unit, y: top))
+        path.closeSubpath()
         return path
     }
 }

@@ -20,6 +20,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private var observers: Set<AnyCancellable> = []
     private var pointerTimer: Timer?
     private var presentTicks = 0
+    /// The pointer is approaching the closed surface, which rises to meet it.
+    private var pointerNear = false
     private var absentTicks = 0
 
     private static let pointerInterval: TimeInterval = 0.1
@@ -593,6 +595,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     func stopPointerTracking() {
         pointerTimer?.invalidate()
         pointerTimer = nil
+        pointerNear = false
         presentTicks = 0
         absentTicks = 0
     }
@@ -642,6 +645,15 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 width: metrics.geometry.compactWidth(),
                 height: metrics.geometry.menuBarHeight
             )
+        // Closed, the surface grows a little as the pointer comes near it,
+        // before it is over it and long before it opens.
+        let near = store.presentation == .compact
+            && region.insetBy(dx: -Self.nearDistance, dy: -Self.nearDistance).contains(NSEvent.mouseLocation)
+        if near != pointerNear {
+            pointerNear = near
+            positionPanel(for: store.presentation, animated: true, nearing: true)
+        }
+
         guard !region.contains(NSEvent.mouseLocation) else {
             absentTicks = 0
             // While the Script runs, a passing pointer does not open the
@@ -770,15 +782,21 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         didSet { applySharing() }
     }
 
+    /// How close the pointer comes before the closed surface grows, and by
+    /// how much ("Screen — 16″ more space — Compact": 410 by 38 to 420 by 42).
+    private static let nearDistance: CGFloat = 60
+    private static let nearGrowth = CGSize(width: 10, height: 4)
+
     private func positionPanel(
         for presentation: CapacityNotchStore.Presentation,
-        animated: Bool
+        animated: Bool,
+        nearing: Bool = false
     ) {
         guard let panel = window, let screen = metrics.screen else { return }
 
         let geometry = metrics.geometry
         let openWidth = geometry.surfaceWidth()
-        let size = switch presentation {
+        var size = switch presentation {
         case .compact:
             switch compactRow {
             case .teleprompter:
@@ -793,6 +811,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             }
         case .expanded:
             NSSize(width: openWidth, height: expandedHeight(on: screen, width: openWidth))
+        }
+        if presentation == .compact, pointerNear {
+            size.width += Self.nearGrowth.width
+            size.height += Self.nearGrowth.height
         }
         surfaceFrame = Self.frame(of: size, on: screen)
         surfaceFrameChanged?(surfaceFrame)
@@ -819,10 +841,11 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             return
         }
 
-        let motion = SurfaceType.surfaceMotion(
-            opening: presentation == .expanded,
-            reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        )
+        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        // Growing towards the pointer is a small, quick give, not an opening.
+        let motion = nearing
+            ? (reduced ? .easeInOut(duration: 0.15) : .spring(response: 0.28, dampingFraction: 0.7))
+            : SurfaceType.surfaceMotion(opening: presentation == .expanded, reduced: reduced)
         withAnimation(motion) {
             shape.size = size
             shape.radius = radius
