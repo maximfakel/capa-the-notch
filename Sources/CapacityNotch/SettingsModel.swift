@@ -89,6 +89,7 @@ final class SettingsModel: ObservableObject {
     /// The Teleprompter Module, observed directly: its Script, speed and
     /// shortcuts are the controller's, and the card follows them live.
     var teleprompter: TeleprompterController { teleprompterOverride ?? application.teleprompter }
+    var shelf: ShelfController { application.shelf }
     /// A stand-in for the pictures Settings renders of itself, so drawing the
     /// Teleprompter card never touches the person's own Script.
     private let teleprompterOverride: TeleprompterController?

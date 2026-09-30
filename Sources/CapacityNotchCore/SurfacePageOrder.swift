@@ -3,16 +3,18 @@ public enum SurfacePage: Hashable, Sendable {
     case capacity
     case music
     case teleprompter
+    case shelf
 }
 
 /// Which pages the expanded surface has, in which order, and how a turn moves
 /// between them. Capacity first — it is the question the product answers —
 /// then each Module in the order it arrived (ADR 0003).
 public enum SurfacePageOrder {
-    public static func pages(musicLoaded: Bool, teleprompter: Bool) -> [SurfacePage] {
+    public static func pages(musicLoaded: Bool, teleprompter: Bool, shelf: Bool = false) -> [SurfacePage] {
         [.capacity]
             + (musicLoaded ? [.music] : [])
             + (teleprompter ? [.teleprompter] : [])
+            + (shelf ? [.shelf] : [])
     }
 
     /// One page on or back; the ends hold.

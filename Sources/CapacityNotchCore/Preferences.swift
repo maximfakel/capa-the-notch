@@ -137,6 +137,21 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "musicEnabled") }
     }
 
+    /// The Shelf Module. Off until asked for (ADR 0003); what it holds is
+    /// never stored, only whether it is on (ADR 0005).
+    public var shelfEnabled: Bool {
+        get { defaults.bool(forKey: "shelfEnabled") }
+        set { defaults.set(newValue, forKey: "shelfEnabled") }
+    }
+
+    /// Images copied to the clipboard land on the Shelf. Off until asked for:
+    /// it means watching the clipboard (ADR 0005, amended). The key is the
+    /// one it had when it took screenshots alone.
+    public var shelfTakesClipboardImages: Bool {
+        get { defaults.bool(forKey: "shelfTakesScreenshots") }
+        set { defaults.set(newValue, forKey: "shelfTakesScreenshots") }
+    }
+
     /// The Teleprompter Module. Off until asked for (ADR 0003): while off, no
     /// shortcut is registered and nothing is shown.
     public var teleprompterEnabled: Bool {

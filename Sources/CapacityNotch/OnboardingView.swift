@@ -510,6 +510,7 @@ private extension BuiltInModule {
         case .music: .music
         case .teleprompter: .teleprompter
         case .dictation: .dictation
+        case .shelf: .shelf
         }
     }
 }

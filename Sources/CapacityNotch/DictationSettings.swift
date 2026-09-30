@@ -23,14 +23,15 @@ enum ModuleShortcutCapture {
 }
 
 enum BuiltInModule: String, CaseIterable {
-    case music = "Music", teleprompter = "Teleprompter", dictation = "Dictation"
-    var symbol: String { switch self { case .music: "music.note"; case .teleprompter: "text.alignleft"; case .dictation: "mic" } }
+    case music = "Music", teleprompter = "Teleprompter", dictation = "Dictation", shelf = "Shelf"
+    var symbol: String { switch self { case .music: "music.note"; case .teleprompter: "text.alignleft"; case .dictation: "mic"; case .shelf: "tray" } }
     var name: String { L(rawValue) }
     var summary: String { L(englishSummary) }
     private var englishSummary: String { switch self {
     case .music: "What's playing, with its controls, under Capacity."
     case .teleprompter: "Your Script, scrolling beside the camera."
     case .dictation: "Speak, then keep typing."
+    case .shelf: "Files at hand, dropped on the notch."
     } }
 }
 enum DictationSettingsPage { case overview, setup, replacements, history }
@@ -105,6 +106,7 @@ struct ModulesSection: View {
                 }
                 TeleprompterCard(teleprompter: model.teleprompter, expanded: model.expandedModule == .teleprompter, expand: { expand(.teleprompter) })
                 DictationCard(controller: model.dictation, expanded: model.expandedModule == .dictation, expand: { expand(.dictation) }, navigate: { model.dictationPage = $0 })
+                ShelfCard(shelf: model.shelf, expanded: model.expandedModule == .shelf, expand: { expand(.shelf) })
             }
             .environment(\.moduleHoverBlocked, _keyboardLock.wrappedValue || _editing.wrappedValue)
             .environment(\.moduleEditing, _editing.projectedValue)
@@ -117,6 +119,42 @@ struct ModulesSection: View {
     }
     private func expand(_ module: BuiltInModule) {
         withAnimation(reduced ? nil : .timingCurve(0.23, 1, 0.32, 1, duration: 0.2)) { model.expandedModule = module }
+    }
+}
+
+/// The Shelf's switch, and what it keeps (ADR 0005).
+private struct ShelfCard: View {
+    @ObservedObject var shelf: ShelfController
+    let expanded: Bool
+    let expand: () -> Void
+    var body: some View {
+        SettingsCard {
+            ModuleHeader(module: .shelf, expanded: expanded, expand: expand, isOn: Binding(get: { shelf.isEnabled }, set: { shelf.setEnabled($0) }))
+            if expanded {
+                Text(L("Files dropped on the notch stay at hand until you drag them away or Capacity Notch quits. Only a reference is kept; nothing is copied."))
+                    .font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
+                    .fixedSize(horizontal: false, vertical: true).padding(.leading, 54).padding(.trailing, 10).padding(.bottom, 10)
+                if shelf.isEnabled {
+                    SettingsDivider()
+                    SettingsRow(height: 56, indent: 44, hovers: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("Images and files from the clipboard"))
+                            Text(L("What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone."))
+                                .font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        Toggle(L("Images and files from the clipboard"), isOn: Binding(get: { shelf.takesClipboardImages }, set: { shelf.setTakesClipboardImages($0) }))
+                            .toggleStyle(SettingsSwitchStyle(standsAlone: true))
+                    }
+                    if shelf.clipboardRefused {
+                        Text(L("macOS does not let Capacity Notch read the clipboard. Allow it in System Settings → Privacy & Security."))
+                            .font(SettingsType.caption).foregroundStyle(SettingsPalette.destructive)
+                            .fixedSize(horizontal: false, vertical: true).padding(.leading, 54).padding(.trailing, 10).padding(.bottom, 10)
+                    }
+                }
+            }
+        }
     }
 }
 

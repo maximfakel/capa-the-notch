@@ -99,6 +99,8 @@ struct NotchRootView: View {
     @ObservedObject private var teleprompter: TeleprompterController
     @ObservedObject private var pages: SurfacePages
     @ObservedObject private var shape: SurfaceShape
+    @ObservedObject private var shelf: ShelfController
+    private let pointer: SurfacePointer
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
 
@@ -107,8 +109,10 @@ struct NotchRootView: View {
         metrics: SurfaceMetrics,
         music: MusicReader,
         teleprompter: TeleprompterController,
+        shelf: ShelfController,
         pages: SurfacePages,
         shape: SurfaceShape,
+        pointer: SurfacePointer,
         connect: @escaping (Provider) -> Void,
         refresh: @escaping (Provider) -> Void
     ) {
@@ -116,6 +120,8 @@ struct NotchRootView: View {
         self.metrics = metrics
         self.music = music
         self.teleprompter = teleprompter
+        self.shelf = shelf
+        self.pointer = pointer
         self.pages = pages
         self.shape = shape
         self.connect = connect
@@ -137,7 +143,7 @@ struct NotchRootView: View {
         // which is what made the spring stutter. The window is one size, the
         // open surface's and a little more; around the shape it is
         // transparent and lets the pointer through.
-        let outline = NotchOutline(size: shape.size, radius: shape.radius)
+        let outline = NotchOutline(size: shape.size, radius: shape.radius, tab: shape.tab)
 
         ZStack(alignment: .top) {
             outline.fill(Color.black)
@@ -155,8 +161,13 @@ struct NotchRootView: View {
                     playing: compactTrack,
                     loaded: music.loaded,
                     teleprompter: teleprompter,
+                    shelf: shelf,
+                    pointer: pointer,
+                    dropping: shelf.isDropTargeted && store.presentation == .compact,
                     page: pages.selected,
                     travel: pages.travel,
+                    controlsShown: pages.controlsShown,
+                    selectPage: { pages.select($0) },
                     send: { music.send($0) },
                     connect: connect,
                     refresh: refresh
@@ -179,56 +190,31 @@ struct NotchRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .clipShape(outline)
         .contentShape(outline)
+        // `SurfacePointer` is in these coordinates: the window's, from its top left.
+        .coordinateSpace(name: SurfacePointer.space)
     }
 }
 
-/// The surface's outline: square along the top, where it meets the menu bar,
-/// rounded along the bottom, centred in whatever the window is.
+/// The surface's outline (`SurfaceOutline`), centred in whatever the window
+/// is, with the drop tab under it while a file is held over the closed notch.
 struct NotchOutline: Shape {
     var size: CGSize
     var radius: CGFloat
+    var tab: CGSize = .zero
 
-    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat> {
-        get { AnimatablePair(AnimatablePair(size.width, size.height), radius) }
+    var animatableData: AnimatablePair<AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
+        get { AnimatablePair(AnimatablePair(AnimatablePair(size.width, size.height), radius), AnimatablePair(tab.width, tab.height)) }
         set {
-            size = CGSize(width: newValue.first.first, height: newValue.first.second)
-            radius = newValue.second
+            size = CGSize(width: newValue.first.first.first, height: newValue.first.first.second)
+            radius = newValue.first.second
+            tab = CGSize(width: newValue.second.first, height: newValue.second.second)
         }
     }
 
-    /// The inside curve where the shape meets the menu bar either side, part
-    /// of the shape itself: twenty points, drawn outside it.
-    static let shoulder: CGFloat = 20
+    static let shoulder = SurfaceOutline.shoulder
 
     func path(in rect: CGRect) -> Path {
-        var path = Path()
-        guard size.width > 0, size.height > 0 else { return path }
-        let x0 = rect.midX - size.width / 2, x1 = x0 + size.width
-        let top = rect.minY, bottom = top + size.height
-        let r = min(Self.shoulder, size.height, size.width / 2)
-        // A shoulder and a corner share the side: on a strip too short for
-        // both, the corner gives way and the side is one curve.
-        let corner = max(0, min(radius, size.width / 2, size.height - r))
-        let unit = r / 12, arc = corner * 0.552
-        path.move(to: CGPoint(x: x0 - r, y: top))
-        // The drawing's own curve, flat along the menu bar and steep down the side.
-        path.addCurve(to: CGPoint(x: x0, y: top + r),
-                      control1: CGPoint(x: x0 - 0.529 * unit, y: top),
-                      control2: CGPoint(x: x0 - 0.211 * unit, y: top + 7.2 * unit))
-        path.addLine(to: CGPoint(x: x0, y: bottom - corner))
-        path.addCurve(to: CGPoint(x: x0 + corner, y: bottom),
-                      control1: CGPoint(x: x0, y: bottom - corner + arc),
-                      control2: CGPoint(x: x0 + corner - arc, y: bottom))
-        path.addLine(to: CGPoint(x: x1 - corner, y: bottom))
-        path.addCurve(to: CGPoint(x: x1, y: bottom - corner),
-                      control1: CGPoint(x: x1 - corner + arc, y: bottom),
-                      control2: CGPoint(x: x1, y: bottom - corner + arc))
-        path.addLine(to: CGPoint(x: x1, y: top + r))
-        path.addCurve(to: CGPoint(x: x1 + r, y: top),
-                      control1: CGPoint(x: x1 + 0.211 * unit, y: top + 7.2 * unit),
-                      control2: CGPoint(x: x1 + 0.529 * unit, y: top))
-        path.closeSubpath()
-        return path
+        Path(SurfaceOutline.path(in: rect, size: size, radius: radius, tab: tab))
     }
 }
 
@@ -238,6 +224,9 @@ struct NotchOutline: Shape {
 final class SurfaceShape: ObservableObject {
     @Published var size: CGSize = .zero
     @Published var radius: CGFloat = 28
+    /// The Shelf's drop tab under the closed strip; zero when no file is
+    /// held over it.
+    @Published var tab: CGSize = .zero
 }
 
 /// The column on its own, with the height it wants and no filling.
@@ -257,9 +246,18 @@ struct SurfaceColumn: View {
     var loaded: NowPlaying? = nil
     /// The Teleprompter Module, for its row and its page; nil or off, neither.
     var teleprompter: TeleprompterController? = nil
+    /// The Shelf Module, for its page; nil or off, none.
+    var shelf: ShelfController? = nil
+    /// Where the pointer is, for what lights under it; none while measuring.
+    var pointer = SurfacePointer()
+    /// A file is held over the closed strip: the drop tab shows under it.
+    var dropping = false
     var page: SurfacePage = .capacity
     /// A swipe under way, in points; see `SurfacePages.travel`.
     var travel: CGFloat = 0
+    /// The page dots have become buttons; see `SurfacePages.controlsShown`.
+    var controlsShown = false
+    var selectPage: (SurfacePage) -> Void = { _ in }
     var send: (MusicCommand) -> Void = { _ in }
     let connect: (Provider) -> Void
     let refresh: (Provider) -> Void
@@ -290,7 +288,7 @@ struct SurfaceColumn: View {
                     .allowsHitTesting(isExpanded)
                     .animation(SurfaceType.contentMotion(appearing: isExpanded, reduced: reduceMotion), value: isExpanded)
 
-                Group {
+                VStack(spacing: 0) {
                     switch compactRow {
                     case .teleprompter:
                         if let teleprompter { TeleprompterRow(teleprompter: teleprompter) }
@@ -299,6 +297,10 @@ struct SurfaceColumn: View {
                     case .none:
                         EmptyView()
                     }
+                    // Beneath whatever the strip already shows, in the tab
+                    // the outline grows for it.
+                    // It hangs from the strip at its give, four points lower.
+                    if dropping { ShelfDropZone().padding(.top, 4) }
                 }
                 .opacity(isExpanded ? 0 : 1)
                 .allowsHitTesting(!isExpanded)
@@ -325,7 +327,11 @@ struct SurfaceColumn: View {
     }
 
     private var pages: [SurfacePage] {
-        SurfacePageOrder.pages(musicLoaded: loaded != nil, teleprompter: teleprompter?.isEnabled == true)
+        SurfacePageOrder.pages(
+            musicLoaded: loaded != nil,
+            teleprompter: teleprompter?.isEnabled == true,
+            shelf: shelf?.isEnabled == true
+        )
     }
 
     private var shownPage: SurfacePage { SurfacePageOrder.shown(page, in: pages) }
@@ -347,7 +353,14 @@ struct SurfaceColumn: View {
                 capacityDetail
             }
 
-            PageDots(pages: pages, selected: pages.count > 1 ? shownPage : nil)
+            PageSwitcher(
+                pages: pages,
+                selected: pages.count > 1 ? shownPage : nil,
+                running: teleprompter?.playback.state == .running ? [.teleprompter] : [],
+                showsButtons: controlsShown,
+                pointer: pointer,
+                select: selectPage
+            )
         }
     }
 
@@ -364,6 +377,10 @@ struct SurfaceColumn: View {
         case .teleprompter:
             if let teleprompter {
                 TeleprompterPage(teleprompter: teleprompter, isVisible: visible)
+            }
+        case .shelf:
+            if let shelf {
+                ShelfPage(shelf: shelf, pointer: pointer, isVisible: visible)
             }
         }
     }

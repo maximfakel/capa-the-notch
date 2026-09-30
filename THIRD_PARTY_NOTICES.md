@@ -56,18 +56,6 @@ Module uses it to read what is playing (ADR 0004).
     OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## Cyclop
-
-Copyright (c) 2026 akalikbergenov
-
-Licensed under the MIT License. Source: https://github.com/akalikbergenov/cyclop
-
-## Codeburn
-
-Copyright (c) 2026 AgentSeal
-
-Licensed under the MIT License. Source: https://github.com/getagentseal/codeburn
-
 ## Codenotch
 
 Copyright (c) 2026 vinzdg

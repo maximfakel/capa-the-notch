@@ -54,6 +54,19 @@ public enum Localization {
         String(format: text(english, in: language), locale: language.locale, arguments: arguments)
     }
 
+    /// "5 files", "5 файлов": Russian takes one of three endings by the last
+    /// digits, which a single format string cannot hold.
+    public static func fileCount(_ count: Int, in language: AppLanguage = current) -> String {
+        switch language.resolved() {
+        case .russian:
+            let tens = count % 100, ones = count % 10
+            let word = (11...14).contains(tens) ? "файлов" : ones == 1 ? "файл" : (2...4).contains(ones) ? "файла" : "файлов"
+            return "\(count) \(word)"
+        case .english, .system:
+            return count == 1 ? "1 file" : "\(count) files"
+        }
+    }
+
     /// A Provider's window names arrive as English data ("5 hour", "Weekly");
     /// Russian says them itself, shortly, as the notch has little room.
     public static func windowLabel(_ label: String, in language: AppLanguage = current) -> String {
@@ -153,6 +166,21 @@ public enum Localization {
         "What's playing, with its controls, under Capacity.": "Что сейчас играет и управление — под лимитами.",
         "Your Script, scrolling beside the camera.": "Ваш текст бежит под камерой.",
         "Speak, then keep typing.": "Голосовая клавиатура на русском.",
+        "Shelf": "Полка",
+        "Files at hand, dropped on the notch.": "Файлы под рукой — просто бросьте их на шторку.",
+        "Files dropped on the notch stay at hand until you drag them away or Capacity Notch quits. Only a reference is kept; nothing is copied.": "Брошенные на шторку файлы остаются под рукой, пока вы их не утащите или не выйдете из Capacity Notch. Хранится только ссылка — сами файлы никуда не копируются.",
+        "empty": "пусто",
+        "Image %@": "Изображение %@",
+        "Images and files from the clipboard": "Картинки и файлы из буфера обмена",
+        "What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone.": "Скопированное само ложится на полку: скриншот, картинка со страницы, медиа или документ из мессенджера. Копирование в Finder, текст и пароли не трогаются.",
+        "macOS does not let Capacity Notch read the clipboard. Allow it in System Settings → Privacy & Security.": "macOS не даёт Capacity Notch читать буфер обмена. Разрешите это в Системных настройках → Конфиденциальность и безопасность.",
+        "Clear": "Очистить",
+        "File\nmoved": "Файл\nперемещён",
+        "%@, moved": "%@, перемещён",
+        "Remove %@ from the Shelf": "Убрать %@ с полки",
+        "Drag files here to keep them at hand": "Перетащите сюда файлы, чтобы держать их под рукой",
+        "Up to 20 files. The Shelf empties when Capacity Notch quits.": "До 20 файлов. Полка очищается при выходе из Capacity Notch.",
+        "Release to put it\non the Shelf": "Отпустите, чтобы\nположить на полку",
         "%@ settings": "Настройки: %@",
         "Expanded": "Развёрнуто",
         "Collapsed": "Свёрнуто",

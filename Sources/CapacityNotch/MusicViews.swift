@@ -498,8 +498,16 @@ final class SurfacePages: ObservableObject {
     /// How far the fingers have carried the pages during a swipe, in points:
     /// negative towards the next page. Zero whenever no swipe is under way.
     @Published private(set) var travel: CGFloat = 0
+    /// The pointer is near the dots, which become buttons and let the
+    /// surface down a little further ("Notch — Page switcher — States").
+    @Published var controlsShown = false
 
     func next() { turn(to: SurfacePageOrder.step(from: selected, by: 1, in: available)) }
+    /// A page's own button in the switcher.
+    func select(_ page: SurfacePage) {
+        guard available.contains(page), page != selected else { return }
+        turn(to: page)
+    }
     func previous() { turn(to: SurfacePageOrder.step(from: selected, by: -1, in: available)) }
 
     /// A track loading or going, a Module switched on or off. A page that has
@@ -582,32 +590,3 @@ struct PageStrip: Layout {
     }
 }
 
-/// The open surface's footer. With a second page it holds the dots — six
-/// points each in an eight-point slot, four apart — and with one page it is
-/// the same band, empty.
-struct PageDots: View {
-    var pages: [SurfacePage] = []
-    let selected: SurfacePage?
-
-    var body: some View {
-        HStack(spacing: 4) {
-            if let selected, pages.count > 1 {
-                ForEach(pages, id: \.self) { page in
-                    dot(active: page == selected)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 8)
-        .padding(.top, 4)
-        .padding(.bottom, 8)
-        .accessibilityHidden(true)
-    }
-
-    private func dot(active: Bool) -> some View {
-        Circle()
-            .fill(active ? Color.white : MusicType.secondary)
-            .frame(width: 6, height: 6)
-            .frame(width: 8, height: 8)
-    }
-}

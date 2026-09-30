@@ -47,6 +47,20 @@ _Avoid_: Voice assistant, transcription service
 The temporary indicator beneath the Notch Surface that shows a dictation’s recording, recognition and completion states.
 _Avoid_: Dictation Row, dictation page
 
+### The Shelf and the clipboard
+
+**Shelf Module**:
+The Module that holds files dropped on the notch — references, not copies — until they are dragged somewhere else (ADR 0005).
+_Avoid_: Drop zone, tray, stash
+
+**Clipboard History Module**:
+The Module that keeps the text a person copied recently, so it can be put on the clipboard again (ADR 0005).
+_Avoid_: Clipboard manager, pasteboard archive
+
+**Clipping**:
+One text the Clipboard History Module keeps: what was copied, and when.
+_Avoid_: Snippet (read as something saved on purpose), clip, entry
+
 ### Capacity
 
 **Provider**:

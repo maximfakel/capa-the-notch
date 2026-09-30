@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var shortcutCapture: AnyCancellable?
     private var dictationPanel: DictationPanelController?
     private(set) lazy var teleprompter = TeleprompterController(preferences: preferences)
+    private(set) lazy var shelf = ShelfController(preferences: preferences)
     /// SIGTERM — what `pkill` sends, and the install loop uses — quits the
     /// application properly, so its children are stopped rather than orphaned.
     private var termination: DispatchSourceSignal?
@@ -114,6 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             store: store,
             music: music,
             teleprompter: teleprompter,
+            shelf: shelf,
             connect: { [weak self] provider in self?.connect(provider) },
             refresh: { [weak self] provider in self?.refresh(provider) }
         )
@@ -672,6 +674,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observations.append(
             TeleprompterModule.observation(enabled: preferences.teleprompterEnabled, script: preferences.script)
         )
+        observations.append(ShelfModule.observation(enabled: shelf.isEnabled, count: shelf.items.count))
+        if shelf.isEnabled, shelf.clipboardRefused { observations.append("shelf-clipboard-refused") }
 
         return DiagnosticReport(
             applicationVersion: Self.applicationVersion,

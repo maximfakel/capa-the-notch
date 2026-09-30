@@ -12,6 +12,8 @@ enum SettingsIcon {
     case music
     case teleprompter
     case dictation
+    /// A tray: the Shelf.
+    case shelf
     /// A screen with its notch: onboarding's first step.
     case notch
     /// A padlock: onboarding's permissions.
@@ -35,7 +37,7 @@ enum SettingsIcon {
     fileprivate var lineWidth: CGFloat {
         switch self {
         case .chevrons: 1.2
-        case .music, .teleprompter, .dictation, .permissions: 1.4
+        case .music, .teleprompter, .dictation, .permissions, .shelf: 1.4
         default: 1.3
         }
     }
@@ -106,6 +108,26 @@ enum SettingsIcon {
             path.addQuadCurve(to: CGPoint(x: 12.5, y: 7.25), control: CGPoint(x: 8, y: 16.25))
             path.move(to: CGPoint(x: 8, y: 11.75))
             path.addLine(to: CGPoint(x: 8, y: 14.25))
+        case .shelf:
+            // The tray's rim, its dip, and its sides going up and in.
+            path.move(to: CGPoint(x: 1.75, y: 9.25))
+            path.addLine(to: CGPoint(x: 5.25, y: 9.25))
+            path.addLine(to: CGPoint(x: 6.25, y: 11))
+            path.addLine(to: CGPoint(x: 9.75, y: 11))
+            path.addLine(to: CGPoint(x: 10.75, y: 9.25))
+            path.addLine(to: CGPoint(x: 14.25, y: 9.25))
+            path.move(to: CGPoint(x: 1.75, y: 9.25))
+            path.addLine(to: CGPoint(x: 1.75, y: 12.25))
+            path.addQuadCurve(to: CGPoint(x: 3.5, y: 14), control: CGPoint(x: 1.75, y: 14))
+            path.addLine(to: CGPoint(x: 12.5, y: 14))
+            path.addQuadCurve(to: CGPoint(x: 14.25, y: 12.25), control: CGPoint(x: 14.25, y: 14))
+            path.addLine(to: CGPoint(x: 14.25, y: 9.25))
+            path.move(to: CGPoint(x: 1.75, y: 9.25))
+            path.addLine(to: CGPoint(x: 3.5, y: 3.9))
+            path.addQuadCurve(to: CGPoint(x: 4.9, y: 3), control: CGPoint(x: 3.8, y: 3))
+            path.addLine(to: CGPoint(x: 11.1, y: 3))
+            path.addQuadCurve(to: CGPoint(x: 12.5, y: 3.9), control: CGPoint(x: 12.2, y: 3))
+            path.addLine(to: CGPoint(x: 14.25, y: 9.25))
         case .notch:
             // The screen's outline dips round the notch at the top.
             path.move(to: CGPoint(x: 6, y: 2.75))

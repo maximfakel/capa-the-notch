@@ -138,3 +138,11 @@ The author chose to start with music (ticket 17) rather than the
 teleprompter, which moves to second among the new Modules (ticket 16). ADR
 0003 is amended to match, and to say what the strip may do: a Module that
 needs attention adds a row beneath Capacity, never replaces it.
+
+**2026-09-30 — the rest of the order has tickets now.** Calendar is ticket
+23; the Shelf and clipboard are ticket 24 (the ADR for what they keep) and
+ticket 25 (the Module); Face Unlock is ticket 26. The author also asked for
+new Providers (ticket 27), which answers "on first request" above, and for a
+local Russian–English translator (ticket 28), which was not on the list.
+Ticket 24 then split the Shelf (ticket 25) from clipboard history (ticket
+29), under ADR 0005.
