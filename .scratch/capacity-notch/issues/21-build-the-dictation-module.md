@@ -4,7 +4,7 @@
 
 **Blocked by:** none (the author requested continuation after ticket 12’s completed feasibility work; tickets 12 and 16 remain open by the author’s choice).
 
-**Status:** needs-info
+**Status:** resolved
 
 ## Comments
 
@@ -158,3 +158,7 @@ symbols had been lost with the capsule. Agreed with the author and done:
 - The author, on seeing the orb: the colour is right, the symbols go —
   colour is enough. This overrides round 4's "colour is not the only cue"
   for the orb; VoiceOver still hears the outcome from the accessibility label.
+
+**2026-09-30 — resolved.** The author: Dictation works. What the runtime
+check above left unchecked, and checking it on a friend's 14″ (microphone
+request, model download, Bluetooth headset), moves to ticket 22.

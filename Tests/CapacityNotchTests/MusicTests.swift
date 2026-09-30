@@ -170,3 +170,17 @@ func nothingPlayingOrUnreadableShowsNoRow() throws {
         "A reader that failed shows nothing rather than the last track it saw"
     )
 }
+
+func theSpeakerIsStruckThroughWhenNothingIsHeard() throws {
+    try expect(Speaker(level: 0.6).symbol == "speaker.wave.2.fill", "Two waves at an ordinary level")
+    try expect(Speaker(level: 0.2).symbol == "speaker.wave.1.fill", "One wave when it is low")
+    try expect(Speaker(level: 0).symbol == "speaker.slash.fill", "Struck through at zero")
+    try expect(Speaker(level: 0.6, isMuted: true).symbol == "speaker.slash.fill", "And when muted, at any level")
+}
+
+func mutingEmptiesTheBarAndKeepsTheLevel() throws {
+    let muted = Speaker(level: 0.6, isMuted: true)
+    try expect(muted.shownLevel == 0, "The bar is empty while muted")
+    try expect(muted.level == 0.6, "The level waits for the sound to come back")
+    try expect(Speaker(level: 1.4).level == 1 && Speaker(level: -1).level == 0, "Never outside 0 to 1")
+}

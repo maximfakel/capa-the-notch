@@ -4,7 +4,7 @@
 
 **Blocked by:** 11/Publish a free GitHub beta release; 16/Build the Teleprompter Module.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Holding a configurable global key records a phrase of up to 25 seconds, performs recognition locally, and stops listening immediately when released.
 - [ ] The prototype evaluates Russian speech containing English developer terms and code-like vocabulary using a representative corpus and records correction effort.
@@ -84,3 +84,7 @@ GigaAM v3 punctuated RNN-T through sherpa-onnx, CPU, from Swift:
 Recommendation: go for a Dictation Module on GigaAM, deciding first how
 English terms are corrected (a vocabulary, a replacement list, or both).
 It does not enter the roadmap by itself.
+
+**2026-09-30 — resolved.** The go above was acted on: Dictation shipped
+(ticket 21). Battery and thermals were never measured; they are not a
+condition for leaving the beta.

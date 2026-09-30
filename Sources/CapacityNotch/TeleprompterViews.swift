@@ -290,7 +290,7 @@ struct TeleprompterPage: View {
         let playback = teleprompter.playback
         let size = teleprompter.textSize
         let current = min(Int(playback.position(at: now).rounded(.down)), max(teleprompter.lines.count - 1, 0))
-        let font = Font.system(size: size.points, weight: .medium)
+        let font = SurfaceType.geist(size.points, .medium)
         let lineHeight = TeleprompterLayout.lineHeight(size)
 
         return VStack(alignment: .leading, spacing: 14) {
@@ -343,7 +343,7 @@ struct TeleprompterPage: View {
                     .accessibilityLabel(L("Slower"))
 
                     Text(String(format: "%.2fx", playback.multiplier))
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(SurfaceType.geist(13, .semibold))
                         .monospacedDigit()
                         .accessibilityLabel(L("Speed"))
                         .accessibilityValue(L("%.2f times", playback.multiplier))
@@ -361,7 +361,7 @@ struct TeleprompterPage: View {
                     Button(L("Paste")) { teleprompter.pasteFromClipboard() }
                     Button(L("Edit Script")) { teleprompter.openSettings() }
                 }
-                .font(.system(size: 13, weight: .medium))
+                .font(SurfaceType.geist(13, .medium))
                 .foregroundStyle(SurfaceType.captionColour)
             }
             .buttonStyle(.plain)

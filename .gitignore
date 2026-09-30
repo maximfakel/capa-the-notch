@@ -11,3 +11,6 @@ Spikes/*/.build/
 Spikes/Dictation/Vendor/
 Spikes/Dictation/Models/
 Spikes/Dictation/Recordings/
+
+# /brag launch videos: renders and Hyperframes projects, kept on this Mac.
+brag-output*/

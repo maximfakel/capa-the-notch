@@ -6,9 +6,9 @@ import SwiftUI
 /// (Paper, "Notch — Compact — Playing") and a page of the expanded surface
 /// ("Notch — Expanded — Playing"). Every size is the drawing's own.
 enum MusicType {
-    static let title = Font.system(size: 15, weight: .medium)
-    static let artist = Font.system(size: 11, weight: .regular)
-    static let time = Font.system(size: 11, weight: .regular)
+    static let title = SurfaceType.geist(15, .medium)
+    static let artist = SurfaceType.geist(11)
+    static let time = SurfaceType.geist(11)
     static let secondary = SurfaceType.captionColour
     static let track = SurfaceType.trackColour
 
@@ -308,9 +308,12 @@ struct MusicPage: View {
                     MusicProgress(track: track, now: context.date, send: send)
                 }
 
-                MusicControls(isPlaying: track.isPlaying, small: 14, large: 18, send: send)
-                    .frame(height: 22)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 20) {
+                    MusicControls(isPlaying: track.isPlaying, small: 14, large: 18, send: send)
+                    Spacer(minLength: 0)
+                    VolumeControl(volume: SystemVolume.shared)
+                }
+                .frame(height: 22)
             }
             .frame(height: 121)
         }
@@ -319,6 +322,54 @@ struct MusicPage: View {
         .foregroundStyle(.white)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(CompactMusicRow.spoken(track))
+    }
+}
+
+/// The Mac's output volume, at the right of the controls: the speaker mutes
+/// and unmutes, the bar sets the level. Nothing, when the output device's
+/// level cannot be set.
+private struct VolumeControl: View {
+    @ObservedObject var volume: SystemVolume
+
+    var body: some View {
+        if let speaker = volume.speaker {
+            HStack(spacing: 8) {
+                Button { volume.toggleMute() } label: {
+                    Image(systemName: speaker.symbol)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(MusicType.secondary)
+                        .frame(width: 18, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(speaker.isMuted ? L("Unmute") : L("Mute"))
+
+                Capsule()
+                    .fill(MusicType.track)
+                    .frame(width: 88, height: 4)
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(.white)
+                            .frame(width: 88 * speaker.shownLevel)
+                    }
+                    .contentShape(Rectangle().inset(by: -8))
+                    .gesture(
+                        DragGesture(minimumDistance: 0).onChanged { value in
+                            volume.set(level: value.location.x / 88)
+                        }
+                    )
+                    .accessibilityElement()
+                    .accessibilityLabel(L("Volume"))
+                    .accessibilityValue(L("%d percent", Int((speaker.shownLevel * 100).rounded())))
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: volume.set(level: speaker.level + 0.1)
+                        case .decrement: volume.set(level: speaker.level - 0.1)
+                        @unknown default: break
+                        }
+                    }
+            }
+        }
     }
 }
 
@@ -336,9 +387,33 @@ private struct MusicProgress: View {
         nonmutating set { _dragged.wrappedValue = newValue }
     }
 
+    /// A seek sent and not yet reported back. Until the stream says the
+    /// track is there, the bar stays where it was let go, rather than
+    /// springing back to the old reading and then jumping forward.
+    private struct Sought: Equatable {
+        let target: TimeInterval
+        let at: Date
+    }
+    private let _sought = State<Sought?>(initialValue: nil)
+    private var sought: Sought? {
+        get { _sought.wrappedValue }
+        nonmutating set { _sought.wrappedValue = newValue }
+    }
+
+    /// Where a sought track should be by now, moving at the rate it plays.
+    private func expected(_ sought: Sought, at clock: Date) -> TimeInterval {
+        let rate = track.isPlaying ? (track.rate ?? 1) : 0
+        return sought.target + clock.timeIntervalSince(sought.at) * rate
+    }
+
     var body: some View {
         let duration = track.duration ?? 0
-        let position = dragged.map { $0 * duration } ?? track.position(at: now) ?? 0
+        // The timeline's date is the last beat, up to a second old when a new
+        // reading redraws the bar between beats; the clock is not.
+        let clock = max(now, Date())
+        let position = dragged.map { $0 * duration }
+            ?? sought.map { min(expected($0, at: clock), duration) }
+            ?? track.position(at: clock) ?? 0
         let fraction = duration > 0 ? min(max(position / duration, 0), 1) : 0
 
         VStack(spacing: 7) {
@@ -366,11 +441,25 @@ private struct MusicProgress: View {
                                         dragged = min(max(value.location.x / proxy.size.width, 0), 1)
                                     }
                                     .onEnded { _ in
-                                        if let dragged, duration > 0 { send(.seek(to: dragged * duration)) }
+                                        if let dragged, duration > 0 {
+                                            sought = Sought(target: dragged * duration, at: Date())
+                                            send(.seek(to: dragged * duration))
+                                        }
                                         dragged = nil
                                     }
                             )
                     }
+                }
+                // The reading that lands near the target settles it; one
+                // that never comes gives the bar back after three seconds.
+                .onChange(of: track) { _, track in
+                    guard let sought, let reported = track.position(at: Date()) else { return }
+                    if abs(reported - expected(sought, at: Date())) < 2 { self.sought = nil }
+                }
+                .task(id: sought) {
+                    guard sought != nil else { return }
+                    try? await Task.sleep(for: .seconds(3))
+                    if !Task.isCancelled { sought = nil }
                 }
 
             HStack {

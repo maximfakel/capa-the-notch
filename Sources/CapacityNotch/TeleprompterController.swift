@@ -211,7 +211,7 @@ final class TeleprompterController: ObservableObject {
 // MARK: - Layout
 
 /// The row's type and rhythm, from Paper "Notch — Compact — Teleprompter":
-/// SF Pro Medium, 17 on 22 at the mockup's size, lines two points apart, a
+/// Geist Medium, 17 on 22 at the mockup's size, lines two points apart, a
 /// little tighter tracked, set in after the controls' column.
 enum TeleprompterLayout {
     static let rowWidth: CGFloat = 560
@@ -228,7 +228,7 @@ enum TeleprompterLayout {
     static let visibleLines = 3
 
     static func font(_ size: TeleprompterTextSize) -> NSFont {
-        .systemFont(ofSize: size.points, weight: .medium)
+        SurfaceType.geistNSFont(size.points, .medium)
     }
 
     static func lineHeight(_ size: TeleprompterTextSize) -> CGFloat {

@@ -529,6 +529,14 @@ enum CapacityNotchTestRunner {
                 disconnectingClaudeClearsFreshCapacityFromTheSurface
             ),
             (
+                "MusicTests.theSpeakerIsStruckThroughWhenNothingIsHeard",
+                theSpeakerIsStruckThroughWhenNothingIsHeard
+            ),
+            (
+                "MusicTests.mutingEmptiesTheBarAndKeepsTheLevel",
+                mutingEmptiesTheBarAndKeepsTheLevel
+            ),
+            (
                 "MusicTests.aFullLineFromTheAdapterSaysWhatIsPlaying",
                 aFullLineFromTheAdapterSaysWhatIsPlaying
             ),

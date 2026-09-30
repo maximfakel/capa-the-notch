@@ -4,7 +4,7 @@
 
 **Blocked by:** 08/Send deduplicated Capacity Alerts; 09/Finish the accessible visual experience; 10/Copy safe diagnostics.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A reproducible Apple Silicon release build is published as a GitHub Release with source, release notes, and a SHA-256 checksum.
 - [ ] Installation guidance uses only standard macOS per-application approval and never asks users to disable Gatekeeper globally.
@@ -352,3 +352,7 @@ last by the author.
 ### Not verified
 
 - 0.2.0 run from the downloaded archive, and on a clean Mac.
+
+**2026-09-30 — resolved.** The beta has been published since 0.1.0 and is at
+0.2.5. The author chose manual updates through "Check for Updates…" over
+Sparkle; the clean-Mac test that is still open moves to ticket 22.

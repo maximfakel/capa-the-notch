@@ -10,18 +10,33 @@ import SwiftUI
 /// is 15 and not the 20 declared. The widths are what the eye sees, so the
 /// widths win.
 enum SurfaceType {
-    static let providerName = Font.system(size: 17, weight: .semibold)
+    static let providerName = geist(17, .semibold)
     static let statusChip = Font.system(size: 11, weight: .semibold)
-    static let windowLabel = Font.system(size: 15, weight: .medium)
-    static let capacity = Font.system(size: 15, weight: .bold, design: .rounded)
-    /// The strip's figures: 15 closed and 17 open, as the two drawings set
-    /// them ("76%" measures 31 points wide closed and 35 open).
-    static func compactCapacity(isExpanded: Bool) -> Font {
-        .system(size: isExpanded ? 17 : 15, weight: .semibold, design: .rounded)
-    }
-    static let caption = Font.system(size: 11, weight: .regular)
-    static let guidance = Font.system(size: 15, weight: .regular)
+    static let windowLabel = geist(15, .medium)
+    static let capacity = geist(15, .medium)
+    /// The strip's figures: 15, closed and open alike, as the Geist drawings
+    /// set them.
+    static let compactCapacity = geist(15, .medium)
+    static let caption = geist(11)
+    static let guidance = geist(15)
     static let refreshGlyph = Font.system(size: 17, weight: .semibold)
+
+    /// Geist, as in Settings (`SettingsType`), for everything the surface
+    /// says. The status chip and the glyphs stay in the system's font, as the
+    /// drawings keep them.
+    static func geist(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        Font.custom("Geist", fixedSize: size).weight(weight)
+    }
+
+    /// The same, where text is measured and drawn by AppKit. The system's font
+    /// stands in if Geist was not registered.
+    static func geistNSFont(_ size: CGFloat, _ weight: NSFont.Weight = .regular) -> NSFont {
+        let descriptor = NSFontDescriptor(fontAttributes: [
+            .family: "Geist",
+            .traits: [NSFontDescriptor.TraitKey.weight: weight.rawValue],
+        ])
+        return NSFont(descriptor: descriptor, size: size) ?? .systemFont(ofSize: size, weight: weight)
+    }
 
     /// Row heights taken from the drawing. Type is allowed to stand taller
     /// than the row it sits in — a twenty-point figure needs about
@@ -449,7 +464,7 @@ private struct CompactSideView: View {
                 .foregroundStyle(provider.presentation.tint)
 
             Text(figure)
-                .font(SurfaceType.compactCapacity(isExpanded: isExpanded))
+                .font(SurfaceType.compactCapacity)
                 .monospacedDigit()
                 .foregroundStyle(.white)
                 // A figure that wraps is not a figure. It keeps its own width

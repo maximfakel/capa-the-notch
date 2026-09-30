@@ -6,7 +6,7 @@ so the person can read while looking at it.
 
 **Blocked by:** none.
 
-**Status:** needs-info
+**Status:** resolved
 
 **Why:** First in the order ticket 15 settled, because it is the most
 self-contained: text and scrolling, no sensitive data, and the notch is the one
@@ -154,3 +154,7 @@ Not checked: two-finger scrolling on the row, the progress drag on the page,
 Reduce Motion, VoiceOver. A focus ring on the Codex refresh button when the
 surface is opened by a click was seen in a fresh launch too — older than
 this work, not a Teleprompter matter.
+
+**2026-09-30 — resolved.** The author: the Teleprompter is in use and already
+in a recorded video. What the runtime check above left unchecked moves to
+ticket 22, as a condition for leaving the beta.
