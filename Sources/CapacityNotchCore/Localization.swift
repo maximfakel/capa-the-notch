@@ -238,6 +238,7 @@ public enum Localization {
         "Replacement": "Замена",
         "Delete replacement": "Удалить замену",
         "Delete %@ replacement": "Удалить замену «%@»",
+        "The text could not be pasted. It is still in the clipboard.": "Не удалось вставить текст. Он остался в буфере обмена.",
         "Download failed. Check your connection and free disk space, then try again.": "Загрузка не удалась. Проверьте подключение и свободное место на диске и попробуйте снова.",
         "Download the speech model in Dictation settings before recording.": "Перед записью загрузите языковую модель в настройках диктовки.",
         "Microphone access is required. Allow Capacity Notch in System Settings → Privacy & Security → Microphone.": "Нужен доступ к микрофону. Разрешите Capacity Notch в Системных настройках → Конфиденциальность и безопасность → Микрофон.",

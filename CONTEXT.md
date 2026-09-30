@@ -62,7 +62,7 @@ A Provider-defined period with measured usage and a reset time, such as a short 
 _Avoid_: Limit, billing period
 
 **Headline Window**:
-The Quota Window with the least remaining Capacity, the earlier reset breaking a tie. It represents a Provider in the compact strip.
+The Quota Window with the least remaining Capacity, the earlier reset breaking a tie. The compact strip shows it when "Least left" is chosen in Settings; by default the strip shows each Provider's five-hour window instead.
 _Avoid_: Primary limit, most urgent window
 
 **Fresh Capacity**:

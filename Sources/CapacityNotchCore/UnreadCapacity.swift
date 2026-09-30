@@ -106,9 +106,11 @@ public enum CompactStrip {
             func chosen(_ provider: Provider) -> Side? {
                 guard let snapshot = on.first(where: { $0.provider == provider }) else { return nil }
                 let windows = byDuration(snapshot.windows)
+                // The window of that length, and only without one the
+                // nearest end: a Provider's shortest is not always five hours.
                 let window = switch choice {
-                case .fiveHour: windows.first
-                case .weekly: windows.last
+                case .fiveHour: windows.first { $0.durationMinutes == 5 * 60 } ?? windows.first
+                case .weekly: windows.first { $0.durationMinutes == 7 * 24 * 60 } ?? windows.last
                 case .leastLeft: snapshot.headlineWindow
                 }
                 return window.map { .window(provider, $0) } ?? .provider(snapshot)

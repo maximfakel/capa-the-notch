@@ -30,6 +30,29 @@ public struct KeyShortcut: Codable, Equatable, Hashable, Sendable {
     /// Each keycap on its own, for drawing them apart.
     public var keycaps: [String] { modifierSymbols + [keyLabel] }
 
+    /// What to call a key just pressed, for its keycap. Keys the keyboard
+    /// prints nothing readable for — Space, the arrows, function keys — are
+    /// named, since their characters draw blank or as private symbols.
+    public static func keyLabel(keyCode: UInt32, characters: String?) -> String {
+        switch keyCode {
+        case 49: return "Space"
+        case 53: return "Esc"
+        case 36: return "Return"
+        case 48: return "Tab"
+        case 51: return "Delete"
+        case 123: return "←"
+        case 124: return "→"
+        case 125: return "↓"
+        case 126: return "↑"
+        default: break
+        }
+        // The arrows' and function keys' characters live in the private use area.
+        guard let characters, !characters.isEmpty,
+              characters.unicodeScalars.allSatisfy({ !(0xE000...0xF8FF).contains($0.value) && !CharacterSet.whitespacesAndNewlines.contains($0) && !CharacterSet.controlCharacters.contains($0) })
+        else { return "Key \(keyCode)" }
+        return characters.uppercased()
+    }
+
     private var modifierSymbols: [String] {
         [(Modifiers.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
             .filter { modifiers.contains($0.0) }

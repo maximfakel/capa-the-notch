@@ -26,6 +26,7 @@ enum CapacityNotchTestRunner {
             ("CompactStrip.bothProviders", theStripShowsEachProvidersFiveHoursWhenBothAreOn),
             ("CompactStrip.nothingConnected", nothingConnectedLeavesTheStripEmptyAndTheSurfaceOpen),
             ("CompactStrip.choice", theStripShowsTheWindowChosenInSettings),
+            ("CompactStrip.choiceByLength", theChosenWindowIsTheOneOfThatLengthNotTheShortestOrLongest),
             ("Diagnostics.dictationStatesReachTheReport", dictationStatesReachTheReportWhole),
             ("Diagnostics.logLinesCarryCodes", aLogLineCarriesCodesAndNeverDescriptions),
             (
@@ -51,6 +52,10 @@ enum CapacityNotchTestRunner {
             (
                 "TeleprompterTests.theTeleprompterIsOffWithQuietDefaults",
                 theTeleprompterIsOffWithQuietDefaults
+            ),
+            (
+                "TeleprompterTests.aRecordedKeyIsNamedAsTheKeycapShowsIt",
+                aRecordedKeyIsNamedAsTheKeycapShowsIt
             ),
             (
                 "TeleprompterTests.startingHoldsTheFirstLineThenMovesAtTheChosenSpeed",

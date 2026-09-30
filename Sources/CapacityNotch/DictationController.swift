@@ -254,7 +254,9 @@ final class DictationController: ObservableObject {
             } catch {
                 guard let self, !Task.isCancelled, session.complete(id) else { return }
                 DiagnosticLog.record(.recognitionFailed(DiagnosticError(error)))
-                fail(error.localizedDescription)
+                // Dictation's own failures are sentences with translations;
+                // anything else is macOS's wording, which the log keeps.
+                fail((error as? DictationFailure)?.message ?? "Recognition failed. Try again.")
             }
         }
     }
@@ -264,6 +266,8 @@ final class DictationController: ObservableObject {
         hotKey?.captureEscape(false)
     }
     private func fail(_ message: String, hidesAfter delay: Duration? = nil) {
+        // An earlier error's timer would hide this one early.
+        dismiss?.cancel(); dismiss = nil
         target = nil; error = message; presentation = .error; hotKey?.captureEscape(true)
         guard let delay else { return }
         dismiss = Task { [weak self] in

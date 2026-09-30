@@ -73,6 +73,15 @@ func theTeleprompterIsOffWithQuietDefaults() throws {
     try expect(shortcut.display == "⌃⌘P", "And spelled with the Mac's symbols")
 }
 
+func aRecordedKeyIsNamedAsTheKeycapShowsIt() throws {
+    try expect(KeyShortcut.keyLabel(keyCode: 49, characters: " ") == "Space", "Space is named, not drawn blank")
+    try expect(KeyShortcut.keyLabel(keyCode: 126, characters: "\u{F700}") == "↑", "An arrow is an arrow, not a private character")
+    try expect(KeyShortcut.keyLabel(keyCode: 36, characters: "\r") == "Return", "Return is named")
+    try expect(KeyShortcut.keyLabel(keyCode: 2, characters: "d") == "D", "A letter is its capital")
+    try expect(KeyShortcut.keyLabel(keyCode: 122, characters: "\u{F704}") == "Key 122", "A key with nothing printable says its number")
+    try expect(KeyShortcut.keyLabel(keyCode: 2, characters: nil) == "Key 2", "And so does one with no characters")
+}
+
 // MARK: - Playback
 
 func startingHoldsTheFirstLineThenMovesAtTheChosenSpeed() throws {

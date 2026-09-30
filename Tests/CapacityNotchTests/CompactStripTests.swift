@@ -64,3 +64,36 @@ func theStripShowsTheWindowChosenInSettings() throws {
     Preferences(defaults: defaults).compactWindow = .weekly
     try expect(Preferences(defaults: defaults).compactWindow == .weekly, "The choice is kept")
 }
+
+func theChosenWindowIsTheOneOfThatLengthNotTheShortestOrLongest() throws {
+    // A Provider with an hour, five hours, a week and a month.
+    let many = CapacitySnapshot(
+        provider: .codex,
+        capturedAt: readAt,
+        windows: [
+            QuotaWindow(id: "month", label: "Monthly", durationMinutes: 43_200, usedFraction: 0.1, resetsAt: readAt),
+            QuotaWindow(id: "hour", label: "1 hour", durationMinutes: 60, usedFraction: 0.1, resetsAt: readAt),
+            QuotaWindow(id: "week", label: "Weekly", durationMinutes: 10_080, usedFraction: 0.1, resetsAt: readAt),
+            QuotaWindow(id: "five", label: "5 hour", durationMinutes: 300, usedFraction: 0.1, resetsAt: readAt),
+        ],
+        connectionState: .fresh
+    )
+    func left(_ snapshot: CapacitySnapshot, _ choice: CompactWindowChoice) -> String? {
+        if case let .window(_, window)? = CompactStrip.sides([snapshot, reading(.claudeCode)], showing: choice).left { return window.id }
+        return nil
+    }
+    try expect(left(many, .fiveHour) == "five", "Five hours is the five-hour window, not the hour")
+    try expect(left(many, .weekly) == "week", "The week is the weekly window, not the month")
+    // Without a window of that length, the nearest end stands in.
+    let other = CapacitySnapshot(
+        provider: .codex,
+        capturedAt: readAt,
+        windows: [
+            QuotaWindow(id: "day", label: "Daily", durationMinutes: 1_440, usedFraction: 0.1, resetsAt: readAt),
+            QuotaWindow(id: "month", label: "Monthly", durationMinutes: 43_200, usedFraction: 0.1, resetsAt: readAt),
+        ],
+        connectionState: .fresh
+    )
+    try expect(left(other, .fiveHour) == "day", "No five hours: the shortest")
+    try expect(left(other, .weekly) == "month", "No week: the longest")
+}

@@ -388,7 +388,7 @@ struct DictationShortcutEditor: View {
             if event.modifierFlags.contains(.command) { mods.insert(.command) }
             if event.modifierFlags.contains(.shift) { mods.insert(.shift) }
             guard !mods.isDisjoint(with: [.control, .option, .command]) else { return nil }
-            controller.setShortcut(.init(keyCode: UInt32(event.keyCode), modifiers: mods, keyLabel: event.charactersIgnoringModifiers?.uppercased() ?? "Key \(event.keyCode)"))
+            controller.setShortcut(.init(keyCode: UInt32(event.keyCode), modifiers: mods, keyLabel: KeyShortcut.keyLabel(keyCode: UInt32(event.keyCode), characters: event.charactersIgnoringModifiers)))
             finish(); return nil
         }
     }

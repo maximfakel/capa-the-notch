@@ -160,10 +160,15 @@ final class DictationDownloader: NSObject, URLSessionDownloadDelegate, @unchecke
             defer { self.continuation = nil }
             return (self.continuation, self.archive)
         }
+        if error == nil, let archive, let response = task.response, let continuation {
+            continuation.resume(with: archive.map { ($0, response) })
+            return
+        }
+        // No one will take the archive, so it goes: a download cancelled or
+        // failed once the file was here would leave it in the temporary folder.
+        if case let .success(file)? = archive { try? FileManager.default.removeItem(at: file) }
         if let error {
             continuation?.resume(throwing: (error as? URLError)?.code == .cancelled ? CancellationError() : error)
-        } else if let archive, let response = task.response {
-            continuation?.resume(with: archive.map { ($0, response) })
         } else {
             continuation?.resume(throwing: URLError(.badServerResponse))
         }

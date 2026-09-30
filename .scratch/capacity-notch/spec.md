@@ -93,6 +93,8 @@ Changed on purpose, and recorded:
 | Claude Code through a non-public first-party endpoint | Claude Code's own `/usage`, and the status-line bridge | ticket 03, ticket 13, ADR 0001 |
 | A notch that shows AI limits; music, Shelf, clipboard, calendar and dictation deferred | a Notch Surface hosting built-in Modules, Capacity the first; the deferred list ordered and decided | ticket 15, ADR 0003, `CONTEXT.md` |
 | Fullscreen supported | over a fullscreen application the closed surface is the strip alone, with no music row; opening it still works | ticket 06, `FullscreenDetection` |
+| Два индикатора в закрытом состоянии: Headline Window | the strip shows each Provider's five-hour window by default, or both of one Provider's windows when only it is on; the week or the Headline Window ("Least left") can be chosen in Settings. The five-hour and weekly choices take the window of that length, and the shortest or longest only when a Provider has none. Decided by the author on 2026-09-30 | 0.2.3–0.2.4, `CompactStrip`, `CONTEXT.md` |
+| Reduce Motion обязателен | the closed strip still grows toward an approaching pointer under Reduce Motion, as a 0.15 s ease rather than a spring; the author judged that short and calm enough on 2026-09-30 | 0.2.5, `NotchPanelController` |
 
 Not what the spec said, and not recorded until now:
 

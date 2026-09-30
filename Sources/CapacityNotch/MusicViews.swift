@@ -314,6 +314,10 @@ struct MusicPage: View {
                     VolumeControl(volume: SystemVolume.shared)
                 }
                 .frame(height: 22)
+                // On the row, not the bar: the bar is nothing until the
+                // level has been read, and nothing never appears.
+                .onAppear { SystemVolume.shared.startWatching() }
+                .onDisappear { SystemVolume.shared.stopWatching() }
             }
             .frame(height: 121)
         }

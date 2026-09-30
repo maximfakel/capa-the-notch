@@ -546,7 +546,11 @@ private struct ShortcutRecorder: View {
             if flags.contains(.command) { modifiers.insert(.command) }
             guard !modifiers.isDisjoint(with: [.control, .option, .command]) else { return nil }
             teleprompter.setShortcut(
-                KeyShortcut(keyCode: UInt32(event.keyCode), modifiers: modifiers, keyLabel: Self.label(event)),
+                KeyShortcut(
+                    keyCode: UInt32(event.keyCode),
+                    modifiers: modifiers,
+                    keyLabel: KeyShortcut.keyLabel(keyCode: UInt32(event.keyCode), characters: event.charactersIgnoringModifiers)
+                ),
                 for: action
             )
             finish()
@@ -560,21 +564,6 @@ private struct ShortcutRecorder: View {
         if recording { ModuleShortcutCapture.setActive(false); teleprompter.suspendShortcuts(false) }
         recording = false
         editing.wrappedValue = false
-    }
-
-    private static func label(_ event: NSEvent) -> String {
-        switch event.keyCode {
-        case 49: "Space"
-        case 53: "Esc"
-        case 36: "Return"
-        case 48: "Tab"
-        case 51: "Delete"
-        case 123: "←"
-        case 124: "→"
-        case 125: "↓"
-        case 126: "↑"
-        default: event.charactersIgnoringModifiers?.uppercased() ?? "Key \(event.keyCode)"
-        }
     }
 }
 

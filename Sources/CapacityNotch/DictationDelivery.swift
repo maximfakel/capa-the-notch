@@ -24,8 +24,9 @@ struct DictationDelivery {
         let workspacePID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let windowPID = frontmostExternalWindowPID(excluding: ownPID)
         guard let targetPID = [focusedPID, workspacePID, windowPID].compactMap({ $0 }).first(where: { $0 != ownPID }) else {
-            lastCaptureFailure = "No external app found. AX focus: \(focusedPID.map(String.init) ?? "none"); workspace: \(workspacePID.map(String.init) ?? "none"); front window: \(windowPID.map(String.init) ?? "none")."
-            logger.error("Capture skipped: \(lastCaptureFailure ?? "no target")")
+            // What was looked at goes to the log; the capsule says it in words.
+            lastCaptureFailure = "No external application was captured when recording began."
+            logger.error("Capture skipped: no external app. AX focus: \(focusedPID.map(String.init) ?? "none"); workspace: \(workspacePID.map(String.init) ?? "none"); front window: \(windowPID.map(String.init) ?? "none")")
             return nil
         }
         lastCaptureFailure = nil
@@ -154,7 +155,7 @@ struct DictationDelivery {
                 return nil
             }
             Self.logger.error("Paste failed; Apple Event error=\(automation.errorNumber ?? 0)")
-            return "Could not send Cmd-V through Quartz or System Events (Apple Event error \(automation.errorNumber ?? 0)). The text is still in the clipboard."
+            return "The text could not be pasted. It is still in the clipboard."
         }
         down.flags = .maskCommand
         up.flags = .maskCommand

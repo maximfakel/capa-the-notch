@@ -8,7 +8,9 @@ import CoreAudio
 ///
 /// It follows the device: a change of output (headphones connected, a
 /// display chosen) and a change of level from the keyboard or Control Center
-/// both arrive as Core Audio notices, so the bar never lags. A device whose
+/// both arrive as Core Audio notices, so the bar never lags. It listens only
+/// while a bar is on screen: with the music page closed or the Music Module
+/// off, Core Audio is not asked about anything (ADR 0003). A device whose
 /// level cannot be set — some displays over HDMI, some USB converters — has no
 /// speaker, and the page shows no bar.
 @MainActor
@@ -19,17 +21,42 @@ final class SystemVolume: ObservableObject {
     @Published private(set) var speaker: Speaker?
 
     private var device = AudioObjectID(kAudioObjectUnknown)
+    /// How many bars are showing; the listeners run while any is.
+    private var watchers = 0
+    private var outputListener: AudioObjectPropertyListenerBlock?
     private var deviceListeners: [(AudioObjectPropertyAddress, AudioObjectPropertyListenerBlock)] = []
     /// Where the level was when it was muted, on a device with no mute of its
     /// own: muting there is setting the level to zero.
     private var levelBeforeMute: Double?
 
-    private init() {
+    private init() {}
+
+    /// A bar appeared: follow the output device and its level.
+    func startWatching() {
+        watchers += 1
+        guard watchers == 1 else { return }
         var address = Self.address(kAudioHardwarePropertyDefaultOutputDevice, scope: kAudioObjectPropertyScopeGlobal)
-        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main) { [weak self] _, _ in
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
             MainActor.assumeIsolated { self?.follow() }
         }
+        if AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main, block) == noErr {
+            outputListener = block
+        }
         follow()
+    }
+
+    /// The last bar went: stop listening to Core Audio altogether.
+    func stopWatching() {
+        guard watchers > 0 else { return }
+        watchers -= 1
+        guard watchers == 0 else { return }
+        if let outputListener {
+            var address = Self.address(kAudioHardwarePropertyDefaultOutputDevice, scope: kAudioObjectPropertyScopeGlobal)
+            AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, .main, outputListener)
+        }
+        outputListener = nil
+        removeDeviceListeners()
+        device = AudioObjectID(kAudioObjectUnknown)
     }
 
     /// Dragging the bar up from silence brings the sound back, as the
@@ -74,11 +101,7 @@ final class SystemVolume: ObservableObject {
 
     /// The default output device, and listeners on its level and mute.
     private func follow() {
-        for (address, block) in deviceListeners {
-            var address = address
-            AudioObjectRemovePropertyListenerBlock(device, &address, .main, block)
-        }
-        deviceListeners = []
+        removeDeviceListeners()
         levelBeforeMute = nil
 
         var id = AudioObjectID(kAudioObjectUnknown)
@@ -97,6 +120,14 @@ final class SystemVolume: ObservableObject {
             deviceListeners.append((address, block))
         }
         read()
+    }
+
+    private func removeDeviceListeners() {
+        for (address, block) in deviceListeners {
+            var address = address
+            AudioObjectRemovePropertyListenerBlock(device, &address, .main, block)
+        }
+        deviceListeners = []
     }
 
     private func read() {
