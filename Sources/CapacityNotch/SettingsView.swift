@@ -230,7 +230,7 @@ private struct ProvidersSection: View {
 
 /// One Provider: whether it is on, what state it is in, when it was last
 /// read, why it is not being read when it is not, and a way to read it now.
-private struct ProviderSettingsCard: View {
+struct ProviderSettingsCard: View {
     let choice: ProviderChoice
     let snapshot: CapacitySnapshot?
     @Binding var isOn: Bool
@@ -579,8 +579,9 @@ private struct ShortcutRecorder: View {
 }
 
 /// One Module that can be switched on. Every Module but the Capacity Module
-/// is off until a person turns it on (CONTEXT.md), so each gets a card here.
-private struct ModuleCard: View {
+/// is off until a person turns it on (CONTEXT.md), so onboarding gives each
+/// one of these.
+struct ModuleCard: View {
     let icon: SettingsIcon
     let name: String
     let summary: String
@@ -670,11 +671,13 @@ private struct SettingsSidebar: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(SettingsSection.allCases) { section in
                 SidebarItem(
-                    section: section,
+                    icon: section.icon,
+                    title: section.title,
                     isSelected: selection == section,
-                    highlight: highlight
+                    highlight: highlight,
+                    action: { selection = section }
                 ) {
-                    selection = section
+                    KeyCaps(keys: ["⌘", String(section.rawValue)])
                 }
                 // ⌘1–⌘5, in the order the sidebar shows them.
                 .keyboardShortcut(KeyEquivalent(Character(String(section.rawValue))), modifiers: .command)
@@ -710,11 +713,15 @@ private struct SettingsSidebar: View {
     }
 }
 
-private struct SidebarItem: View {
-    let section: SettingsSection
+/// One line of a sidebar — Settings' sections, onboarding's steps — with
+/// whatever belongs at its end: keycaps, a step's number or its tick.
+struct SidebarItem<Trailing: View>: View {
+    let icon: SettingsIcon
+    let title: String
     let isSelected: Bool
     let highlight: Namespace.ID
     let action: () -> Void
+    @ViewBuilder let trailing: Trailing
 
     private let _hovering = State(initialValue: false)
     private var hovering: Bool {
@@ -725,12 +732,12 @@ private struct SidebarItem: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                SettingsIconView(section.icon)
+                SettingsIconView(icon)
                     .foregroundStyle(isSelected ? SettingsPalette.text : SettingsPalette.icon)
-                Text(section.title)
+                Text(title)
                     .font(isSelected ? SettingsType.bodyMedium : SettingsType.body)
                 Spacer(minLength: 0)
-                KeyCaps(keys: ["⌘", String(section.rawValue)])
+                trailing
             }
             .padding(.horizontal, 8)
             .frame(height: 32)
@@ -758,8 +765,10 @@ private struct SidebarItem: View {
 /// A shortcut spelled out in keycaps, as Fluid Functionalism's command menu
 /// shows them: one cap per key, 20 points tall, two points apart. Only
 /// shortcuts that work in this window are shown.
-private struct KeyCaps: View {
+struct KeyCaps: View {
     let keys: [String]
+    /// What VoiceOver says; Settings' sidebar shortcuts by default.
+    var label: String?
 
     var body: some View {
         HStack(spacing: 2) {
@@ -776,25 +785,38 @@ private struct KeyCaps: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Command \(keys.last ?? "")")
+        .accessibilityLabel(label ?? "Command \(keys.last ?? "")")
     }
 }
 
 struct SectionHeading: View {
-    let section: SettingsSection
+    let title: String
+    let subtitle: String
+
+    init(section: SettingsSection) {
+        self.init(title: section.title, subtitle: section.subtitle)
+    }
+
+    init(title: String, subtitle: String) {
+        self.title = title
+        self.subtitle = subtitle
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // The drawing's line heights, 28 and 18, rather than the font's.
-            Text(section.title)
+            // The drawing's line heights, 28 and 18, rather than the font's;
+            // a subtitle too long for one line takes a second.
+            Text(title)
                 .font(SettingsType.title)
                 .tracking(-0.22)
                 .frame(height: 28)
                 .accessibilityAddTraits(.isHeader)
-            Text(section.subtitle)
+            Text(subtitle)
                 .font(SettingsType.body)
                 .foregroundStyle(SettingsPalette.muted)
-                .frame(height: 18)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 18)
         }
     }
 }
@@ -802,7 +824,7 @@ struct SectionHeading: View {
 // MARK: - Pieces
 
 /// A card with the footnote that belongs to it.
-private struct SettingsGroup<Content: View>: View {
+struct SettingsGroup<Content: View>: View {
     let footnote: String?
     @ViewBuilder let content: Content
 
@@ -982,17 +1004,20 @@ private struct SettingsSwitch: View {
 }
 
 struct SettingsButtonStyle: ButtonStyle {
+    /// The one button a page leads with, dark on light as the drawing's
+    /// "Download • 170MB" is.
+    var prominent = false
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(SettingsType.body)
-            .foregroundStyle(isEnabled ? SettingsPalette.text : SettingsPalette.muted)
+            .foregroundStyle(prominent ? SettingsPalette.window : isEnabled ? SettingsPalette.text : SettingsPalette.muted)
             .padding(.horizontal, 10)
             .frame(height: 24)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(configuration.isPressed ? SettingsPalette.hover : SettingsPalette.control)
+                    .fill(prominent ? SettingsPalette.text.opacity(configuration.isPressed ? 0.8 : 1) : configuration.isPressed ? SettingsPalette.hover : SettingsPalette.control)
                     .shadow(color: SettingsPalette.ring, radius: 1, y: 1)
             )
             .overlay(
@@ -1033,7 +1058,7 @@ private struct SettingsIconButton: View {
 
 /// A pop-up choice drawn as the mockup's small white control with its
 /// chevrons; the menu it opens is the system's.
-private struct SettingsPicker<Value: Hashable, Items: View>: View {
+struct SettingsPicker<Value: Hashable, Items: View>: View {
     @Binding var selection: Value
     let label: String
     @ViewBuilder let items: Items

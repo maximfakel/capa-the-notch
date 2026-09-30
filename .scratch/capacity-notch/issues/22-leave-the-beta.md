@@ -48,3 +48,23 @@ Decided already, by the author on 2026-09-30:
   conditions for leaving the beta.
 - The compact expanded surface for 14″ and 13″: the author saw both display
   modes on a 14″ M5 Pro and nothing needs changing.
+
+## Comments
+
+**2026-09-30, onboarding redone.** The first-launch window is built again in
+Settings' own style and drawn in Paper beside Settings ("Pairtask" /
+"Settings", the "Onboarding — 1…6" row); the author will settle the sizes
+there. Six steps: Welcome, Permissions, Providers, Music, Teleprompter,
+Dictation. Translated into Russian with the rest of the interface.
+
+The author changed three of ticket 07's rules:
+
+- **Choices take effect at once.** Onboarding writes through the same model
+  as Settings, so a switch flicked there is on immediately, not at Finish.
+- **Providers can be skipped.** Continue still waits for a Provider to
+  answer; Skip goes on without one.
+- **Every permission is asked for up front,** on its own step: notifications,
+  the microphone, Accessibility and System Events, one by one or with
+  "Allow All". Asking for notifications no longer switches alerts on.
+
+Still open under this item: the author's pass on sizes in Paper.

@@ -154,6 +154,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Onboarding, every step in both appearances, for the same comparison.
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_ONBOARDING"] {
+            for step in OnboardingModel.Step.allCases {
+                let model = OnboardingModel(preferences: preferences, application: self, store: store, notifications: notifications, step: step)
+                Self.draw(OnboardingView(model: model), height: 560, into: folder, named: "onboarding-\(step.rawValue + 1)-\(step)")
+            }
+            // The two Modules switched on, from stand-ins that touch neither
+            // the person's Script nor their Dictation.
+            let suite = "capacity-notch-dump-\(UUID().uuidString)"
+            if let defaults = UserDefaults(suiteName: suite) {
+                let demo = Preferences(defaults: defaults)
+                demo.teleprompterEnabled = true
+                demo.dictationEnabled = true
+                let teleprompter = TeleprompterController(preferences: demo, registersShortcuts: false)
+                let dictation = DictationController(preferences: demo, registersShortcuts: false)
+                for step in [OnboardingModel.Step.teleprompter, .dictation] {
+                    let model = OnboardingModel(preferences: preferences, application: self, store: store, notifications: notifications, step: step, teleprompter: teleprompter, dictation: dictation)
+                    Self.draw(OnboardingView(model: model), height: 560, into: folder, named: "onboarding-\(step.rawValue + 1)-\(step)-on")
+                }
+                UserDefaults.standard.removePersistentDomain(forName: suite)
+            }
+        }
+
         // The Teleprompter's row, page and Settings card, drawn from a stand-in
         // with a sample Script — never the person's own — to hold against
         // Paper "Notch — … — Teleprompter" and "Settings — Modules — Teleprompter".
@@ -358,10 +381,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboarding: NSWindowController?
     private var settings: NSWindowController?
 
-    func isProviderRunning(_ provider: Provider) -> Bool {
-        isConnected(provider)
-    }
-
     /// Shows the first-run path. Re-running it opens the same window rather
     /// than a second one, and changes nothing until it is finished.
     func startOnboarding(force: Bool) {
@@ -373,9 +392,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let model = OnboardingModel(preferences: preferences, application: self)
-        onboarding = Self.window(
-            titled: "Welcome to Capacity Notch",
+        let model = OnboardingModel(preferences: preferences, application: self, store: store, notifications: notifications)
+        onboarding = Self.settingsWindow(
+            titled: L("Welcome to Capacity Notch"),
             content: OnboardingView(model: model)
         )
         onboarding?.window?.makeKeyAndOrderFront(nil)
@@ -401,6 +420,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Settings redraw themselves; only the window's own title is AppKit's.
     func applyLanguage() {
         settings?.window?.title = L("Capacity Notch Settings")
+        onboarding?.window?.title = L("Welcome to Capacity Notch")
     }
 
     /// Light, dark, or the Mac's own, for every window the application opens.
@@ -422,8 +442,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Settings, both appearances of one section, as pictures.
     private static func drawSettings(model: SettingsModel, section: SettingsSection, height: CGFloat, into folder: String, named name: String) {
+        draw(SettingsView(model: model, section: section), height: height, into: folder, named: name)
+    }
+
+    private static func draw(_ view: some View, height: CGFloat, into folder: String, named name: String) {
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let host = NSHostingView(rootView: SettingsView(model: model, section: section))
+            let host = NSHostingView(rootView: view)
             host.appearance = NSAppearance(named: appearance)
             host.frame = NSRect(x: 0, y: 0, width: 760, height: height)
             host.layoutSubtreeIfNeeded()
@@ -534,7 +558,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let model = SettingsModel(preferences: preferences, application: self, store: store)
         if forDictation { configureDictationSettings(model) }
-        settings = Self.settingsWindow(content: SettingsView(model: model, section: section ?? .general))
+        settings = Self.settingsWindow(titled: L("Capacity Notch Settings"), content: SettingsView(model: model, section: section ?? .general))
         settings?.window?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
@@ -544,28 +568,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.dictationPage = dictation.modelReady && dictation.microphoneAllowed ? .overview : .setup
     }
 
-    /// The drawing's window: 760 by 560, the sidebar running to the top edge
-    /// under the traffic lights, no title — the sidebar says where you are.
-    private static func settingsWindow(content: some View) -> NSWindowController {
+    /// The drawing's window, for Settings and onboarding alike: 760 by 560,
+    /// the sidebar running to the top edge under the traffic lights, no title
+    /// shown — the sidebar says where you are.
+    private static func settingsWindow(titled title: String, content: some View) -> NSWindowController {
         let hosting = NSHostingController(rootView: content)
         hosting.sizingOptions = []
         let window = NSWindow(contentViewController: hosting)
-        window.title = L("Capacity Notch Settings")
+        window.title = title
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.styleMask = [.titled, .closable, .fullSizeContentView]
         window.isMovableByWindowBackground = true
         window.setContentSize(NSSize(width: 760, height: 560))
-        window.isReleasedWhenClosed = false
-        window.center()
-        return NSWindowController(window: window)
-    }
-
-    private static func window(titled title: String, content: some View) -> NSWindowController {
-        let hosting = NSHostingController(rootView: content)
-        let window = NSWindow(contentViewController: hosting)
-        window.title = title
-        window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.center()
         return NSWindowController(window: window)

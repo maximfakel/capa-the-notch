@@ -24,8 +24,11 @@ final class DictationMicrophone: @unchecked Sendable {
     private let lock = NSLock()
     private var samples: [Float] = []
     private var accepting = false
-    /// The queue whose buffers are still wanted; any other's are dropped.
-    private var live: AudioQueueRef?
+    /// Which queue's buffers are still wanted; any other's are dropped.
+    /// A number, not the queue's address: a disposed queue's callback can
+    /// still be waiting when a new queue is made at the same address.
+    private var queuesMade = 0
+    private var live: Int?
     // Touched only from the MainActor methods below.
     private var queue: AudioQueueRef?
     private var listener: AudioObjectPropertyListenerBlock?
@@ -57,9 +60,10 @@ final class DictationMicrophone: @unchecked Sendable {
             mBytesPerPacket: 4, mFramesPerPacket: 1, mBytesPerFrame: 4,
             mChannelsPerFrame: 1, mBitsPerChannel: 32, mReserved: 0
         )
+        let number = lock.withLock { queuesMade += 1; return queuesMade }
         var made: AudioQueueRef?
         let status = AudioQueueNewInputWithDispatchQueue(&made, &format, 0, callbacks) { [weak self] queue, buffer, _, _, _ in
-            self?.received(buffer, from: queue, level: level, limit: limit)
+            self?.received(buffer, from: queue, number: number, level: level, limit: limit)
         }
         guard status == noErr, let made else { throw DictationFailure("The microphone could not start. Check microphone access and your input device in System Settings.") }
         // A tenth of a second a buffer, three in turn.
@@ -67,7 +71,7 @@ final class DictationMicrophone: @unchecked Sendable {
             var buffer: AudioQueueBufferRef?
             if AudioQueueAllocateBuffer(made, 1_600 * 4, &buffer) == noErr, let buffer { AudioQueueEnqueueBuffer(made, buffer, 0, nil) }
         }
-        lock.withLock { live = made }
+        lock.withLock { live = number }
         queue = made
         guard AudioQueueStart(made, nil) == noErr else {
             tearDownQueue()
@@ -78,11 +82,11 @@ final class DictationMicrophone: @unchecked Sendable {
 
     /// On the callback queue. Held under the lock throughout, so a queue being
     /// torn down never has its buffer read after it is gone.
-    private func received(_ buffer: AudioQueueBufferRef, from queue: AudioQueueRef, level: @escaping @Sendable (Float) -> Void, limit: @escaping @Sendable () -> Void) {
+    private func received(_ buffer: AudioQueueBufferRef, from queue: AudioQueueRef, number: Int, level: @escaping @Sendable (Float) -> Void, limit: @escaping @Sendable () -> Void) {
         var measured: Float?
         var full = false
         lock.withLock {
-            guard live == queue else { return }
+            guard live == number else { return }
             defer { AudioQueueEnqueueBuffer(queue, buffer, 0, nil) }
             let count = Int(buffer.pointee.mAudioDataByteSize) / MemoryLayout<Float>.size
             guard accepting, count > 0 else { return }

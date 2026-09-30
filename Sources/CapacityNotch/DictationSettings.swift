@@ -200,7 +200,7 @@ private struct DictationSubpage: View {
     private var englishSubtitle: String { switch page { case .setup: "Speak in Russian, with the IT terms you use every day."; case .history: "Your last 50 results, kept only on this Mac."; case .replacements: "Choose how recognised words are written."; case .overview: "" } }
 }
 
-private struct DictationSetup: View {
+struct DictationSetup: View {
     @ObservedObject var controller: DictationController
     var body: some View {
         if !controller.isEnabled {
@@ -235,14 +235,17 @@ private struct DictationSetup: View {
         }.padding(14).background(SettingsPalette.card, in: RoundedRectangle(cornerRadius: 10))
         VStack(alignment: .leading, spacing: 10) {
             step(2, L("Allow microphone access"), complete: controller.microphoneAllowed)
-            if controller.modelReady && !controller.microphoneAllowed {
+            // Onboarding may have asked already, before the model was here.
+            if controller.microphoneAllowed {
+                Text(L("Granted")).font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
+            } else if controller.modelReady {
                 Text(L("Microphone access is needed only while recording.")).font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
                 Button(L("Allow microphone access")) { controller.requestMicrophone() }.buttonStyle(SettingsButtonStyle()).disabled(!controller.isEnabled)
             } else if !controller.modelReady { Text(L("Requested after the model is ready.")).font(SettingsType.caption).foregroundStyle(SettingsPalette.muted) }
         }.padding(.horizontal, 14)
         VStack(alignment: .leading, spacing: 10) {
             step(3, L("Enable automatic insertion"), complete: controller.insertionAllowed)
-            Text(L("Optional. You can always paste from the clipboard.")).font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
+            Text(controller.insertionAllowed ? L("Granted") : L("Optional. You can always paste from the clipboard.")).font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
             if controller.modelReady && controller.microphoneAllowed && !controller.insertionAllowed {
                 Button(L("Enable automatic insertion")) { controller.requestInsertion() }.buttonStyle(SettingsButtonStyle()).disabled(!controller.isEnabled)
             }
@@ -358,13 +361,14 @@ private struct DictationReplacementsView: View {
     }
 }
 
-private struct DictationShortcutEditor: View {
+/// The shortcut's keycaps and Edit, in Settings and in onboarding alike.
+struct DictationShortcutEditor: View {
     @ObservedObject var controller: DictationController
     private let _monitor = State<Any?>(initialValue: nil)
     private let _recording = State(initialValue: false)
     @Environment(\.moduleEditing) private var editing
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             HStack(spacing: 2) {
                 ForEach(Array(controller.shortcut.keycaps.enumerated()), id: \.offset) { _, cap in
                     Text(cap).font(SettingsType.keycap).foregroundStyle(SettingsPalette.muted).padding(.horizontal, 4).frame(minWidth: 20).frame(height: 20).background(SettingsPalette.keycap, in: RoundedRectangle(cornerRadius: 5))

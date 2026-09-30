@@ -5,8 +5,8 @@ import UserNotifications
 /// Puts a Capacity Alert in front of the person, and brings them back to the
 /// window it was about.
 ///
-/// Permission is asked for at the moment someone switches alerts on, and never
-/// before: a permission prompt at launch is a question nobody asked for.
+/// Permission is asked for in onboarding, with everything else Capacity Notch
+/// needs, or at the moment someone switches alerts on — never at launch.
 @MainActor
 final class CapacityNotifications: NSObject, UNUserNotificationCenterDelegate {
     nonisolated static let providerKey = "provider"
@@ -33,6 +33,11 @@ final class CapacityNotifications: NSObject, UNUserNotificationCenterDelegate {
     /// decided, which is not always what was asked.
     func requestPermission() async -> Bool {
         (try? await centre.requestAuthorization(options: [.alert, .sound])) ?? false
+    }
+
+    /// What macOS has decided, without asking.
+    func authorization() async -> UNAuthorizationStatus {
+        await centre.notificationSettings().authorizationStatus
     }
 
     func send(_ alert: CapacityAlert) {

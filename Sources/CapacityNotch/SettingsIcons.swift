@@ -11,6 +11,15 @@ enum SettingsIcon {
     case diagnostics
     case music
     case teleprompter
+    case dictation
+    /// A screen with its notch: onboarding's first step.
+    case notch
+    /// A padlock: onboarding's permissions.
+    case permissions
+    /// The figure macOS draws for Accessibility.
+    case accessibility
+    /// A key on a keyboard: System Events pressing ⌘V.
+    case automation
     case refresh
     case chevrons
 
@@ -26,7 +35,7 @@ enum SettingsIcon {
     fileprivate var lineWidth: CGFloat {
         switch self {
         case .chevrons: 1.2
-        case .music, .teleprompter: 1.4
+        case .music, .teleprompter, .dictation, .permissions: 1.4
         default: 1.3
         }
     }
@@ -88,6 +97,65 @@ enum SettingsIcon {
                 path.move(to: CGPoint(x: 3, y: y))
                 path.addLine(to: CGPoint(x: end, y: y))
             }
+        case .dictation:
+            path.addRoundedRect(
+                in: CGRect(x: 5.75, y: 1.75, width: 4.5, height: 7.5),
+                cornerSize: CGSize(width: 2.25, height: 2.25)
+            )
+            path.move(to: CGPoint(x: 3.5, y: 7.25))
+            path.addQuadCurve(to: CGPoint(x: 12.5, y: 7.25), control: CGPoint(x: 8, y: 16.25))
+            path.move(to: CGPoint(x: 8, y: 11.75))
+            path.addLine(to: CGPoint(x: 8, y: 14.25))
+        case .notch:
+            // The screen's outline dips round the notch at the top.
+            path.move(to: CGPoint(x: 6, y: 2.75))
+            path.addLine(to: CGPoint(x: 3.25, y: 2.75))
+            path.addQuadCurve(to: CGPoint(x: 1.75, y: 4.25), control: CGPoint(x: 1.75, y: 2.75))
+            path.addLine(to: CGPoint(x: 1.75, y: 11.75))
+            path.addQuadCurve(to: CGPoint(x: 3.25, y: 13.25), control: CGPoint(x: 1.75, y: 13.25))
+            path.addLine(to: CGPoint(x: 12.75, y: 13.25))
+            path.addQuadCurve(to: CGPoint(x: 14.25, y: 11.75), control: CGPoint(x: 14.25, y: 13.25))
+            path.addLine(to: CGPoint(x: 14.25, y: 4.25))
+            path.addQuadCurve(to: CGPoint(x: 12.75, y: 2.75), control: CGPoint(x: 14.25, y: 2.75))
+            path.addLine(to: CGPoint(x: 10, y: 2.75))
+            path.addLine(to: CGPoint(x: 10, y: 3.75))
+            path.addQuadCurve(to: CGPoint(x: 9, y: 4.75), control: CGPoint(x: 10, y: 4.75))
+            path.addLine(to: CGPoint(x: 7, y: 4.75))
+            path.addQuadCurve(to: CGPoint(x: 6, y: 3.75), control: CGPoint(x: 6, y: 4.75))
+            path.closeSubpath()
+        case .permissions:
+            path.addRoundedRect(
+                in: CGRect(x: 3, y: 7, width: 10, height: 7.25),
+                cornerSize: CGSize(width: 1.75, height: 1.75)
+            )
+            path.move(to: CGPoint(x: 5.25, y: 7))
+            path.addLine(to: CGPoint(x: 5.25, y: 4.75))
+            path.addArc(center: CGPoint(x: 8, y: 4.75), radius: 2.75,
+                        startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+            path.addLine(to: CGPoint(x: 10.75, y: 7))
+            path.move(to: CGPoint(x: 8, y: 10))
+            path.addLine(to: CGPoint(x: 8, y: 11.25))
+        case .accessibility:
+            path.addEllipse(in: CGRect(x: 1.75, y: 1.75, width: 12.5, height: 12.5))
+            path.addEllipse(in: CGRect(x: 7.1, y: 3.85, width: 1.8, height: 1.8))
+            path.move(to: CGPoint(x: 4.75, y: 6.75))
+            path.addLine(to: CGPoint(x: 11.25, y: 6.75))
+            path.move(to: CGPoint(x: 8, y: 6.75))
+            path.addLine(to: CGPoint(x: 8, y: 9.25))
+            path.addLine(to: CGPoint(x: 6.25, y: 12))
+            path.move(to: CGPoint(x: 8, y: 9.25))
+            path.addLine(to: CGPoint(x: 9.75, y: 12))
+        case .automation:
+            path.addRoundedRect(
+                in: CGRect(x: 1.75, y: 3.75, width: 12.5, height: 8.5),
+                cornerSize: CGSize(width: 1.75, height: 1.75)
+            )
+            for x in [4.5, 6.75, 9.25, 11.5] {
+                path.move(to: CGPoint(x: x, y: 6.5))
+                path.addLine(to: CGPoint(x: x + 0.01, y: 6.5))
+            }
+            path.move(to: CGPoint(x: 5.5, y: 9.5))
+            path.addLine(to: CGPoint(x: 10.5, y: 9.5))
         case .refresh:
             // Most of a circle from three o'clock round to half past one,
             // and the arrowhead at its end.

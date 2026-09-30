@@ -1,0 +1,188 @@
+@preconcurrency import ApplicationServices
+import AppKit
+import AVFoundation
+import UserNotifications
+
+/// Everything Capacity Notch asks macOS for, asked for together in
+/// onboarding so nothing interrupts work later: notifications for Capacity
+/// Alerts, the microphone for Dictation, Accessibility to insert its text,
+/// and System Events for the paste Dictation falls back on.
+///
+/// Music and Launch at Login need nothing: the one reads what is playing
+/// without a prompt (ADR 0004), the other is macOS's own switch.
+@MainActor
+final class SystemAccess: ObservableObject {
+    enum Kind: CaseIterable, Identifiable {
+        case notifications
+        case microphone
+        case accessibility
+        case automation
+
+        var id: Self { self }
+
+        var name: String { L(englishName) }
+
+        private var englishName: String {
+            switch self {
+            case .notifications: "Notifications"
+            case .microphone: "Microphone"
+            case .accessibility: "Accessibility"
+            case .automation: "System Events"
+            }
+        }
+
+        var reason: String { L(englishReason) }
+
+        private var englishReason: String {
+            switch self {
+            case .notifications: "A Capacity Alert when a window is about to run out."
+            case .microphone: "Dictation hears you only while you hold its shortcut."
+            case .accessibility: "Dictation types its text where the cursor is."
+            case .automation: "Dictation's fallback for pasting its text."
+            }
+        }
+
+        var icon: SettingsIcon {
+            switch self {
+            case .notifications: .alerts
+            case .microphone: .dictation
+            case .accessibility: .accessibility
+            case .automation: .automation
+            }
+        }
+
+        /// The pane of Privacy & Security where a refusal is undone.
+        fileprivate var settingsURL: URL? {
+            switch self {
+            case .notifications: URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")
+            case .microphone: URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+            case .accessibility: URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            case .automation: URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")
+            }
+        }
+    }
+
+    enum State: Equatable {
+        case granted
+        /// macOS has not asked yet, so asking shows its own prompt.
+        case notAsked
+        /// Refused, or asked and not yet switched on: only System Settings
+        /// can change it now.
+        case refused
+        /// Notifications, run outside an application bundle.
+        case unavailable
+    }
+
+    @Published private(set) var states: [Kind: State] = [:]
+
+    private let dictation: DictationController
+    private let notifications: CapacityNotifications?
+    /// Accessibility has no "refused": once its prompt has been shown, the
+    /// next step is System Settings.
+    private var askedAccessibility = false
+    private var watching: Task<Void, Never>?
+
+    init(dictation: DictationController, notifications: CapacityNotifications?) {
+        self.dictation = dictation
+        self.notifications = notifications
+    }
+
+    func state(_ kind: Kind) -> State { states[kind] ?? .notAsked }
+
+    /// Anything macOS can still be asked about.
+    var anyToAsk: Bool { Kind.allCases.contains { state($0) == .notAsked } }
+
+    /// Reads what macOS has decided, without asking anything.
+    func refresh() async {
+        var next: [Kind: State] = [:]
+        if let notifications {
+            next[.notifications] = switch await notifications.authorization() {
+            case .authorized, .provisional, .ephemeral: .granted
+            case .denied: .refused
+            default: .notAsked
+            }
+        } else {
+            next[.notifications] = .unavailable
+        }
+        next[.microphone] = switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized: .granted
+        case .notDetermined: .notAsked
+        default: .refused
+        }
+        next[.accessibility] = AXIsProcessTrusted() ? .granted : askedAccessibility ? .refused : .notAsked
+        next[.automation] = await Self.automation(asking: false)
+        if next != states { states = next }
+        dictation.refreshPermissions()
+    }
+
+    /// Shows macOS's prompt for one kind, or its pane in System Settings once
+    /// the prompt has had its answer.
+    func request(_ kind: Kind) async {
+        guard state(kind) == .notAsked else {
+            if let url = kind.settingsURL { NSWorkspace.shared.open(url) }
+            return
+        }
+        switch kind {
+        case .notifications:
+            _ = await notifications?.requestPermission()
+        case .microphone:
+            await dictation.askForMicrophone()
+        case .accessibility:
+            askedAccessibility = true
+            dictation.askForInsertion()
+        case .automation:
+            _ = await Self.automation(asking: true)
+        }
+        await refresh()
+    }
+
+    /// Every prompt still to be shown, one after another. Accessibility goes
+    /// last: its prompt sends the person to System Settings.
+    func requestAll() async {
+        for kind in [Kind.notifications, .microphone, .automation, .accessibility] where state(kind) == .notAsked {
+            await request(kind)
+        }
+    }
+
+    /// Keeps the states current while they are on screen: Accessibility, and
+    /// anything changed in System Settings, never says it changed.
+    func watch() {
+        watching?.cancel()
+        watching = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.refresh()
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+
+    func stopWatching() {
+        watching?.cancel()
+        watching = nil
+    }
+
+    /// Whether Capacity Notch may send System Events its paste. Asking needs
+    /// System Events running; without asking, a System Events that is not
+    /// running cannot say, and is treated as not asked — asking then launches
+    /// it and, when access was already given, returns without a prompt.
+    private static func automation(asking: Bool) async -> State {
+        let systemEvents = "com.apple.systemevents"
+        if asking, NSRunningApplication.runningApplications(withBundleIdentifier: systemEvents).isEmpty,
+           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: systemEvents) {
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = false
+            _ = try? await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
+        }
+        // It can wait on the person's answer, so never on the main thread.
+        let status = await Task.detached {
+            let target = NSAppleEventDescriptor(bundleIdentifier: systemEvents)
+            guard let address = target.aeDesc else { return OSStatus(procNotFound) }
+            return AEDeterminePermissionToAutomateTarget(address, typeWildCard, typeWildCard, asking)
+        }.value
+        switch Int(status) {
+        case Int(noErr): return .granted
+        case Int(errAEEventNotPermitted): return .refused
+        default: return .notAsked
+        }
+    }
+}

@@ -1,7 +1,7 @@
 import Foundation
 
-/// The language Capacity Notch speaks: Settings, the menu, the notch and its
-/// notifications. Onboarding stays in English for now.
+/// The language Capacity Notch speaks: onboarding, Settings, the menu, the
+/// notch and its notifications.
 public enum AppLanguage: String, CaseIterable, Sendable {
     case system
     case english
@@ -339,6 +339,46 @@ public enum Localization {
         "Copy Diagnostics": "Копировать отчёт",
         "Reveal Log": "Показать журнал",
         "Run Onboarding Again": "Онбординг",
+
+        // Onboarding
+        "Welcome": "Приветствие",
+        "Welcome to Capacity Notch": "Добро пожаловать в Capacity Notch",
+        "Connect a Provider": "Подключите провайдера",
+        "How much of Codex and Claude Code is left, right under the notch — and a few tools beside it.": "Сколько осталось лимитов Codex и Claude Code — прямо под вырезом экрана. И ещё несколько инструментов рядом.",
+        "Capacity Notch reads nothing until a Provider is on.": "Пока провайдер выключен, Capacity Notch ничего не читает.",
+        "Control what's playing without leaving what you're doing.": "Управляйте музыкой, не отрываясь от работы.",
+        "Read your Script beside the camera, without looking away.": "Читайте текст рядом с камерой, не отводя взгляд.",
+        "Speech becomes text on this Mac. The speech model is downloaded once.": "Речь превращается в текст прямо на этом Mac. Языковая модель загружается один раз.",
+        "Everything chosen here can be changed later in Settings.": "Всё, что вы выберете здесь, можно поменять потом в настройках.",
+        "Onboarding steps": "Шаги онбординга",
+        "Done": "Готово",
+        "Step %d": "Шаг %d",
+        "Back": "Назад",
+        "Continue": "Продолжить",
+        "Skip": "Пропустить",
+        "Skipped": "Пропущено",
+        "Permissions": "Разрешения",
+        "Everything macOS will ask about, at once, so nothing interrupts you later.": "Всё, о чём спросит macOS, — сразу, чтобы потом ничего не отвлекало.",
+        "Notifications": "Уведомления",
+        "Microphone": "Микрофон",
+        "Accessibility": "Универсальный доступ",
+        "System Events": "System Events",
+        "A Capacity Alert when a window is about to run out.": "Оповещение, когда лимит вот-вот закончится.",
+        "Dictation hears you only while you hold its shortcut.": "Диктовка слышит вас, пока вы держите сочетание.",
+        "Dictation types its text where the cursor is.": "Диктовка вставляет текст туда, где стоит курсор.",
+        "Dictation's fallback for pasting its text.": "Запасной способ вставки текста для диктовки.",
+        "macOS asks about each one in turn. Accessibility is switched on in System Settings; its state here follows when you come back.": "macOS спросит о каждом по очереди. Универсальный доступ включается в Системных настройках — когда вернётесь, здесь это отразится.",
+        "Allow All": "Разрешить всё",
+        "Allow": "Разрешить",
+        "Granted": "Разрешено",
+        "Open Settings": "Открыть настройки",
+        "Unavailable": "Недоступно",
+        "Finish": "Готово",
+        "Capacity": "Лимиты",
+        "What is left of each window, and whether it will last.": "Сколько осталось в каждом лимите и хватит ли его.",
+        "Settings and the notch speak it; you can change it at any time.": "На нём говорят настройки и шторка. Поменять можно в любой момент.",
+        "Claude Code is experimental. Capacity Notch says what it reads before reading anything.": "Claude Code — экспериментальный. Прежде чем что-то читать, Capacity Notch скажет, что именно.",
+        "Write or paste the Script in Settings, under Modules. The shortcuts can be changed there too.": "Текст можно написать или вставить в настройках, в разделе «Модули». Там же меняются сочетания клавиш.",
         "Copied text carries versions, the states of Providers and Dictation, and timings. It carries no credential, address, identifier, Provider message or dictated text — those cannot reach it.": "В скопированном тексте — версии, состояние провайдеров и диктовки, время. Учётных данных, адресов, идентификаторов, сообщений провайдеров и надиктованного текста в нём нет.",
     ]
 }

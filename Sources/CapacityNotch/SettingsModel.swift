@@ -6,9 +6,6 @@ import SwiftUI
 struct ProviderChoice: Identifiable {
     let provider: Provider
     let name: String
-    /// A line under the name, where onboarding needs one. Settings says what
-    /// a Provider is doing instead, on its card.
-    var note: String? = nil
 
     var id: String { provider.rawValue }
 }

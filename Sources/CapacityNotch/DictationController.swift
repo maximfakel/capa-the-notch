@@ -100,20 +100,28 @@ final class DictationController: ObservableObject {
     }
     func requestMicrophone() {
         guard isEnabled, modelReady else { return }
-        let status = Self.microphoneStatus
-        if status == .notDetermined {
-            DiagnosticLog.record(.microphoneRequested(status))
-            Task {
-                microphoneAllowed = await AVCaptureDevice.requestAccess(for: .audio)
-                DiagnosticLog.record(.microphoneAnswered(granted: microphoneAllowed, now: Self.microphoneStatus))
-            }
+        if Self.microphoneStatus == .notDetermined {
+            Task { await askForMicrophone() }
         } else {
-            DiagnosticLog.record(.microphoneSettingsOpened(status))
-            openPrivacy("Microphone")
+            openMicrophoneSettings()
         }
+    }
+    /// macOS's own question, which it asks only once; onboarding asks it
+    /// before Dictation is on, with the rest of what Capacity Notch needs.
+    func askForMicrophone() async {
+        DiagnosticLog.record(.microphoneRequested(Self.microphoneStatus))
+        microphoneAllowed = await AVCaptureDevice.requestAccess(for: .audio)
+        DiagnosticLog.record(.microphoneAnswered(granted: microphoneAllowed, now: Self.microphoneStatus))
+    }
+    func openMicrophoneSettings() {
+        DiagnosticLog.record(.microphoneSettingsOpened(Self.microphoneStatus))
+        openPrivacy("Microphone")
     }
     func requestInsertion() {
         guard isEnabled else { return }
+        askForInsertion()
+    }
+    func askForInsertion() {
         AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
         refreshPermissions()
     }
