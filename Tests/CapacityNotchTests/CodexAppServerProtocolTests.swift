@@ -286,3 +286,25 @@ func anUnreadSurfaceShowsNoNumbersAtAll() throws {
         "With nothing read, the header should say so rather than claim mock Capacity"
     )
 }
+
+func theCodexInChatGPTIsFoundWhereNewerReleasesKeepIt() throws {
+    let paths = CodexInstallation.defaultSearchPaths
+    let bundled = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex"
+    guard let newer = paths.firstIndex(of: bundled), let npm = paths.firstIndex(where: { $0.hasSuffix("/.local/bin/codex") }) else {
+        throw TestFailure(description: "ChatGPT's newer Codex and an npm install are both looked for")
+    }
+    try expect(newer < npm, "The native Codex in ChatGPT comes before a script that needs Node")
+}
+
+func codexRunsWithThePathATerminalWouldGiveIt() throws {
+    let home = URL(fileURLWithPath: "/Users/someone")
+    let environment = CodexInstallation.environment(base: ["PATH": "/usr/bin:/bin", "HOME": "/Users/someone"], home: home)
+    let path = (environment["PATH"] ?? "").split(separator: ":").map(String.init)
+    try expect(path.prefix(2) == ["/usr/bin", "/bin"], "What it was given comes first")
+    for wanted in ["/opt/homebrew/bin", "/usr/local/bin", "/Users/someone/.local/bin"] {
+        try expect(path.contains(wanted), "\(wanted) is there, where npm's Node usually is")
+    }
+    try expect(environment["HOME"] == "/Users/someone", "The rest is left as it was")
+    let twice = CodexInstallation.environment(base: ["PATH": "/usr/local/bin:/usr/bin"], home: home)["PATH"] ?? ""
+    try expect(twice.components(separatedBy: "/usr/local/bin").count == 2, "Nothing twice")
+}

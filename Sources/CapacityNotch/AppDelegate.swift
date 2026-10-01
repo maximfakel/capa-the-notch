@@ -272,7 +272,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         codexRefresh = Task { [weak self, codex] in
             await codex.connect()
             while !Task.isCancelled {
-                guard let delay = await self?.nextDelay(for: .codex) else { return }
+                guard let delay = self?.nextDelay(for: .codex) else { return }
                 try? await Task.sleep(for: .seconds(delay))
                 guard !Task.isCancelled else { return }
                 await codex.refresh()
@@ -361,7 +361,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         claudeRefresh = Task { [weak self, claude] in
             await claude.connect()
             while !Task.isCancelled {
-                guard let delay = await self?.nextDelay(for: .claudeCode) else { return }
+                guard let delay = self?.nextDelay(for: .claudeCode) else { return }
                 try? await Task.sleep(for: .seconds(delay))
                 guard !Task.isCancelled else { return }
                 await claude.refresh()

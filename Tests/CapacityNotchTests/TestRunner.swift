@@ -25,6 +25,8 @@ enum CapacityNotchTestRunner {
             ("CompactStrip.oneProvider", theStripShowsTheOnlyProvidersShortWindowLeftAndLongRight),
             ("CompactStrip.bothProviders", theStripShowsEachProvidersFiveHoursWhenBothAreOn),
             ("CompactStrip.nothingConnected", nothingConnectedLeavesTheStripEmptyAndTheSurfaceOpen),
+            ("Codex.chatGPTBundled", theCodexInChatGPTIsFoundWhereNewerReleasesKeepIt),
+            ("Codex.environment", codexRunsWithThePathATerminalWouldGiveIt),
             ("Shelf.newestFirstAndTwenty", theShelfKeepsTheNewestFirstAndAtMostTwenty),
             ("Shelf.droppedAgainRises", aFileDroppedAgainRisesInsteadOfAppearingTwice),
             ("Shelf.removeAndClear", aFileIsRemovedAloneAndClearingEmptiesTheShelf),

@@ -50,6 +50,7 @@ public final class CodexProcessTransport: CodexAppServerTransport, @unchecked Se
 
         process.executableURL = URL(fileURLWithPath: executablePath)
         process.arguments = ["app-server"]
+        process.environment = CodexInstallation.environment()
         process.standardInput = inbound
         process.standardOutput = outbound
         // Codex logs to stderr. It is discarded unless the person running

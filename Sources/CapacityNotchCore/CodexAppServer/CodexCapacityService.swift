@@ -73,6 +73,12 @@ public actor CodexCapacityService {
                 params: clientInfo.initializeParams
             )
             try await client.notify(method: CodexAppServerMethod.initialized)
+        } catch JSONRPCTransportError.connectionClosed {
+            // It ended before answering: it could not start here, which is
+            // not the same as speaking another protocol.
+            await tearDown()
+            emitDisconnected(.providerUnavailable(detail: "it stopped before answering. Check that `codex app-server` runs in Terminal."))
+            return
         } catch {
             await tearDown()
             emitDisconnected(.providerIncompatible(detail: handshakeDetail(for: error)))

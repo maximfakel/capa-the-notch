@@ -177,10 +177,13 @@ private struct FileDragSource: NSViewRepresentable {
     }
 }
 
-private final class FileDragView: NSView, NSDraggingSource, NSFilePromiseProviderDelegate {
+private final class FileDragView: NSView, NSDraggingSource {
     var item: ShelfItem?
     var ended: () -> Void = {}
     private var pressedAt: NSPoint?
+    /// The image being dragged out, held for the drag: the provider keeps
+    /// its delegate weakly.
+    private var promised: PromisedFile?
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -201,7 +204,9 @@ private final class FileDragView: NSView, NSDraggingSource, NSFilePromiseProvide
             icon = NSWorkspace.shared.icon(forFile: url.path)
         case let .inMemory(name, data):
             let type = UTType(filenameExtension: (name as NSString).pathExtension) ?? .png
-            dragged = NSDraggingItem(pasteboardWriter: NSFilePromiseProvider(fileType: type.identifier, delegate: self))
+            let file = PromisedFile(name: name, data: data)
+            promised = file
+            dragged = NSDraggingItem(pasteboardWriter: NSFilePromiseProvider(fileType: type.identifier, delegate: file))
             icon = NSImage(data: data) ?? NSWorkspace.shared.icon(for: type)
         }
         let side: CGFloat = 48
@@ -222,19 +227,28 @@ private final class FileDragView: NSView, NSDraggingSource, NSFilePromiseProvide
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
         // Finder moves a file a moment after the drop; look again once it has.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [ended] in ended() }
+        // The destination has written the file by the time the drag ends.
+        promised = nil
+    }
+}
+
+/// Something held in memory, dragged out and written wherever it is dropped.
+/// Its name and bytes are fixed when the drag starts, so writing them — on
+/// whatever queue the destination asks — touches nothing of the Shelf's.
+private final class PromisedFile: NSObject, NSFilePromiseProviderDelegate, Sendable {
+    let name: String
+    let data: Data
+
+    init(name: String, data: Data) {
+        self.name = name
+        self.data = data
     }
 
-    // MARK: An image written where it is dropped
-
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType fileType: String) -> String {
-        item?.name ?? "Image.png"
+        name
     }
 
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, writePromiseTo url: URL, completionHandler: @escaping (Error?) -> Void) {
-        guard case let .inMemory(_, data)? = item?.content else {
-            completionHandler(CocoaError(.fileNoSuchFile))
-            return
-        }
         do {
             try data.write(to: url)
             completionHandler(nil)
