@@ -13,7 +13,6 @@ enum SurfaceType {
     static let providerName = geist(17, .semibold)
     static let statusChip = Font.system(size: 11, weight: .semibold)
     static let windowLabel = geist(15, .medium)
-    static let capacity = geist(15, .medium)
     /// The strip's figures: 15, closed and open alike, as the Geist drawings
     /// set them.
     static let compactCapacity = geist(15, .medium)
@@ -69,9 +68,6 @@ enum SurfaceType {
     }
 
     static let headerRow: CGFloat = 22
-    static let windowRow: CGFloat = 18
-    static let captionRow: CGFloat = 14
-    static let provenanceRow: CGFloat = 14
 
     /// The drawing's own colours, spelled out. The system's named colours
     /// follow the Mac's appearance, and in Light mode they are a shade darker
@@ -103,6 +99,7 @@ struct NotchRootView: View {
     private let pointer: SurfacePointer
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
+    private let openProviderSettings: () -> Void
 
     init(
         store: CapacityNotchStore,
@@ -114,7 +111,8 @@ struct NotchRootView: View {
         shape: SurfaceShape,
         pointer: SurfacePointer,
         connect: @escaping (Provider) -> Void,
-        refresh: @escaping (Provider) -> Void
+        refresh: @escaping (Provider) -> Void,
+        openProviderSettings: @escaping () -> Void
     ) {
         _store = StateObject(wrappedValue: store)
         self.metrics = metrics
@@ -126,6 +124,7 @@ struct NotchRootView: View {
         self.shape = shape
         self.connect = connect
         self.refresh = refresh
+        self.openProviderSettings = openProviderSettings
     }
 
     /// Over a fullscreen application the closed surface is the strip alone: a
@@ -160,15 +159,18 @@ struct NotchRootView: View {
                     isExpanded: store.presentation == .expanded,
                     playing: compactTrack,
                     loaded: music.loaded,
+                    musicOn: music.isOn,
+                    remembered: music.remembered,
                     teleprompter: teleprompter,
                     shelf: shelf,
                     pointer: pointer,
-                    dropping: shelf.isDropTargeted && store.presentation == .compact,
+                    dropping: shelf.showsDropTab && store.presentation == .compact,
                     page: pages.selected,
                     travel: pages.travel,
                     controlsShown: pages.controlsShown,
                     selectPage: { pages.select($0) },
                     send: { music.send($0) },
+                    openProviderSettings: openProviderSettings,
                     connect: connect,
                     refresh: refresh
                 ) {
@@ -244,6 +246,10 @@ struct SurfaceColumn: View {
     var playing: NowPlaying? = nil
     /// Its track for the expanded page: whatever is loaded.
     var loaded: NowPlaying? = nil
+    /// The Music Module is on: its page stands whether or not anything plays.
+    var musicOn = false
+    /// What the page shows once nothing is loaded: the last track, if any.
+    var remembered: RememberedTrack? = nil
     /// The Teleprompter Module, for its row and its page; nil or off, neither.
     var teleprompter: TeleprompterController? = nil
     /// The Shelf Module, for its page; nil or off, none.
@@ -259,6 +265,7 @@ struct SurfaceColumn: View {
     var controlsShown = false
     var selectPage: (SurfacePage) -> Void = { _ in }
     var send: (MusicCommand) -> Void = { _ in }
+    var openProviderSettings: () -> Void = {}
     let connect: (Provider) -> Void
     let refresh: (Provider) -> Void
     let toggle: () -> Void
@@ -300,8 +307,11 @@ struct SurfaceColumn: View {
                     // Beneath whatever the strip already shows, in the tab
                     // the outline grows for it.
                     // It hangs from the strip at its give, four points lower.
-                    if dropping { ShelfDropZone().padding(.top, 4) }
+                    if dropping {
+                        ShelfDropZone(swallowedAt: shelf?.isSwallowing == true ? shelf?.swallowedAt : nil).padding(.top, 4)
+                    }
                 }
+                .environment(\.kapaAwake, !isExpanded)
                 .opacity(isExpanded ? 0 : 1)
                 .allowsHitTesting(!isExpanded)
                 .animation(SurfaceType.contentMotion(appearing: !isExpanded, reduced: reduceMotion), value: isExpanded)
@@ -328,7 +338,7 @@ struct SurfaceColumn: View {
 
     private var pages: [SurfacePage] {
         SurfacePageOrder.pages(
-            musicLoaded: loaded != nil,
+            music: musicOn || loaded != nil,
             teleprompter: teleprompter?.isEnabled == true,
             shelf: shelf?.isEnabled == true
         )
@@ -336,7 +346,15 @@ struct SurfaceColumn: View {
 
     private var shownPage: SurfacePage { SurfacePageOrder.shown(page, in: pages) }
 
-    /// Everything the open surface shows under its strip.
+    /// The room every page leaves between its content and the surface's
+    /// sides.
+    private static let pageMargin: CGFloat = 18
+
+    /// Everything the open surface shows under its strip. Every page has the
+    /// same room, so the surface does not change height as pages turn: what
+    /// a page leaves of it stays empty below, and a page that outgrew it would
+    /// be cut at the bottom rather than push the dots down — so each is drawn
+    /// to fit, and the picture dump is where a page that does not shows.
     private var openContent: some View {
         VStack(spacing: 0) {
             // With more than one page they are laid side by side and moved
@@ -345,12 +363,28 @@ struct SurfaceColumn: View {
                 PageStrip(position: stripPosition, heightPosition: CGFloat(pages.firstIndex(of: shownPage) ?? 0)) {
                     ForEach(pages, id: \.self) { candidate in
                         pageView(candidate)
+                            .frame(height: NotchGeometry.pageHeight, alignment: .top)
                             .accessibilityHidden(candidate != shownPage)
                     }
                 }
-                .clipped()
+                // Turning, a page fades out over the margin every page keeps
+                // to its edge, rather than running on to the outline and
+                // being cut there — across the rounded corners, it looked
+                // like the next page poking out of the surface. At rest
+                // nothing reaches the margin, so nothing fades.
+                .mask {
+                    HStack(spacing: 0) {
+                        LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: Self.pageMargin)
+                        Color.black
+                        LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: Self.pageMargin)
+                    }
+                }
             } else {
                 capacityDetail
+                    .frame(height: NotchGeometry.pageHeight, alignment: .top)
+                    .clipped()
             }
 
             PageSwitcher(
@@ -367,12 +401,22 @@ struct SurfaceColumn: View {
     @ViewBuilder
     private func pageView(_ candidate: SurfacePage) -> some View {
         let visible = isExpanded && (candidate == shownPage || travel != 0)
+        Group {
+            pageContent(candidate, visible: visible)
+        }
+        .environment(\.kapaAwake, visible)
+    }
+
+    @ViewBuilder
+    private func pageContent(_ candidate: SurfacePage, visible: Bool) -> some View {
         switch candidate {
         case .capacity:
             capacityDetail
         case .music:
             if let loaded {
                 MusicPage(track: loaded, now: now, isVisible: visible, send: send)
+            } else {
+                MusicIdlePage(remembered: remembered)
             }
         case .teleprompter:
             if let teleprompter {
@@ -403,7 +447,8 @@ struct SurfaceColumn: View {
             now: now,
             highlighted: highlighted,
             connect: connect,
-            refresh: refresh
+            refresh: refresh,
+            openProviderSettings: openProviderSettings
         )
     }
 }
@@ -532,104 +577,144 @@ struct DetailCapacityView: View {
     var highlighted: CapacityNotchStore.HighlightedWindow?
     let connect: (Provider) -> Void
     let refresh: (Provider) -> Void
+    var openProviderSettings: () -> Void = {}
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // With nothing connected there is no reading to date, and the
-            // drawing leaves the line out: six points and then the cards.
-            if let headline = CapacityProvenance.of(snapshots).headline {
-                Text(headline)
-                    .font(SurfaceType.caption)
-                    .foregroundStyle(SurfaceType.captionColour)
-                    .frame(height: SurfaceType.provenanceRow)
-                    .padding(.horizontal, 18)
-            }
+        let offered = SurfaceCards.offered(snapshots)
+        if offered.isEmpty {
+            cards
+        } else {
+            NothingConnectedView(providers: offered, openSettings: openProviderSettings)
+        }
+    }
 
+    private var cards: some View {
+        // The cards stand straight under the strip, as in "Limits — C ·
+        // Gauges": the page has 152 points, and a line saying when Capacity
+        // was read would not leave the gauges theirs. Each card's chip says
+        // whether it is fresh.
+        let shown = SurfaceCards.shown(snapshots)
+        // One Kapa a page, on the card whose state it shows (ADR 0006).
+        let kapa = KapaMood.capacityFocus(shown)
+        return VStack(alignment: .leading, spacing: 0) {
             // A Provider switched off has no card; the other takes the width.
             HStack(spacing: 12) {
-                ForEach(SurfaceCards.shown(snapshots), id: \.provider) { snapshot in
+                ForEach(shown, id: \.provider) { snapshot in
                     ProviderCard(
                         snapshot: snapshot,
                         now: now,
+                        isWide: shown.count == 1,
                         highlighted: highlighted?.provider == snapshot.provider
                             ? highlighted?.windowID
                             : nil,
+                        kapa: kapa?.provider == snapshot.provider ? kapa?.expression : nil,
                         connect: { connect(snapshot.provider) },
                         refresh: { refresh(snapshot.provider) }
                     )
                 }
             }
-            // Both cards stand as tall as the taller one: the row takes the
-            // height its tallest card wants, and each card fills it.
-            .fixedSize(horizontal: false, vertical: true)
+            // Both cards fill the page's height, so they stand as tall as each
+            // other and as the drawing.
+            .frame(maxHeight: .infinity)
             .padding(.horizontal, 18)
-            .padding(.top, 6)
         }
         .foregroundStyle(.white)
     }
 }
 
-/// Four points of capacity on a faint ground, filled to what is left.
-private struct CapacityTrack: View {
-    let remainingPercentage: Double
-    let tint: Color
+/// Nothing connected ("Notch — Disconnected · Three Providers"): every
+/// Provider's mark, a line, and one button to Settings ▸ Providers, where
+/// connecting — and its consent — happens. No Provider is connected from here.
+private struct NothingConnectedView: View {
+    let providers: [Provider]
+    let openSettings: () -> Void
 
     var body: some View {
-        Capsule()
-            .fill(SurfaceType.trackColour)
-            .frame(height: 4)
-            .overlay(alignment: .leading) {
-                GeometryReader { proxy in
-                    Capsule()
-                        .fill(tint)
-                        .frame(
-                            width: proxy.size.width
-                                * min(max(remainingPercentage / 100, 0), 1)
-                        )
+        VStack(spacing: 14) {
+            HStack(spacing: 22) {
+                // Nothing connected yet: the first thing Kapa does is say hello.
+                WithKapa { KapaView(expression: .hello, size: 30) }
+                ForEach(providers, id: \.self) { provider in
+                    ProviderMark(provider: provider, size: 28)
+                        .foregroundStyle(provider.presentation.tint)
+                        .accessibilityLabel(provider.presentation.displayName)
                 }
             }
+            .accessibilityElement(children: .combine)
+
+            Text(L("Connect up to two in Settings"))
+                .font(SurfaceType.geist(13, .medium))
+                .foregroundStyle(SurfaceType.captionColour)
+                .lineLimit(1)
+
+            CapsuleButton(title: L("Open Settings"), inset: 14, action: openSettings)
+                .accessibilityLabel(L("Open Provider Settings"))
+        }
+        // Centred in the page's 152, six points lower than the middle, as in
+        // "Notch — Disconnected · Three Providers".
+        .padding(.top, 6)
+        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-/// What an unread Provider offers: the one button that starts it, and the
-/// sentence only when a button cannot finish the job — an install or a
-/// sign-in is not something Connect can do.
+/// The surface's one kind of button: a word on a pale capsule ("Notch —
+/// Disconnected").
+private struct CapsuleButton: View {
+    let title: String
+    /// Either side of the word: twelve for Connect, fourteen for Settings.
+    let inset: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(SurfaceType.windowLabel)
+                .foregroundStyle(.white)
+                .frame(height: 18)
+                .padding(.horizontal, inset)
+                .padding(.vertical, 10)
+                .background(Capsule().fill(SurfaceType.connectColour))
+        }
+        .buttonStyle(.plain)
+        .focusable()
+    }
+}
+
+/// What an unread Provider offers: the one button that starts it — or,
+/// when a button cannot finish the job, since an install or a sign-in is not
+/// something Connect can do, only the sentence saying what to do, in two
+/// lines at most ("Limits — C · Exhausted + No data"). The refresh button in
+/// the header tries again once it is done.
 private struct ConnectAction: View {
     let reason: CapacityStatusReason?
     let connect: () -> Void
 
     var body: some View {
-        VStack(spacing: 12) {
-            if let reason, reason.needsAPersonFirst {
-                Text(reason.localizedGuidance)
-                    .font(SurfaceType.guidance)
-                    .foregroundStyle(SurfaceType.captionColour)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Button(action: connect) {
-                Text(L("Connect"))
-                    .font(SurfaceType.windowLabel)
-                    .foregroundStyle(.white)
-                    .frame(height: 18)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(SurfaceType.connectColour))
-            }
-            .buttonStyle(.plain)
-            .focusable()
-            .accessibilityLabel(L("Connect this Provider"))
+        if let reason, reason.needsAPersonFirst {
+            Text(reason.localizedGuidance)
+                .font(SurfaceType.guidance)
+                .foregroundStyle(SurfaceType.captionColour)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            CapsuleButton(title: L("Connect"), inset: 12, action: connect)
+                .accessibilityLabel(L("Connect this Provider"))
+                .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
 struct ProviderCard: View {
     let snapshot: CapacitySnapshot
     let now: Date
+    /// The only card on the surface: its gauges have the width, and room
+    /// beside them for what they leave out ("Limits — C · One provider").
+    var isWide = false
     /// The window an alert was about, when it is this Provider's.
     var highlighted: String?
+    /// Kapa's pose, on the one card of the page that has it.
+    var kapa: KapaExpression?
     let connect: () -> Void
     let refresh: () -> Void
 
@@ -639,18 +724,43 @@ struct ProviderCard: View {
         // around it — twelve points of nothing, which put the card twelve
         // points taller than it was drawn.
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            // Six apart, as drawn: at eight a long name and "Connecting"
+            // do not both fit beside the refresh button.
+            HStack(spacing: 6) {
                 ProviderMark(provider: snapshot.provider, size: 17)
                     .foregroundStyle(snapshot.provider.presentation.tint)
 
-                Text(snapshot.provider.presentation.displayName)
-                    .font(SurfaceType.providerName)
+                // Kapa beside the name while there is room for both, smaller
+                // where "Claude Code" and a chip leave little — on a half card
+                // "Stale" leaves 25 points — and gone where there is none: the
+                // name is what has to stay.
+                ViewThatFits(in: .horizontal) {
+                    if let kapa {
+                        HStack(spacing: 6) {
+                            providerName
+                            WithKapa { KapaView(expression: kapa, size: 26) }
+                        }
+                        HStack(spacing: 3) {
+                            providerName
+                            WithKapa { KapaView(expression: kapa, size: 20) }
+                        }
+                    }
+                    providerName
+                }
+                // Measured against what the chip leaves, not a share of it: the
+                // row would otherwise split the slack between this and the
+                // chip, and Kapa would never find its 25 points.
+                .layoutPriority(1)
 
-                Spacer()
+                Spacer(minLength: 0)
 
-                Text(snapshot.connectionState.presentation.label)
+                Text(chip.label)
                     .font(SurfaceType.statusChip)
-                    .foregroundStyle(snapshot.connectionState.presentation.tint)
+                    .foregroundStyle(chip.tint)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    // Measured first: what the chip says outranks Kapa.
+                    .layoutPriority(2)
 
                 Button(action: refresh) {
                     Image(systemName: "arrow.clockwise")
@@ -676,61 +786,204 @@ struct ProviderCard: View {
                 )
                 .padding(.top, 20)
                 .padding(.bottom, 6)
-            } else if let reason = snapshot.statusReason, reason.repeatsTheChip == false {
-                Text(reason.localizedGuidance)
-                    .font(SurfaceType.guidance)
-                    .foregroundStyle(SurfaceType.captionColour)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 12)
-            }
-
-            ForEach(snapshot.windows, id: \.id) { window in
-                VStack(alignment: .leading, spacing: 7) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(Localization.windowLabel(window.label))
-                            .font(SurfaceType.windowLabel)
-                        Spacer()
-                        Text(L("%d%% left", Int(window.remainingPercentage)))
-                            .font(SurfaceType.capacity)
-                            .monospacedDigit()
-                            .foregroundStyle(window.pace.tint)
-                    }
-                    .frame(height: SurfaceType.windowRow)
-
-                    CapacityTrack(
-                        remainingPercentage: window.remainingPercentage,
-                        tint: window.pace.tint
-                    )
-
-                    HStack(spacing: 5) {
-                        Text(L("%d%% used", Int((window.usedFraction * 100).rounded())))
-                        Text("·")
-                        Text(window.resetText(at: now))
-                    }
-                    .font(SurfaceType.caption)
-                    .foregroundStyle(SurfaceType.captionColour)
-                    .frame(height: SurfaceType.captionRow)
+            } else if snapshot.windows.isEmpty {
+                // Nothing read yet. A reason worth a sentence takes the
+                // place — the gauges would not fit under two lines of it —
+                // and otherwise the gauges hold their places, empty, so the
+                // card keeps its shape while it waits.
+                if let reason = snapshot.statusReason, reason.repeatsTheChip == false {
+                    Text(reason.localizedGuidance)
+                        .font(SurfaceType.guidance)
+                        .foregroundStyle(SurfaceType.captionColour)
+                        .lineLimit(2)
+                        .padding(.top, 10)
+                } else {
+                    gauges(of: [nil, nil])
                 }
-                .padding(.top, 12)
-                .padding(.horizontal, highlighted == window.id ? 8 : 0)
-                .background {
-                    if highlighted == window.id {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.white.opacity(0.45), lineWidth: 1)
-                    }
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(CapacitySpeech.window(window, at: now))
+            } else {
+                gauges(of: snapshot.windows.map { Optional($0) })
+                    // Old numbers are shown, but not as if they were new.
+                    .opacity(snapshot.connectionState == .stale ? 0.5 : 1)
             }
 
             Spacer(minLength: 0)
         }
         .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // Both cards the same width, whatever their names and chips ask for.
+        .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(SurfaceType.cardColour)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(CapacitySpeech.provider(snapshot, at: now))
+    }
+
+    private var providerName: some View {
+        Text(snapshot.provider.presentation.displayName)
+            .font(SurfaceType.providerName)
+            .fixedSize()
+    }
+
+    /// What the header's chip says. A Provider that cannot be read until a
+    /// person does something says it has no data, in red, and the sentence
+    /// under it says what to do.
+    private var chip: ConnectionStatePresentation {
+        if case .disconnected = snapshot.connectionState, snapshot.statusReason?.needsAPersonFirst == true {
+            return ConnectionStatePresentation(label: L("No data"), tint: SurfaceType.red)
+        }
+        // OpenCode's month used up stops work however green the windows are,
+        // so it takes the chip's place, in red. A half-width card has room
+        // only for the short form.
+        if case let .openCodeMonthlyLimitReached(until)? = snapshot.statusReason {
+            guard isWide, let until else { return ConnectionStatePresentation(label: L("Month used up"), tint: SurfaceType.red) }
+            let date = until.formatted(Date.FormatStyle().day().month(.abbreviated).locale(Localization.current.locale))
+            return ConnectionStatePresentation(label: L("Monthly limit reached · until %@", date), tint: SurfaceType.red)
+        }
+        return snapshot.connectionState.presentation
+    }
+
+    /// The windows as gauges, side by side; an empty place for a window not
+    /// read yet.
+    @ViewBuilder
+    private func gauges(of windows: [QuotaWindow?]) -> some View {
+        HStack(spacing: isWide ? 8 : 0) {
+            ForEach(Array(windows.enumerated()), id: \.offset) { _, window in
+                let gauge = CapacityGauge(
+                    window: window,
+                    now: now,
+                    placeholder: chip.label,
+                    showsLabel: !isWide,
+                    isHighlighted: window.map { $0.id == highlighted } ?? false
+                )
+                if isWide {
+                    HStack(spacing: 14) {
+                        gauge
+                        if let window { WideGaugeDetail(window: window, now: now) }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    gauge.frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 10)
+    }
+}
+
+/// One Quota Window as an open arc ("Limits — C · Gauges"): 270°, opening
+/// downwards, filled from the lower left to what is left, the share in the
+/// middle, the window under it, and when it comes back in the gap. A window
+/// used up tints its whole track red. Nil is a window not read yet: an empty
+/// arc and two quiet bars where the numbers will be.
+struct CapacityGauge: View {
+    let window: QuotaWindow?
+    let now: Date
+    /// What VoiceOver says for a window not read yet: the card's own chip.
+    let placeholder: String
+    var showsLabel = true
+    var isHighlighted = false
+
+    private let size: CGFloat = 88
+    private let lineWidth: CGFloat = 7
+
+    var body: some View {
+        ZStack {
+            arc(to: 1)
+                .stroke(trackColour, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+            if let window, !window.isUsedUp {
+                arc(to: window.remainingFraction)
+                    .stroke(window.pace.tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+            }
+
+            if let window {
+                VStack(spacing: 0) {
+                    Text("\(Int(window.remainingPercentage))%")
+                        .font(SurfaceType.geist(22, .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(window.isUsedUp ? SurfaceType.red : Color.white)
+                    if showsLabel {
+                        Text(Localization.windowLabel(window.label))
+                            .font(SurfaceType.caption)
+                            .foregroundStyle(Color.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+                }
+                VStack {
+                    Spacer()
+                    Text(resetText(window))
+                        .font(SurfaceType.caption)
+                        .foregroundStyle(window.isUsedUp ? SurfaceType.red : SurfaceType.captionColour)
+                        .lineLimit(1)
+                }
+            } else {
+                VStack(spacing: 6) {
+                    Capsule().fill(Color.white.opacity(0.1)).frame(width: 36, height: 12)
+                    Capsule().fill(Color.white.opacity(0.08)).frame(width: 24, height: 8)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .overlay {
+            if isHighlighted {
+                Circle().stroke(Color.white.opacity(0.45), lineWidth: 1).padding(-2)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(window.map { CapacitySpeech.window($0, at: now) } ?? placeholder)
+    }
+
+    private var trackColour: Color {
+        guard let window, window.isUsedUp else { return SurfaceType.trackColour }
+        return SurfaceType.red.opacity(0.22)
+    }
+
+    /// The arc from the lower left, clockwise over the top, `fraction` of
+    /// the way to the lower right.
+    private func arc(to fraction: Double) -> some Shape {
+        Circle()
+            .inset(by: lineWidth / 2)
+            .trim(from: 0, to: 0.75 * min(max(fraction, 0), 1))
+            .rotation(.degrees(135))
+    }
+
+    private func resetText(_ window: QuotaWindow) -> String {
+        switch GaugeReset(resetsAt: window.resetsAt, at: now) {
+        case let .at(date):
+            date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))
+        case let .in(countdown):
+            countdown
+        case .unknown:
+            "—"
+        }
+    }
+}
+
+private extension QuotaWindow {
+    /// Nothing left, as the gauge's number shows it: a sliver under half a
+    /// percent reads "0%", so it is drawn as used up too.
+    var isUsedUp: Bool { remainingPercentage <= 0 }
+}
+
+/// Beside a wide card's gauge: the window's name, how much is used, and how
+/// long until it comes back — what the gauge itself has no room for.
+private struct WideGaugeDetail: View {
+    let window: QuotaWindow
+    let now: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(Localization.windowLabel(window.label))
+                .font(SurfaceType.geist(13))
+                .foregroundStyle(Color.white.opacity(0.75))
+            Text(L("%d%% used", Int((window.usedFraction * 100).rounded())))
+            if let resetsAt = window.resetsAt {
+                Text(L("resets in %@", ResetCountdown.text(until: resetsAt, at: now)))
+            }
+        }
+        .font(SurfaceType.caption)
+        .foregroundStyle(SurfaceType.captionColour)
+        .lineLimit(1)
+        .accessibilityHidden(true)
     }
 }
 
@@ -750,9 +1003,11 @@ private extension Provider {
     var presentation: ProviderPresentation {
         switch self {
         case .codex:
-            ProviderPresentation(displayName: "Codex", tint: .white)
+            ProviderPresentation(displayName: spokenName, tint: .white)
         case .claudeCode:
-            ProviderPresentation(displayName: "Claude Code", tint: SurfaceType.orange)
+            ProviderPresentation(displayName: spokenName, tint: SurfaceType.orange)
+        case .openCode:
+            ProviderPresentation(displayName: spokenName, tint: .white)
         }
     }
 }
@@ -774,20 +1029,14 @@ private extension CapacityConnectionState {
         case .stale:
             ConnectionStatePresentation(label: L("Stale"), tint: SurfaceType.yellow)
         case .disconnected:
-            // A dash, not a word. The card's body says what to do about it.
+            // A dash, not a word, beside a Connect button; a Provider that
+            // needs a person first says "No data" instead (ProviderCard).
             ConnectionStatePresentation(label: "—", tint: SurfaceType.red)
         }
     }
 }
 
 
-private extension QuotaWindow {
-    func resetText(at now: Date) -> String {
-        guard let resetsAt else { return L("reset time not reported") }
-        let clock = resetsAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))
-        return L("resets in %@ · %@", ResetCountdown.text(until: resetsAt, at: now), clock)
-    }
-}
 
 private extension CapacityPace {
     var tint: Color {
@@ -795,22 +1044,6 @@ private extension CapacityPace {
         case .sustainable: SurfaceType.green
         case .tightening: SurfaceType.yellow
         case .unsustainable: SurfaceType.red
-        }
-    }
-}
-
-
-private extension CapacityProvenance {
-    var headline: String? {
-        switch self {
-        case .mock:
-            L("Mock capacity")
-        case let .fresh(readAt):
-            L("Read at %@", readAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale)))
-        case let .stale(readAt):
-            L("Last read at %@", readAt.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale)))
-        case .disconnected:
-            nil
         }
     }
 }

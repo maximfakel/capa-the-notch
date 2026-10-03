@@ -10,6 +10,9 @@ import Foundation
 /// has been closed reports exactly what an idle one does — nothing playing —
 /// and the two must not look alike. A stream that ends on its own is tested
 /// again before it is restarted, so a crash is not mistaken for a closed door.
+/// A test that fails is tried again a minute later, and on waking: one failure
+/// — a Mac just woken, mediaremoted restarting — must not close the Module
+/// until it is switched off and on.
 @MainActor
 final class MusicReader: ObservableObject {
     /// What the compact strip's row shows: playing, or paused for less than
@@ -18,8 +21,12 @@ final class MusicReader: ObservableObject {
     /// What is loaded, however long it has been paused: the expanded
     /// surface's page exists while this does.
     @Published private(set) var loaded: NowPlaying?
+    /// The last track, once nothing is loaded: the page shows it dimmed.
+    @Published private(set) var remembered: RememberedTrack?
     /// macOS stopped telling the adapter what is playing.
     @Published private(set) var isUnreadable = false
+    /// The Module is on: its page is there, whether or not anything plays.
+    @Published private(set) var isOn = false
 
     private let adapter: Adapter?
     private var presence = MusicPresence()
@@ -27,6 +34,9 @@ final class MusicReader: ObservableObject {
     private var process: Process?
     private var isRunning = false
     private var lingerTimer: Timer?
+    private var retryTimer: Timer?
+    private var wakeObserver: NSObjectProtocol?
+    private static let retryAfter: TimeInterval = 60
 
     init(bundle: Bundle = .main) {
         adapter = Adapter(bundle: bundle)
@@ -35,14 +45,25 @@ final class MusicReader: ObservableObject {
     func start() {
         guard !isRunning else { return }
         isRunning = true
+        isOn = true
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.retryIfUnreadable() }
+        }
         testThenStream()
     }
 
     func stop() {
         isRunning = false
+        isOn = false
+        retryTimer?.invalidate()
+        retryTimer = nil
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        wakeObserver = nil
         process?.terminate()
         process = nil
-        presence.lose()
+        presence.forget()
         streamFollower = NowPlayingStream()
         publish()
     }
@@ -74,12 +95,29 @@ final class MusicReader: ObservableObject {
                     self.isUnreadable = true
                     self.presence.lose()
                     self.publish()
+                    self.scheduleRetry()
                     return
                 }
                 self.isUnreadable = false
                 self.startStream(adapter)
             }
         }
+    }
+
+    private func scheduleRetry() {
+        retryTimer?.invalidate()
+        let timer = Timer(timeInterval: Self.retryAfter, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.retryIfUnreadable() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        retryTimer = timer
+    }
+
+    private func retryIfUnreadable() {
+        guard isRunning, isUnreadable, process == nil else { return }
+        retryTimer?.invalidate()
+        retryTimer = nil
+        testThenStream()
     }
 
     private func startStream(_ adapter: Adapter) {
@@ -139,11 +177,15 @@ final class MusicReader: ObservableObject {
         let now = Date()
         let shownNow = presence.shown(at: now)
         if shown != shownNow { shown = shownNow }
-        if loaded != presence.loaded { loaded = presence.loaded }
+        let loadedNow = presence.loaded(at: now)
+        if loaded != loadedNow { loaded = loadedNow }
+        let rememberedNow = presence.remembered(at: now)
+        if remembered != rememberedNow { remembered = rememberedNow }
 
-        // A paused row goes away ten seconds after the pause, whether or not
-        // the stream says anything more in between.
-        let lingering = shownNow.map { !$0.isPlaying } ?? false
+        // A paused row goes away ten seconds after the pause, and a track
+        // reported gone goes once the grace is over, whether or not the
+        // stream says anything more in between.
+        let lingering = (shownNow.map { !$0.isPlaying } ?? false) || presence.isHolding(at: now)
         if lingering, lingerTimer == nil {
             let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.publish() }

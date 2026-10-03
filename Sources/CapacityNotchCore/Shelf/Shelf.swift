@@ -38,51 +38,91 @@ public struct ShelfItem: Identifiable, Equatable, Sendable {
     public var kind: ShelfFileKind { ShelfFileKind(name: name) }
 }
 
-/// What the Shelf Module holds: newest first, up to twenty. It lives in
-/// memory only; nothing here is written anywhere (ADR 0005).
-public struct Shelf: Equatable, Sendable {
-    public static let limit = 20
+/// One of the Shelf's three views of what it keeps (CONTEXT: Shelf Tab).
+/// All three are always there, whether or not their intake is on.
+public enum ShelfTab: String, CaseIterable, Sendable {
+    /// What is dropped on the notch, and documents copied elsewhere.
+    case files
+    /// Screenshots and images taken from the clipboard.
+    case screenshots
+    /// Copied text, as Clippings (ticket 08); nothing yet.
+    case clipboard
 
-    public private(set) var items: [ShelfItem] = []
+    /// How many the tab keeps; past it the oldest give way. Twenty each for
+    /// now; ticket 08 lets the Clippings be 50 or 100.
+    public var limit: Int { 20 }
+
+    /// Where something taken from the clipboard goes: an image — a
+    /// screenshot among them — under Screenshots, anything else under Files.
+    public static func forCopied(_ name: String) -> ShelfTab {
+        ShelfFileKind(name: name) == .image ? .screenshots : .files
+    }
+}
+
+/// What the Shelf Module holds: each tab newest first, up to its limit. It
+/// lives in memory only; nothing here is written anywhere (ADR 0005).
+public struct Shelf: Equatable, Sendable {
+    private var held: [ShelfTab: [ShelfItem]] = [:]
 
     public init() {}
 
+    public func items(in tab: ShelfTab) -> [ShelfItem] {
+        held[tab] ?? []
+    }
+
+    /// How many it holds, in every tab.
+    public var count: Int {
+        held.values.reduce(0) { $0 + $1.count }
+    }
+
+    /// Every item held, in every tab.
+    public var allItems: [ShelfItem] {
+        ShelfTab.allCases.flatMap(items(in:))
+    }
+
     /// Files dropped together keep their order, and the last of them lands
-    /// in front. A file already here rises rather than appearing twice, and
-    /// past twenty the oldest give way.
-    public mutating func add(_ urls: [URL]) {
+    /// in front. A file already in the tab rises rather than appearing
+    /// twice, and past the tab's limit the oldest give way.
+    public mutating func add(_ urls: [URL], to tab: ShelfTab = .files) {
+        var items = items(in: tab)
         for url in urls {
             let standard = url.standardizedFileURL
             let existing = items.firstIndex { $0.url?.standardizedFileURL == standard }
             let item = existing.map { items.remove(at: $0) } ?? ShelfItem(url: standard)
             items.insert(item, at: 0)
         }
-        trim()
+        store(items, in: tab)
     }
 
     /// Something with no file behind it, held in memory. The same bytes
     /// again rise, under the name they came with this time.
-    public mutating func addInMemory(named name: String, data: Data) {
-        if let existing = items.firstIndex(where: {
+    public mutating func addInMemory(named name: String, data: Data, to tab: ShelfTab = .files) {
+        var items = items(in: tab)
+        items.removeAll {
             if case let .inMemory(_, held) = $0.content { return held == data }
             return false
-        }) {
-            items.remove(at: existing)
         }
         items.insert(ShelfItem(content: .inMemory(name: name, data: data)), at: 0)
-        trim()
+        store(items, in: tab)
     }
 
+    /// From whichever tab holds it.
     public mutating func remove(_ id: ShelfItem.ID) {
-        items.removeAll { $0.id == id }
+        for tab in held.keys { held[tab]?.removeAll { $0.id == id } }
     }
 
-    public mutating func clear() {
-        items.removeAll()
+    /// Clear on the Shelf page: the tab shown, and no other.
+    public mutating func clear(_ tab: ShelfTab) {
+        held[tab] = nil
     }
 
-    private mutating func trim() {
-        if items.count > Self.limit { items.removeLast(items.count - Self.limit) }
+    /// Switched off or quitting: everything goes.
+    public mutating func clearAll() {
+        held.removeAll()
+    }
+
+    private mutating func store(_ items: [ShelfItem], in tab: ShelfTab) {
+        held[tab] = Array(items.prefix(tab.limit))
     }
 }
 
@@ -132,10 +172,13 @@ public enum ShelfFileKind: Equatable, Sendable {
 }
 
 /// What the Shelf Module says in Copy Diagnostics: on or off, and how many
-/// files — never a name or a path (ADR 0005).
+/// in each tab — never a name or a path (ADR 0005).
 public enum ShelfModule {
-    public static func observation(enabled: Bool, count: Int) -> String {
-        enabled ? "shelf-on-\(count)-files" : "shelf-off"
+    public static func observation(enabled: Bool, shelf: Shelf, clippings: Clippings = Clippings()) -> String {
+        guard enabled else { return "shelf-off" }
+        let files = shelf.items(in: .files).count, screenshots = shelf.items(in: .screenshots).count
+        let said = "shelf-on-\(files)-files-\(screenshots)-screenshots"
+        return clippings.items.isEmpty ? said : said + "-\(clippings.items.count)-clippings"
     }
 }
 

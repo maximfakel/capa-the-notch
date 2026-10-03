@@ -5,7 +5,7 @@ to put on the clipboard again — exactly as ADR 0005 decides it.
 
 **Blocked by:** none.
 
-**Status:** needs-info
+**Status:** wontfix (superseded by surface-210/08)
 
 **Why:** Split from the Shelf by ticket 24. It holds the most sensitive data
 Capacity Notch touches, so ADR 0005 decides what it may keep; this ticket
@@ -38,3 +38,7 @@ builds only that.
   while the surface is shared.
 - Whether reading the clipboard shows macOS's alert on the Macs it will run
   on, measured, and what `NSPasteboard.accessBehavior` answers.
+
+## Comments
+
+- 2026-10-02: Superseded. The author decided the Clipboard History Module becomes the Shelf's Clipboard tab, with every rule of ADR 0005 unchanged (ADR 0005 amended 2026-10-02). Built in `.scratch/surface-210/issues/08-clipboard-tab.md`.

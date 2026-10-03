@@ -34,10 +34,10 @@ func onlyTheProvidersSwitchedOnHaveCards() throws {
         "With Codex switched off, Claude Code's card has the width to itself, got \(shown.map(\.provider))"
     )
 
-    let bothOff = UnreadCapacity.snapshots(capturedAt: now)
+    let allOff = UnreadCapacity.snapshots(capturedAt: now)
     try expect(
-        SurfaceCards.shown(bothOff).count == 2,
-        "With nothing switched on, both cards stay, each offering to connect"
+        SurfaceCards.shown(allOff).isEmpty,
+        "With nothing switched on, no Provider has a card of its own, got \(SurfaceCards.shown(allOff).map(\.provider))"
     )
 
     let failing = CapacitySnapshot.disconnected(provider: .codex, capturedAt: now, reason: .providerNotInstalled)
@@ -45,4 +45,24 @@ func onlyTheProvidersSwitchedOnHaveCards() throws {
         SurfaceCards.shown([failing, read(.claudeCode)]).count == 2,
         "A Provider that is on but failing keeps its card, to say why"
     )
+}
+
+func nothingConnectedOffersEveryProvidersMarkInOrder() throws {
+    let allOff = UnreadCapacity.snapshots(capturedAt: now)
+    try expect(
+        SurfaceCards.offered(allOff) == [.codex, .claudeCode, .openCode],
+        "Nothing on: the marks of Codex, Claude Code and OpenCode, in that order, got \(SurfaceCards.offered(allOff))"
+    )
+    try expect(
+        SurfaceCards.offered(allOff.reversed()) == [.codex, .claudeCode, .openCode],
+        "in that order whatever order the snapshots come in"
+    )
+
+    let oneOn = allOff.map { $0.provider == .openCode ? read(.openCode) : $0 }
+    try expect(SurfaceCards.offered(oneOn).isEmpty, "One on: no marks, got \(SurfaceCards.offered(oneOn))")
+    try expect(
+        SurfaceCards.shown(oneOn).map(\.provider) == [.openCode],
+        "and its card alone, across the width, got \(SurfaceCards.shown(oneOn).map(\.provider))"
+    )
+    try expect(SurfaceCards.offered([]).isEmpty, "Nothing known yet is not nothing connected")
 }

@@ -155,38 +155,19 @@ func codexBinaryIsFoundOnlyWhereItIsExecutable() throws {
     )
 }
 
-func theSurfaceHeaderDescribesWhatItIsActuallyShowing() throws {
-    let early = Date(timeIntervalSince1970: 1_000)
-    let late = Date(timeIntervalSince1970: 2_000)
-
-    func snapshot(_ provider: Provider, _ state: CapacityConnectionState, _ at: Date) -> CapacitySnapshot {
-        CapacitySnapshot(provider: provider, capturedAt: at, windows: [], connectionState: state)
-    }
-
+/// Every open page is the same height, so the surface does not jump as pages
+/// turn: the strip, 152 of page and the page dots — 210 under a 38-point menu
+/// bar, as drawn ("Limits — C · Gauges"). The Teleprompter reading while
+/// closed stands as tall ("Compact — Teleprompter running").
+func everyOpenPageIsTheSameHeight() throws {
+    let drawn = NotchGeometry(menuBarHeight: 38, notchWidth: 185)
+    try expect(drawn.openHeight == 210, "210 under the drawing's menu bar, got \(drawn.openHeight)")
+    try expect(NotchGeometry.pageHeight == 152 && NotchGeometry.pageSwitcherHeight == 20, "152 of page, 20 of dots")
+    let smaller = NotchGeometry(menuBarHeight: 32, notchWidth: 185)
+    try expect(smaller.openHeight == 204, "A shorter menu bar takes its own height off, not the page's")
     try expect(
-        CapacityProvenance.of(MockCapacityCatalog.snapshots(capturedAt: early)) == .mock,
-        "An untouched surface shows mock Capacity"
-    )
-    try expect(
-        CapacityProvenance.of([
-            snapshot(.codex, .fresh, late),
-            snapshot(.claudeCode, .mock, early),
-        ]) == .fresh(late),
-        "One live Provider should stop the header from claiming mock Capacity"
-    )
-    try expect(
-        CapacityProvenance.of([
-            snapshot(.codex, .stale, early),
-            snapshot(.claudeCode, .fresh, late),
-        ]) == .stale(early),
-        "A Provider whose refresh failed should be admitted in the header"
-    )
-    try expect(
-        CapacityProvenance.of([
-            snapshot(.codex, .disconnected(.providerNotInstalled), late),
-            snapshot(.claudeCode, .mock, early),
-        ]) == .disconnected,
-        "With nothing readable the header should say so"
+        drawn.menuBarHeight + NotchGeometry.compactTeleprompterRow == drawn.openHeight,
+        "Closed, a reading Teleprompter is as tall as the open surface"
     )
 }
 
@@ -263,8 +244,8 @@ func anUnreadSurfaceShowsNoNumbersAtAll() throws {
     let snapshots = UnreadCapacity.snapshots(capturedAt: Date(timeIntervalSince1970: 10_000))
 
     try expect(
-        snapshots.map(\.provider) == [.codex, .claudeCode],
-        "Both Providers should be present before either is read"
+        snapshots.map(\.provider) == Provider.allCases,
+        "Every Provider should be present before any is read"
     )
     try expect(
         snapshots.allSatisfy(\.windows.isEmpty),
@@ -280,10 +261,6 @@ func anUnreadSurfaceShowsNoNumbersAtAll() throws {
     try expect(
         snapshots.compactMap(\.statusReason).allSatisfy { $0.guidance.contains("in Settings") },
         "Each unread Provider should say where to turn it on — Settings, the menu no longer connects"
-    )
-    try expect(
-        CapacityProvenance.of(snapshots) == .disconnected,
-        "With nothing read, the header should say so rather than claim mock Capacity"
     )
 }
 

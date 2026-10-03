@@ -29,11 +29,13 @@ final class SettingsModel: ObservableObject {
         application: AppDelegate,
         store: CapacityNotchStore? = nil,
         teleprompter: TeleprompterController? = nil,
-        dictation: DictationController? = nil
+        dictation: DictationController? = nil,
+        shelf: ShelfController? = nil
     ) {
         self.preferences = preferences
         self.application = application
         teleprompterOverride = teleprompter
+        shelfOverride = shelf
         dictationOverride = dictation
         snapshots = store?.snapshots ?? []
         appearance = preferences.appearance
@@ -89,15 +91,16 @@ final class SettingsModel: ObservableObject {
     /// The Teleprompter Module, observed directly: its Script, speed and
     /// shortcuts are the controller's, and the card follows them live.
     var teleprompter: TeleprompterController { teleprompterOverride ?? application.teleprompter }
-    var shelf: ShelfController { application.shelf }
+    var shelf: ShelfController { shelfOverride ?? application.shelf }
+    /// A stand-in for the pictures, so drawing the Shelf card never touches
+    /// the person's own Shelf or its switches.
+    private let shelfOverride: ShelfController?
     /// A stand-in for the pictures Settings renders of itself, so drawing the
     /// Teleprompter card never touches the person's own Script.
     private let teleprompterOverride: TeleprompterController?
 
-    let providers = [
-        ProviderChoice(provider: .codex, name: "Codex"),
-        ProviderChoice(provider: .claudeCode, name: "Claude Code"),
-    ]
+    /// In surface order, the one order Providers stand in (`ProviderSelection`).
+    let providers = Provider.allCases.map { ProviderChoice(provider: $0, name: $0.spokenName) }
 
     func binding(for provider: Provider) -> Binding<Bool> {
         Binding(
@@ -106,8 +109,14 @@ final class SettingsModel: ObservableObject {
         )
     }
 
+    /// Whether this Provider's switch can be turned on: at most two can be.
+    func canConnect(_ provider: Provider) -> Bool {
+        preferences.canConnect(provider)
+    }
+
     private func setProvider(_ provider: Provider, connected: Bool) {
-        preferences.setConnectsAtLaunch(provider, connected)
+        // Refused past the two-at-most rule: the switch stays off.
+        guard preferences.setConnectsAtLaunch(provider, connected) else { return }
         objectWillChange.send()
 
         if connected {
@@ -215,8 +224,7 @@ final class SettingsModel: ObservableObject {
 
     func copyDiagnostics() {
         let report = application.diagnosticReport()
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(report, forType: .string)
+        OwnClipboard.copy(report)
         lastCopiedReport = report
     }
 

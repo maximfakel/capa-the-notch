@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Builds Packaging/AppIcon.icns from Packaging/AppIcon-source.png.
 
-The source is the author's 1024-point square from Paper ("Pairtask", page 4,
-"Icon"). macOS draws an application's icon on a grid: a rounded square 824
+The source is Kapa's icon (ADR 0006), cut to its rounded square from the
+author's 1254-pixel picture. macOS draws an application's icon on a grid: a rounded square 824
 points wide in the middle of a 1024 canvas, with a soft shadow under it, so a
 square filling the canvas looks larger and sharper than everything beside it
 in the Dock. This puts the art on that grid, then asks iconutil for the .icns.

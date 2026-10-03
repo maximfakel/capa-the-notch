@@ -225,7 +225,30 @@ enum TeleprompterLayout {
     static let bottomInset: CGFloat = 16
     /// Between the strip and the first line, as in the music row.
     static let stripGap: CGFloat = 6
+    /// The open page's lines: under them stand the progress and controls.
     static let visibleLines = 3
+
+    /// The Teleprompter Row's lines: as many as its room holds. The row was
+    /// made as tall as an open page so the surface keeps its height opening
+    /// and closing, and three lines left the lower half of it dark; it now
+    /// shows what comes next there — six lines at the smaller sizes, five
+    /// at the largest. The line read is still the top one, by the camera.
+    static func rowLines(_ size: TeleprompterTextSize) -> Int {
+        let room = NotchGeometry.compactTeleprompterRow - stripGap - topInset - bottomInset + lineGap
+        return max(visibleLines, Int(room / pitch(size)))
+    }
+
+    /// How bright each line in view is, from the one read down: the drawing's
+    /// three — #FFF, #FFFFFF8C, #FFFFFF40 — then quieter still, so the eye
+    /// stays at the top.
+    static func lineOpacity(_ row: Int) -> Double {
+        switch row {
+        case ..<1: 1
+        case 1: 0x8C / 255.0
+        case 2: 0x40 / 255.0
+        default: max(0x40 / 255.0 * pow(0.82, Double(row - 2)), 0.1)
+        }
+    }
 
     static func font(_ size: TeleprompterTextSize) -> NSFont {
         SurfaceType.geistNSFont(size.points, .medium)
@@ -243,14 +266,17 @@ enum TeleprompterLayout {
         -0.01 * size.points
     }
 
-    /// The text area under the strip: three lines and their insets.
+    /// The row's text area under the strip: its lines and their insets.
     static func textAreaHeight(_ size: TeleprompterTextSize) -> CGFloat {
-        topInset + CGFloat(visibleLines) * lineHeight(size) + CGFloat(visibleLines - 1) * lineGap + bottomInset
+        let lines = rowLines(size)
+        return topInset + CGFloat(lines) * lineHeight(size) + CGFloat(lines - 1) * lineGap + bottomInset
     }
 
-    /// Everything the row adds under the strip.
+    /// Everything the row adds under the strip: as tall as an open page and
+    /// its dots, the three lines at the top and the rest left dark ("Compact
+    /// — Teleprompter running"). Three lines at the largest size take 106.
     static func rowHeight(_ size: TeleprompterTextSize) -> CGFloat {
-        stripGap + textAreaHeight(size)
+        NotchGeometry.compactTeleprompterRow
     }
 
     static func attributes(_ size: TeleprompterTextSize) -> [NSAttributedString.Key: Any] {

@@ -53,7 +53,7 @@ final class OnboardingModel: ObservableObject {
 
         private var englishSubtitle: String {
             switch self {
-            case .welcome: "How much of Codex and Claude Code is left, right under the notch — and a few tools beside it."
+            case .welcome: "How much of Codex, Claude Code and OpenCode is left, right under the notch — and a few tools beside it."
             case .permissions: "Everything macOS will ask about, at once, so nothing interrupts you later."
             case .providers: "Capacity Notch reads nothing until a Provider is on."
             case .music: "Control what's playing without leaving what you're doing."
@@ -343,13 +343,14 @@ struct OnboardingView: View {
                                 choice: choice,
                                 snapshot: settings.snapshot(for: choice.provider),
                                 isOn: settings.binding(for: choice.provider),
+                                canTurnOn: settings.canConnect(choice.provider),
                                 now: context.date,
                                 refresh: { settings.refresh(choice.provider) }
                             )
                         }
                     }
                 }
-                Text(L("Claude Code is experimental. Capacity Notch says what it reads before reading anything."))
+                Text(L("Claude Code and OpenCode are experimental. Capacity Notch says what it reads before reading anything."))
                     .font(SettingsType.caption)
                     .foregroundStyle(SettingsPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)

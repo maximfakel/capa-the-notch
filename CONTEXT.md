@@ -20,6 +20,10 @@ _Avoid_: Plugin, widget, extension
 **Capacity Module**:
 The Module that shows AI-service Capacity; the one Capacity Notch started as. The terms under Capacity are its language.
 
+**Kapa**:
+The surface's one character: a cyan bell whose face says what the Module it stands in already says — calm, worried, listening, pleased. Part of how Modules look, never a Module itself, and never in the compact strip (ADR 0006).
+_Avoid_: Mascot, companion, buddy, pet, avatar
+
 ### The teleprompter
 
 **Teleprompter Module**:
@@ -50,15 +54,15 @@ _Avoid_: Dictation Row, dictation page
 ### The Shelf and the clipboard
 
 **Shelf Module**:
-The Module that holds files dropped on the notch — references, not copies — until they are dragged somewhere else (ADR 0005).
-_Avoid_: Drop zone, tray, stash
+The Module that keeps things at hand on the notch — files, screenshots and copied text — until they are dragged or copied somewhere else (ADR 0005).
+_Avoid_: Drop zone, tray, stash, clipboard manager, pasteboard archive
 
-**Clipboard History Module**:
-The Module that keeps the text a person copied recently, so it can be put on the clipboard again (ADR 0005).
-_Avoid_: Clipboard manager, pasteboard archive
+**Shelf Tab**:
+One of the Shelf's three views of what it keeps: Files, Screenshots, and Clipboard (the Clippings).
+_Avoid_: Section, category, filter
 
 **Clipping**:
-One text the Clipboard History Module keeps: what was copied, and when.
+One copied text the Shelf keeps: what was copied, and when.
 _Avoid_: Snippet (read as something saved on purpose), clip, entry
 
 ### Capacity
@@ -103,3 +107,4 @@ _Avoid_: Usage cache, quota response
 
 - Codex
 - Claude Code
+- OpenCode (its Go plan; ADR 0001)

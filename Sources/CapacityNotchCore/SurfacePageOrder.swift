@@ -10,9 +10,9 @@ public enum SurfacePage: Hashable, Sendable {
 /// between them. Capacity first — it is the question the product answers —
 /// then each Module in the order it arrived (ADR 0003).
 public enum SurfacePageOrder {
-    public static func pages(musicLoaded: Bool, teleprompter: Bool, shelf: Bool = false) -> [SurfacePage] {
+    public static func pages(music: Bool, teleprompter: Bool, shelf: Bool = false) -> [SurfacePage] {
         [.capacity]
-            + (musicLoaded ? [.music] : [])
+            + (music ? [.music] : [])
             + (teleprompter ? [.teleprompter] : [])
             + (shelf ? [.shelf] : [])
     }

@@ -139,13 +139,35 @@ private struct ShelfCard: View {
                     SettingsRow(height: 56, indent: 44, hovers: false) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L("Images and files from the clipboard"))
-                            Text(L("What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone."))
+                            Text(L("What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone. New screenshots saved to a folder land under Screenshots too."))
                                 .font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+                        .padding(.vertical, 10)
                         Spacer()
                         Toggle(L("Images and files from the clipboard"), isOn: Binding(get: { shelf.takesClipboardImages }, set: { shelf.setTakesClipboardImages($0) }))
                             .toggleStyle(SettingsSwitchStyle(standsAlone: true))
+                    }
+                    if shelf.screenshotFolderRefused {
+                        Text(L("macOS does not let Capacity Notch read the folder screenshots are saved to. Allow it in System Settings → Privacy & Security → Files & Folders. Screenshots you copy still arrive."))
+                            .font(SettingsType.caption).foregroundStyle(SettingsPalette.destructive)
+                            .fixedSize(horizontal: false, vertical: true).padding(.leading, 54).padding(.trailing, 10).padding(.bottom, 10)
+                    }
+                    SettingsDivider()
+                    SettingsRow(height: 56, indent: 44, hovers: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("Text from the clipboard"))
+                            Text(L("Text you copy is kept under Clipboard, newest first, to put on the clipboard again. Passwords and anything marked secret are left alone."))
+                                .font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.vertical, 10)
+                        Spacer()
+                        Toggle(L("Text from the clipboard"), isOn: Binding(get: { shelf.keepsText }, set: { shelf.setKeepsText($0) }))
+                            .toggleStyle(SettingsSwitchStyle(standsAlone: true))
+                    }
+                    if shelf.keepsText {
+                        ClippingSettings(shelf: shelf)
                     }
                     if shelf.clipboardRefused {
                         Text(L("macOS does not let Capacity Notch read the clipboard. Allow it in System Settings → Privacy & Security."))
@@ -155,6 +177,66 @@ private struct ShelfCard: View {
                 }
             }
         }
+    }
+}
+
+/// How many Clippings, for how long, and from which applications never
+/// (ADR 0005).
+private struct ClippingSettings: View {
+    @ObservedObject var shelf: ShelfController
+
+    var body: some View {
+        SettingsRow(indent: 44) {
+            Text(L("Keep"))
+            Spacer()
+            SettingsPicker(selection: Binding(get: { shelf.clippingLimit }, set: { shelf.setClippingLimit($0) }), label: "\(shelf.clippingLimit.rawValue)") {
+                ForEach(ClippingLimit.allCases, id: \.self) { limit in
+                    Button("\(limit.rawValue)") { shelf.setClippingLimit(limit) }
+                }
+            }
+        }
+        SettingsToggleRow(L("Forget each after 24 hours"), isOn: Binding(get: { shelf.clippingsExpire }, set: { shelf.setClippingsExpire($0) }), indent: 44)
+        SettingsRow(height: 48, indent: 44, hovers: false) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("Never from these applications"))
+                Text(L("Passwords and Keychain Access are always left alone."))
+                    .font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
+            }
+            .padding(.vertical, 10)
+            Spacer()
+            Button(L("Add Application…"), action: chooseApplication)
+                .buttonStyle(SettingsButtonStyle())
+        }
+        ForEach(shelf.excludedApplications, id: \.self) { identifier in
+            SettingsRow(indent: 44) {
+                Text(Self.name(of: identifier))
+                Spacer()
+                Button {
+                    shelf.setExcludedApplications(shelf.excludedApplications.filter { $0 != identifier })
+                } label: {
+                    Image(systemName: "minus.circle").foregroundStyle(SettingsPalette.muted)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("Remove %@", Self.name(of: identifier)))
+            }
+        }
+    }
+
+    private func chooseApplication() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.allowsMultipleSelection = true
+        guard panel.runModal() == .OK else { return }
+        let chosen = panel.urls.compactMap { Bundle(url: $0)?.bundleIdentifier }
+        let all = shelf.excludedApplications + chosen.filter { !shelf.excludedApplications.contains($0) }
+        shelf.setExcludedApplications(all)
+    }
+
+    /// The application's own name, or its identifier if it is gone.
+    private static func name(of identifier: String) -> String {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) else { return identifier }
+        return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
     }
 }
 

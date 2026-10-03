@@ -9,30 +9,31 @@ private func file(_ name: String) -> URL {
 func theShelfKeepsTheNewestFirstAndAtMostTwenty() throws {
     var shelf = Shelf()
     shelf.add([file("a.pdf"), file("b.png")])
-    try expect(shelf.items.map(\.name) == ["b.png", "a.pdf"], "The newest first, got \(shelf.items.map(\.name))")
+    let files = { shelf.items(in: .files) }
+    try expect(files().map(\.name) == ["b.png", "a.pdf"], "The newest first, got \(files().map(\.name))")
 
     shelf.add((1...25).map { file("\($0).txt") })
-    try expect(shelf.items.count == Shelf.limit, "Twenty at most, got \(shelf.items.count)")
-    try expect(shelf.items.first?.name == "25.txt", "The last one dropped is in front")
-    try expect(!shelf.items.contains { $0.name == "a.pdf" }, "The oldest give way")
+    try expect(files().count == ShelfTab.files.limit, "Twenty at most, got \(files().count)")
+    try expect(files().first?.name == "25.txt", "The last one dropped is in front")
+    try expect(!files().contains { $0.name == "a.pdf" }, "The oldest give way")
 }
 
 func aFileDroppedAgainRisesInsteadOfAppearingTwice() throws {
     var shelf = Shelf()
     shelf.add([file("a.pdf"), file("b.png"), file("c.zip")])
     shelf.add([file("a.pdf")])
-    try expect(shelf.items.map(\.name) == ["a.pdf", "c.zip", "b.png"], "Risen to the front, got \(shelf.items.map(\.name))")
-    try expect(shelf.items.count == 3, "Not twice")
+    let names = shelf.items(in: .files).map(\.name)
+    try expect(names == ["a.pdf", "c.zip", "b.png"], "Risen to the front, got \(names)")
 }
 
-func aFileIsRemovedAloneAndClearingEmptiesTheShelf() throws {
+func aFileIsRemovedAloneAndClearingEmptiesItsTab() throws {
     var shelf = Shelf()
     shelf.add([file("a.pdf"), file("b.png")])
-    let b = try unwrap(shelf.items.first { $0.name == "b.png" })
+    let b = try unwrap(shelf.items(in: .files).first { $0.name == "b.png" })
     shelf.remove(b.id)
-    try expect(shelf.items.map(\.name) == ["a.pdf"], "Only that one goes")
-    shelf.clear()
-    try expect(shelf.items.isEmpty, "Clearing empties it")
+    try expect(shelf.items(in: .files).map(\.name) == ["a.pdf"], "Only that one goes")
+    shelf.clear(.files)
+    try expect(shelf.items(in: .files).isEmpty, "Clearing empties it")
 }
 
 func aFileIsDrawnByWhatKindItIs() throws {
@@ -49,15 +50,20 @@ func aFileIsDrawnByWhatKindItIs() throws {
 }
 
 func theShelfTellsDiagnosticsHowManyNeverWhich() throws {
-    try expect(ShelfModule.observation(enabled: false, count: 0) == "shelf-off", "Off")
-    try expect(ShelfModule.observation(enabled: true, count: 3) == "shelf-on-3-files", "On, and how many")
+    var shelf = Shelf()
+    try expect(ShelfModule.observation(enabled: false, shelf: shelf) == "shelf-off", "Off")
+    shelf.add([file("a.pdf"), file("b.zip"), file("c.key")])
+    shelf.addInMemory(named: "shot.png", data: Data([1]), to: .screenshots)
+    shelf.addInMemory(named: "shot 2.png", data: Data([2]), to: .screenshots)
+    let said = ShelfModule.observation(enabled: true, shelf: shelf)
+    try expect(said == "shelf-on-3-files-2-screenshots", "On, and how many in each tab, got \(said)")
 }
 
 func pagesRunCapacityMusicTeleprompterShelf() throws {
-    let all = SurfacePageOrder.pages(musicLoaded: true, teleprompter: true, shelf: true)
+    let all = SurfacePageOrder.pages(music: true, teleprompter: true, shelf: true)
     try expect(all == [.capacity, .music, .teleprompter, .shelf], "The Shelf last, got \(all)")
     try expect(
-        SurfacePageOrder.pages(musicLoaded: false, teleprompter: false, shelf: true) == [.capacity, .shelf],
+        SurfacePageOrder.pages(music: false, teleprompter: false, shelf: true) == [.capacity, .shelf],
         "Empty or not, the Shelf has its page while it is on"
     )
 }
@@ -104,14 +110,15 @@ func anImageWithoutAFileIsHeldInMemory() throws {
     shelf.add([file("a.pdf")])
     let png = Data([0x89, 0x50, 0x4E, 0x47])
     shelf.addInMemory(named: "Снимок экрана.png", data: png)
-    try expect(shelf.items.first?.name == "Снимок экрана.png", "The image lands in front")
-    try expect(shelf.items.first?.url == nil, "With no file behind it")
-    try expect(shelf.items.first?.kind == .image, "Drawn as an image")
+    let files = { shelf.items(in: .files) }
+    try expect(files().first?.name == "Снимок экрана.png", "An image dropped with no file lands in front")
+    try expect(files().first?.url == nil, "With no file behind it")
+    try expect(files().first?.kind == .image, "Drawn as an image")
     shelf.addInMemory(named: "Снимок экрана 2.png", data: png)
-    try expect(shelf.items.count == 2, "The same image again rises rather than appearing twice")
-    try expect(shelf.items.first?.name == "Снимок экрана 2.png", "Under its newer name")
+    try expect(files().count == 2, "The same image again rises rather than appearing twice")
+    try expect(files().first?.name == "Снимок экрана 2.png", "Under its newer name")
     shelf.add((1...25).map { file("\($0).txt") })
-    try expect(shelf.items.count == Shelf.limit, "Images count towards the twenty")
+    try expect(files().count == ShelfTab.files.limit, "Images dropped count towards the twenty files")
 }
 
 func aScreenshotOnTheClipboardIsOnePNGAndNothingElse() throws {
@@ -160,4 +167,167 @@ func whatIsCopiedLandsOnTheShelfExceptFromFinder() throws {
     try expect(ClipboardTake.isExcludedApplication("com.apple.Passwords"), "Passwords is never read from")
     try expect(ClipboardTake.isExcludedApplication("com.apple.keychainaccess"), "Nor Keychain Access")
     try expect(!ClipboardTake.isExcludedApplication("ru.keepcoder.Telegram"), "Telegram is")
+}
+
+// MARK: - Shelf Tabs
+
+func theShelfHasThreeTabsInOrder() throws {
+    try expect(ShelfTab.allCases == [.files, .screenshots, .clipboard], "Files, Screenshots, Clipboard, got \(ShelfTab.allCases)")
+    try expect(ShelfTab.files.limit == 20 && ShelfTab.screenshots.limit == 20, "Twenty files and twenty screenshots")
+}
+
+func whatIsCopiedLandsInTheTabForItsKind() throws {
+    var shelf = Shelf()
+    let png = Data([0x89, 0x50, 0x4E, 0x47])
+    shelf.addInMemory(named: "Снимок экрана 2026-10-01 в 01.02.03.png", data: png, to: ShelfTab.forCopied("Снимок экрана 2026-10-01 в 01.02.03.png"))
+    shelf.addInMemory(named: "Договор.docx", data: Data([1, 2, 3]), to: ShelfTab.forCopied("Договор.docx"))
+    shelf.add([file("photo.JPG")], to: ShelfTab.forCopied("photo.JPG"))
+    shelf.add([file("Отчёт.pdf")])
+
+    try expect(
+        shelf.items(in: .screenshots).map(\.name) == ["photo.JPG", "Снимок экрана 2026-10-01 в 01.02.03.png"],
+        "Screenshots and copied images under Screenshots, got \(shelf.items(in: .screenshots).map(\.name))"
+    )
+    try expect(
+        shelf.items(in: .files).map(\.name) == ["Отчёт.pdf", "Договор.docx"],
+        "A dropped file and a copied document under Files, got \(shelf.items(in: .files).map(\.name))"
+    )
+    try expect(shelf.items(in: .clipboard).isEmpty, "Nothing under Clipboard until text intake")
+    try expect(shelf.count == 4, "Four held in all, got \(shelf.count)")
+}
+
+func eachTabKeepsItsOwnLimit() throws {
+    var shelf = Shelf()
+    shelf.add((1...20).map { file("\($0).txt") })
+    for index in 1...25 {
+        shelf.addInMemory(named: "\(index).png", data: Data([UInt8(index)]), to: .screenshots)
+    }
+    try expect(shelf.items(in: .screenshots).count == 20, "Twenty screenshots, got \(shelf.items(in: .screenshots).count)")
+    try expect(shelf.items(in: .screenshots).first?.name == "25.png", "The newest in front")
+    try expect(!shelf.items(in: .screenshots).contains { $0.name == "1.png" }, "The oldest screenshot gives way")
+    try expect(shelf.items(in: .files).count == 20, "and the twenty files are all still there")
+}
+
+func clearEmptiesOnlyTheTabItIsAskedFor() throws {
+    var shelf = Shelf()
+    shelf.add([file("a.pdf"), file("b.zip")])
+    shelf.addInMemory(named: "shot.png", data: Data([9]), to: .screenshots)
+    shelf.clear(.screenshots)
+    try expect(shelf.items(in: .screenshots).isEmpty, "Screenshots cleared")
+    try expect(shelf.items(in: .files).count == 2, "Files kept, got \(shelf.items(in: .files).count)")
+    let a = try unwrap(shelf.items(in: .files).first { $0.name == "a.pdf" })
+    shelf.remove(a.id)
+    try expect(shelf.items(in: .files).map(\.name) == ["b.zip"], "Removing finds the item in whichever tab holds it")
+    shelf.clearAll()
+    try expect(shelf.count == 0, "Switching off or quitting empties every tab")
+}
+
+func theShelfCountsScreenshotsAsEachLanguageDoes() throws {
+    try expect(Localization.screenshotCount(1, in: .english) == "1 screenshot", "One")
+    try expect(Localization.screenshotCount(5, in: .english) == "5 screenshots", "Many")
+    try expect(Localization.screenshotCount(1, in: .russian) == "1 скрин", "Один скрин")
+    try expect(Localization.screenshotCount(3, in: .russian) == "3 скрина", "Три скрина")
+    try expect(Localization.screenshotCount(11, in: .russian) == "11 скринов", "Одиннадцать скринов")
+}
+
+// MARK: - The screenshot folder
+
+func theScreenshotFolderIsWhereMacOSSavesScreenshots() throws {
+    let home = URL(fileURLWithPath: "/Users/someone")
+    try expect(
+        ScreenshotFolder.location(setting: nil, home: home).path == "/Users/someone/Desktop",
+        "The Desktop unless another place was chosen"
+    )
+    try expect(
+        ScreenshotFolder.location(setting: "~/Pictures/Снимки", home: home).path == "/Users/someone/Pictures/Снимки",
+        "A folder of one's own, with ~ for home"
+    )
+    try expect(
+        ScreenshotFolder.location(setting: "/Volumes/Work/Shots/", home: home).path == "/Volumes/Work/Shots",
+        "Or anywhere at all"
+    )
+    try expect(ScreenshotFolder.location(setting: "  ", home: home).path == "/Users/someone/Desktop", "A blank setting is no setting")
+}
+
+func onlyScreenshotsSavedAfterTheSwitchWasTurnedOnAreTaken() throws {
+    let folder = URL(fileURLWithPath: "/Users/someone/Desktop")
+    let on = Date(timeIntervalSince1970: 1_000_000)
+    func entry(_ name: String, after seconds: TimeInterval, regular: Bool = true) -> ScreenshotFolder.Entry {
+        ScreenshotFolder.Entry(url: folder.appendingPathComponent(name), created: on.addingTimeInterval(seconds), isRegularFile: regular)
+    }
+    let entries = [
+        entry("Снимок экрана 2026-10-02 в 10.00.02.png", after: 2),
+        entry("Screenshot 2026-10-02 at 10.00.01.png", after: 1),
+        entry("Снимок экрана 2026-10-02 в 09.59.00.png", after: -60),
+        entry(".Снимок экрана 2026-10-02 в 10.00.03.png", after: 3),
+        entry("kcl.png", after: 4),
+        entry("Отчёт.pdf", after: 5),
+        entry("Bildschirmfoto 2026-10-02 um 10.00.06.png", after: 6),
+        entry("Screenshot 2026-10-02 at 1.00.07 PM.png", after: 7),
+        entry("Screenshot 2026-10-02 at 10.00.08.png", after: 8, regular: false),
+    ]
+    let taken = ScreenshotFolder.newScreenshots(in: entries, since: on, alreadyTaken: [], settings: .init())
+    try expect(
+        taken.map(\.lastPathComponent) == [
+            "Screenshot 2026-10-02 at 10.00.01.png",
+            "Снимок экрана 2026-10-02 в 10.00.02.png",
+            "Bildschirmfoto 2026-10-02 um 10.00.06.png",
+            "Screenshot 2026-10-02 at 1.00.07 PM.png",
+        ],
+        """
+        New screenshots, oldest first so the newest lands in front — whatever language names them — \
+        never one from before, one still being written, another image, a document or a folder; \
+        got \\(taken.map(\\.lastPathComponent))
+        """
+    )
+
+    let again = ScreenshotFolder.newScreenshots(in: entries, since: on, alreadyTaken: Set(taken), settings: .init())
+    try expect(again.isEmpty, "A screenshot already taken is not taken again, got \\(again.map(\\.lastPathComponent))")
+}
+
+func aScreenshotIsKnownByTheNameAndTypeMacOSWasToldToUse() throws {
+    func taken(_ name: String, _ settings: ScreenshotFolder.Settings) -> Bool {
+        ScreenshotFolder.isScreenshot(name: name, settings: settings)
+    }
+    try expect(taken("Screenshot.png", .init()), "Without the date, by its name")
+    try expect(taken("Снимок экрана 2.png", .init()), "or a numbered one")
+    try expect(!taken("Screenshot 2026-10-02 at 10.00.01.jpg", .init()), "PNG unless told otherwise")
+    try expect(taken("Screenshot 2026-10-02 at 10.00.01.jpg", .init(type: "jpg")), "JPEG when macOS was told JPEG")
+    try expect(taken("Экран.png", .init(name: "Экран")), "A name of one's own")
+    try expect(taken("Экран 2026-10-02 в 10.00.01.png", .init(name: "Экран")), "with the date after it")
+    try expect(!taken("Экраны и окна.png", .init(name: "Экран")), "but not any word that starts with it")
+    try expect(!taken("Screenshot of the bug.png", .init()), "nor a name that only begins like a screenshot's")
+    try expect(taken("Screenshot 2026-10-02 at 10.00.01 (2).png", .init()), "Two in one second")
+    try expect(taken("Снимок экрана — 2026-10-02 в 18.03.21.png", .init()), "macOS 27 puts a dash between the name and the day")
+    try expect(
+        taken("Снимок экрана\u{00A0}— 2026-10-02 в\u{00A0}18.03.21.png", .init()),
+        "with no-break spaces where macOS 27 puts them, as on this Mac"
+    )
+    try expect(taken("Screenshot 2026-10-02 at 1.00.07\u{202F}PM.png", .init()), "and the narrow one before PM")
+    try expect(taken("Screenshot — 2026-10-02 at 18.03.21.png", .init()), "in English too")
+    try expect(taken("Экран — 2026-10-02 в 18.03.21.png", .init(name: "Экран")), "and after a name of one's own")
+    try expect(
+        !taken("Bildschirmfoto 2026-10-02 um 10.00.06.png", .init(name: "Экран")),
+        "With a name of one's own, only that name"
+    )
+}
+
+func theScreenshotSettingsAreReadFromMacOSsOwnKeys() throws {
+    let home = URL(fileURLWithPath: "/Users/someone")
+    let chosen: [String: Any] = ["location": "~/Pictures", "name": "Экран", "type": "JPG", "location-last": "~/Elsewhere"]
+    try expect(ScreenshotFolder.location(domain: chosen, home: home).path == "/Users/someone/Pictures", "`location`, not the last one offered")
+    try expect(ScreenshotFolder.Settings(domain: chosen) == .init(name: "Экран", type: "jpg"), "`name` and `type`, the type in lower case")
+    try expect(ScreenshotFolder.location(domain: [:], home: home).path == "/Users/someone/Desktop", "Nothing said, the Desktop")
+    try expect(ScreenshotFolder.Settings(domain: ["name": "", "type": 3]) == .init(), "Nothing usable, nothing set")
+}
+
+func theFolderIsLookedAtOnlyWhileMacOSSavesScreenshotsToOne() throws {
+    try expect(ScreenshotFolder.savesToFolder(domain: [:]), "To a file, unless told otherwise")
+    try expect(ScreenshotFolder.savesToFolder(domain: ["target": "file"]), "To a file")
+    try expect(!ScreenshotFolder.savesToFolder(domain: ["target": "clipboard"]), "Not while screenshots go to the clipboard")
+    try expect(!ScreenshotFolder.savesToFolder(domain: ["target": "preview"]), "nor to Preview")
+    try expect(
+        ScreenshotFolder.savesToFolder(domain: ["target": "clipboard", "target-screenshot": "file"]),
+        "The screenshots' own target over the shared one"
+    )
 }

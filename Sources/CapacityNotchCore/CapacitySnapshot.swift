@@ -3,6 +3,8 @@ import Foundation
 public enum Provider: String, Equatable, Sendable, CaseIterable {
     case codex
     case claudeCode
+    /// OpenCode's Go plan, read with its own key (ADR 0001, amended).
+    case openCode
 }
 
 /// Why a Provider has no Capacity to show, together with the one action that
@@ -21,6 +23,14 @@ public enum CapacityStatusReason: Equatable, Sendable {
     case claudeCodeNotInstalled
     case claudeUsageFailed
     case claudeUsageNotUnderstood
+    case openCodeDisconnected
+    case openCodeNotSignedIn
+    case openCodeKeyRefused
+    case openCodeUnreachable
+    case openCodeAnswerNotUnderstood
+    /// Not a failure: the windows are read, but the plan's month is used up,
+    /// so OpenCode refuses work however green they are.
+    case openCodeMonthlyLimitReached(until: Date?)
     case staleFromArchive
 
     public var guidance: String {
@@ -51,6 +61,18 @@ public enum CapacityStatusReason: Equatable, Sendable {
             "Claude Code did not answer. Check that it is signed in, then refresh."
         case .claudeUsageNotUnderstood:
             "Claude Code's usage report has changed and Capacity Notch cannot read it. Update Capacity Notch."
+        case .openCodeDisconnected:
+            "Turn on OpenCode in Settings to read its Capacity."
+        case .openCodeNotSignedIn:
+            "Sign in to OpenCode with `opencode auth login`, then try again."
+        case .openCodeKeyRefused:
+            "OpenCode refused its key. Sign in again with `opencode auth login`."
+        case .openCodeUnreachable:
+            "opencode.ai is not answering. Retrying."
+        case .openCodeAnswerNotUnderstood:
+            "OpenCode's answer was not understood. Update Capacity Notch."
+        case .openCodeMonthlyLimitReached:
+            "Monthly limit reached"
         case .staleFromArchive:
             "Last seen before Capacity Notch restarted. Refreshing."
         }
@@ -74,7 +96,10 @@ public enum CapacityStatusReason: Equatable, Sendable {
     /// Whether the card's chip already carries this, so spelling it out in a
     /// sentence underneath would only repeat it.
     public var repeatsTheChip: Bool {
-        self == .staleFromArchive
+        switch self {
+        case .staleFromArchive, .openCodeMonthlyLimitReached: true
+        default: false
+        }
     }
 
     /// The reason as a word a bug report can carry.
@@ -100,6 +125,12 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case .claudeCodeNotInstalled: "claude-code-not-installed"
         case .claudeUsageFailed: "claude-usage-failed"
         case .claudeUsageNotUnderstood: "claude-usage-not-understood"
+        case .openCodeDisconnected: "opencode-disconnected"
+        case .openCodeNotSignedIn: "opencode-not-signed-in"
+        case .openCodeKeyRefused: "opencode-key-refused"
+        case .openCodeUnreachable: "opencode-unreachable"
+        case .openCodeAnswerNotUnderstood: "opencode-not-understood"
+        case .openCodeMonthlyLimitReached: "opencode-month-used-up"
         case .staleFromArchive: "stale-from-archive"
         }
     }
@@ -114,7 +145,10 @@ public enum CapacityStatusReason: Equatable, Sendable {
              .providerAnswerNotUnderstood,
              .claudeStatusLineUnavailable,
              .claudeCodeNotInstalled,
-             .claudeUsageNotUnderstood:
+             .claudeUsageNotUnderstood,
+             .openCodeNotSignedIn,
+             .openCodeKeyRefused,
+             .openCodeAnswerNotUnderstood:
             true
         case .providerUnavailable,
              .providerCouldNotRead,
@@ -122,6 +156,9 @@ public enum CapacityStatusReason: Equatable, Sendable {
              .claudeDisconnected,
              .claudeStatusLineStale,
              .claudeUsageFailed,
+             .openCodeDisconnected,
+             .openCodeUnreachable,
+             .openCodeMonthlyLimitReached,
              .staleFromArchive:
             false
         }
@@ -139,9 +176,15 @@ public enum CapacityStatusReason: Equatable, Sendable {
              .providerCouldNotRead,
              .claudeStatusLineStale,
              .claudeUsageFailed,
+             .openCodeUnreachable,
              .staleFromArchive:
             true
-        case .providerNotInstalled,
+        case .openCodeDisconnected,
+             .openCodeNotSignedIn,
+             .openCodeKeyRefused,
+             .openCodeAnswerNotUnderstood,
+             .openCodeMonthlyLimitReached,
+             .providerNotInstalled,
              .providerIncompatible,
              .providerNotAuthenticated,
              .providerAnswerNotUnderstood,

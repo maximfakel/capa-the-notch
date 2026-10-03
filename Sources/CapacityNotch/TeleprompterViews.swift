@@ -193,7 +193,7 @@ final class ScriptScrollView: NSView {
     private func showLines(around position: Double) {
         guard !lines.isEmpty else { return }
         let first = max(Int(position.rounded(.down)) - 1, 0)
-        let last = min(Int(position.rounded(.down)) + TeleprompterLayout.visibleLines + 3, lines.count - 1)
+        let last = min(Int(position.rounded(.down)) + TeleprompterLayout.rowLines(size) + 3, lines.count - 1)
         let wanted = Set(first ... last)
 
         for (index, layer) in lineLayers where !wanted.contains(index) {
@@ -213,19 +213,19 @@ final class ScriptScrollView: NSView {
                 height: TeleprompterLayout.lineHeight(size)
             )
             if Self.drawnForPictures {
-                let row = CGFloat(index) - CGFloat(position.rounded(.down))
-                layer.opacity = row <= 0 ? 1 : row == 1 ? Float(0x8C) / 255 : Float(0x40) / 255
+                let row = index - Int(position.rounded(.down))
+                layer.opacity = Float(TeleprompterLayout.lineOpacity(row))
             }
             content.addSublayer(layer)
             lineLayers[index] = layer
         }
     }
 
-    /// Three bands, one per line in view: the current line full white, the
-    /// next at 55%, the one after at 25% (the mockup's #FFF, #FFFFFF8C,
-    /// #FFFFFF40). Each changes to the next within the two points between
-    /// lines, so a line at rest is one colour and a moving one passes from
-    /// band to band.
+    /// One band per line in view (`TeleprompterLayout.lineOpacity`): the
+    /// current line full white, the next at 55%, the one after at 25% (the
+    /// mockup's #FFF, #FFFFFF8C, #FFFFFF40), and quieter below. Each changes
+    /// to the next within the two points between lines, so a line at rest is
+    /// one colour and a moving one passes from band to band.
     private func layoutFade() {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -234,10 +234,16 @@ final class ScriptScrollView: NSView {
         let lineHeight = TeleprompterLayout.lineHeight(size)
         let bottom = { (line: Int) in (TeleprompterLayout.topInset + CGFloat(line) * self.pitch + lineHeight) / height }
         let top = { (line: Int) in (TeleprompterLayout.topInset + CGFloat(line) * self.pitch) / height }
-        fade.colors = [1, 1, 0x8C / 255.0, 0x8C / 255.0, 0x40 / 255.0, 0x40 / 255.0].map {
-            NSColor.white.withAlphaComponent($0).cgColor
+        var colours: [Double] = []
+        var locations: [CGFloat] = []
+        for line in 0 ..< TeleprompterLayout.rowLines(size) {
+            let opacity = TeleprompterLayout.lineOpacity(line)
+            colours += [opacity, opacity]
+            locations += [line == 0 ? 0 : top(line), bottom(line)]
         }
-        fade.locations = [0, bottom(0), top(1), bottom(1), top(2), 1].map { NSNumber(value: Double($0)) }
+        locations[locations.count - 1] = 1
+        fade.colors = colours.map { NSColor.white.withAlphaComponent($0).cgColor }
+        fade.locations = locations.map { NSNumber(value: Double($0)) }
         fade.startPoint = CGPoint(x: 0.5, y: 0)
         fade.endPoint = CGPoint(x: 0.5, y: 1)
         CATransaction.commit()
@@ -353,6 +359,14 @@ struct TeleprompterPage: View {
                             .foregroundStyle(SurfaceType.captionColour)
                     }
                     .accessibilityLabel(L("Faster"))
+                }
+
+                // Paper "Notch — Expanded — Teleprompter": a still Kapa, never
+                // a moving one, on the page of the Module that reads by the
+                // camera (ADR 0006). Not beside the Teleprompter Row at all.
+                WithKapa {
+                    KapaView(expression: .quiet, size: 22, isAnimated: false)
+                        .padding(.leading, 6)
                 }
 
                 Spacer()

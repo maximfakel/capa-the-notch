@@ -473,7 +473,7 @@ func staleCodexCapacityKeepsTheMomentItWasRead() async throws {
     try expect(held.connectionState == .stale, "A backend failure keeps the last reading as Stale Capacity")
     try expect(
         held.capturedAt == fixedNow,
-        "Stale Capacity was read when it was read, not when it went stale; the surface says \"Last read at\" from this. Got \(held.capturedAt.timeIntervalSince(fixedNow))s later"
+        "Stale Capacity was read when it was read, not when it went stale. Got \(held.capturedAt.timeIntervalSince(fixedNow))s later"
     )
 }
 

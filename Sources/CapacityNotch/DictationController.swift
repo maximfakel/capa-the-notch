@@ -239,7 +239,7 @@ final class DictationController: ObservableObject {
                 DiagnosticLog.record(.recognitionFinished(samples: samples.count, empty: result.isEmpty))
                 // Nothing to fix, only to try again, so it does not wait for Escape.
                 guard !result.isEmpty else { fail("No speech was recognised. Check your microphone and try again.", hidesAfter: .seconds(2.5)); return }
-                NSPasteboard.general.clearContents(); NSPasteboard.general.setString(result, forType: .string)
+                OwnClipboard.copy(result)
                 let delivery = target; target = nil
                 deliveryMessage = await delivery?.insert(result) ?? DictationDelivery.lastCaptureFailure ?? "No external application was captured when recording began."
                 presentation = deliveryMessage == nil ? .inserted : .copied
@@ -276,7 +276,7 @@ final class DictationController: ObservableObject {
             presentation = .hidden; hotKey?.captureEscape(false)
         }
     }
-    func copy(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
+    func copy(_ text: String) { OwnClipboard.copy(text) }
     func delete(_ id: UUID) { history.delete(id); preferences.dictationHistory = history }
     func clearHistory() { history.clear(); preferences.dictationHistory = history }
 }

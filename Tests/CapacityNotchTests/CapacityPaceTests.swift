@@ -80,3 +80,17 @@ func theCountdownSaysHowLongInTheFewestWords() throws {
     )
     try expect(text(50 * 3600) == "2d 2h", "got \(text(50 * 3600))")
 }
+
+/// Under a gauge there is room for one short thing: the time of day while the
+/// reset is within a day, a countdown past that ("Limits — C · Gauges").
+func aGaugeSaysWhenItResetsInOneShortThing() throws {
+    func reset(_ seconds: TimeInterval?) -> GaugeReset {
+        GaugeReset(resetsAt: seconds.map { now.addingTimeInterval($0) }, at: now)
+    }
+
+    try expect(reset(3 * 3600) == .at(now.addingTimeInterval(3 * 3600)), "Within the day, the time it comes back")
+    try expect(reset(24 * 3600 - 60) == .at(now.addingTimeInterval(24 * 3600 - 60)), "Still the time, just under a day")
+    try expect(reset(50 * 3600) == .in("2d 2h"), "Past a day, how long")
+    try expect(reset(-60) == .in("moments"), "Already due")
+    try expect(reset(nil) == .unknown, "Not reported")
+}

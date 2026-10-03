@@ -4,58 +4,208 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Paper "Notch — Expanded — Shelf" and "— Shelf empty": the Shelf as a page
-/// of the open surface.
+/// of the open surface, its three Shelf Tabs in the header.
 struct ShelfPage: View {
     @ObservedObject var shelf: ShelfController
     @ObservedObject var pointer: SurfacePointer
     /// Whether the page can be seen, so a moved file is noticed when it is.
     var isVisible = true
 
+    private var items: [ShelfItem] { shelf.items(in: shelf.tab) }
+    private var clippings: [Clipping] { shelf.clippings.items }
+
+    /// How many the tab shown holds: its items, or its Clippings.
+    private var held: Int { shelf.tab == .clipboard ? clippings.count : items.count }
+
+    /// One tile's width and the gap after it, for the tab shown.
+    private var tileWidth: CGFloat { shelf.tab == .clipboard ? ClippingCard.width : ShelfTile.width }
+
+    /// Everything the Shelf keeps, every tab: what rises when something lands,
+    /// whichever tab it lands in, and stays put when only the tab changes.
+    private var kept: Int {
+        ShelfTab.allCases.reduce(0) { total, tab in
+            total + (tab == .clipboard ? clippings.count : shelf.items(in: tab).count)
+        }
+    }
+
+    /// Kapa beside the count for a moment after something lands, then gone:
+    /// a reaction, not a resident (ADR 0006).
+    @State private var landed = false
+    @State private var landedAt = Date.distantPast
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(L("Shelf"))
-                    .font(SurfaceType.geist(15, .semibold))
-                    .foregroundStyle(.white)
-                Text(shelf.items.isEmpty ? L("empty") : Localization.fileCount(shelf.items.count))
-                    .font(SurfaceType.geist(12))
-                    .foregroundStyle(SurfaceType.captionColour)
-                Spacer(minLength: 0)
-                if !shelf.items.isEmpty {
-                    Button(L("Clear")) { shelf.clear() }
-                        .buttonStyle(.plain)
-                        .font(SurfaceType.geist(13, .medium))
-                        .foregroundStyle(SurfaceType.captionColour)
-                }
-            }
+            header
 
-            if shelf.items.isEmpty {
-                ShelfEmptyZone()
+            if held == 0 {
+                ShelfEmptyZone(title: emptyTitle, detail: emptyDetail)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 8) {
-                        ForEach(shelf.items) { item in
-                            ShelfTile(
-                                item: item,
-                                isMissing: shelf.missing.contains(item.id),
-                                thumbnail: shelf.thumbnails[item.id],
-                                pointer: pointer,
-                                remove: { shelf.remove(item.id) },
-                                dragEnded: { shelf.refreshAvailability() }
-                            )
+                        if shelf.tab == .clipboard {
+                            ForEach(clippings) { clipping in
+                                ClippingCard(
+                                    clipping: clipping,
+                                    copied: shelf.justCopied == clipping.id,
+                                    pointer: pointer,
+                                    copy: { shelf.copy(clipping) },
+                                    remove: { shelf.removeClipping(clipping.id) }
+                                )
+                            }
+                        } else {
+                            ForEach(items) { item in
+                                ShelfTile(
+                                    item: item,
+                                    isMissing: shelf.missing.contains(item.id),
+                                    thumbnail: shelf.thumbnails[item.id],
+                                    pointer: pointer,
+                                    remove: { shelf.remove(item.id) },
+                                    dragEnded: { shelf.refreshAvailability() }
+                                )
+                            }
                         }
                     }
-                    // Room for the ✕ that stands out of a tile's corner.
+                    // Room for the ✕ that stands out of a tile's corner, taken
+                    // from the gap above the row rather than from the tiles,
+                    // which keep the drawing's 76.
                     .padding(.top, 6)
                     .padding(.trailing, 6)
                 }
+                .padding(.top, -6)
+                // Each tab its own row, scrolled from its start.
+                .id(shelf.tab)
+                .background(
+                    GeometryReader { geometry in
+                        let row = geometry.frame(in: .named(SurfacePointer.space))
+                        Color.clear
+                            .onAppear { claimRow(row) }
+                            .onChange(of: row) { _, now in claimRow(now) }
+                            .onChange(of: held) { _, _ in claimRow(row) }
+                            .onChange(of: isVisible) { _, _ in claimRow(row) }
+                    }
+                )
             }
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
-        .padding(.bottom, 10)
+        .padding(.bottom, 4)
         .onAppear { shelf.refreshAvailability() }
         .onChange(of: isVisible) { _, visible in if visible { shelf.refreshAvailability() } }
+        // An empty tab — shown, or just cleared — has no row to scroll.
+        .onChange(of: held == 0) { _, empty in if empty { pointer.scrollableRow = nil } }
+        .onChange(of: shelf.tab) { _, _ in if held == 0 { pointer.scrollableRow = nil } }
+        .onDisappear { pointer.scrollableRow = nil }
+        .onChange(of: kept) { before, after in
+            guard after > before else { return }
+            // Twenty dropped at once land as one: one gulp, held 1.8 seconds
+            // from the last of them.
+            let at = Date()
+            landedAt = at
+            withAnimation(.easeOut(duration: 0.15)) { landed = true }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(1.8))
+                guard landedAt == at else { return }
+                withAnimation(.easeIn(duration: 0.2)) { landed = false }
+            }
+        }
+    }
+
+    /// The name and the count on the left, Clear on the right, and the tabs
+    /// in the middle of the page whatever the two sides measure, as in
+    /// "Notch — Expanded — Shelf".
+    private var header: some View {
+        ZStack {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(L("Shelf"))
+                    .font(SurfaceType.geist(15, .semibold))
+                    .foregroundStyle(.white)
+                Text(count)
+                    .font(SurfaceType.geist(12))
+                    .foregroundStyle(SurfaceType.captionColour)
+                if landed {
+                    WithKapa {
+                        KapaView(expression: .received, size: 22, isAnimated: isVisible)
+                            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+                            .transition(.opacity)
+                    }
+                }
+                Spacer(minLength: 0)
+                // Red while there is something to clear; grey, and doing
+                // nothing, while the tab is empty.
+                Button(L("Clear")) { shelf.clear() }
+                    .buttonStyle(.plain)
+                    .font(SurfaceType.geist(13, .medium))
+                    .foregroundStyle(held == 0 ? SurfaceType.captionColour : SurfaceType.red)
+                    .disabled(held == 0)
+                    .accessibilityLabel(L("Clear %@", title(of: shelf.tab)))
+            }
+
+            HStack(spacing: 8) {
+                ForEach(ShelfTab.allCases, id: \.self) { tab in
+                    Button(title(of: tab)) { shelf.tab = tab }
+                        .buttonStyle(.plain)
+                        .font(SurfaceType.geist(13, .medium))
+                        .foregroundStyle(tab == shelf.tab ? Color.white : SurfaceType.captionColour)
+                        .accessibilityAddTraits(tab == shelf.tab ? .isSelected : [])
+                }
+            }
+            .padding(.top, 1)
+        }
+        .frame(height: 18)
+    }
+
+    private func title(of tab: ShelfTab) -> String {
+        switch tab {
+        case .files: L("Files")
+        case .screenshots: L("Screenshots")
+        case .clipboard: L("Clipboard")
+        }
+    }
+
+    /// The tab's own count: files, screenshots, or Clippings.
+    private var count: String {
+        switch shelf.tab {
+        case _ where held == 0: L("Empty")
+        case .files: Localization.fileCount(held)
+        case .screenshots: Localization.screenshotCount(held)
+        case .clipboard: Localization.clippingCount(held)
+        }
+    }
+
+    /// An empty tab says what lands in it, or, while its intake is off, how
+    /// to turn it on: Files as in "Notch — Expanded — Shelf empty", the other
+    /// two in the same zone, which no frame draws yet.
+    private var emptyTitle: String {
+        switch shelf.tab {
+        case .files: L("Drag files here to keep them at hand")
+        case .screenshots: L("Screenshots and images you copy wait here")
+        case .clipboard: L("Text you copy can wait here")
+        }
+    }
+
+    private var emptyDetail: String {
+        switch shelf.tab {
+        case .files:
+            return L("Up to 20 files. The Shelf empties when Capacity Notch quits.")
+        case .screenshots:
+            return shelf.takesClipboardImages
+                ? L("Up to 20. The Shelf empties when Capacity Notch quits.")
+                : L("Turn on “Images and files from the clipboard” in Settings → Modules → Shelf.")
+        case .clipboard:
+            guard shelf.keepsText else { return L("Turn on text from the clipboard in Settings → Modules → Shelf.") }
+            return shelf.clippingsExpire
+                ? L("Up to %d. Each goes after 24 hours, and all when Capacity Notch quits.", shelf.clippingLimit.rawValue)
+                : L("Up to %d. All go when Capacity Notch quits.", shelf.clippingLimit.rawValue)
+        }
+    }
+
+    /// The row is the panel's to scroll only while the page is shown and the
+    /// files do not all fit; otherwise a swipe over it turns the page as
+    /// anywhere else.
+    private func claimRow(_ row: CGRect) {
+        let count = CGFloat(held)
+        let content = count * tileWidth + max(count - 1, 0) * 8 + 6
+        pointer.scrollableRow = isVisible && held > 0 && content > row.width ? row : nil
     }
 }
 
@@ -70,7 +220,7 @@ private struct ShelfTile: View {
     let remove: () -> Void
     let dragEnded: () -> Void
 
-    private static let width: CGFloat = 76
+    static let width: CGFloat = 76
 
     var body: some View {
         PointerInside(pointer: pointer) { hovered in
@@ -97,13 +247,18 @@ private struct ShelfTile: View {
                             .accessibilityLabel(L("Remove %@ from the Shelf", item.name))
                         }
                     }
-                Text(item.name)
+                // Two lines of 13, cut in the middle across both as Finder
+                // cuts a name: "Снимок экра… 12.41.png".
+                Text(ShelfTileName.fitted(item.name, width: Self.width))
                     .font(SurfaceType.geist(11))
+                    .lineSpacing(13 - SurfaceType.geistNSFont(11).lineHeight)
                     .foregroundStyle(isMissing ? Color.white.opacity(0x59 / 255) : .white)
                     .lineLimit(2)
-                    .truncationMode(.middle)
                     .multilineTextAlignment(.center)
-                    .frame(width: Self.width)
+                    // Its own two lines, whatever SwiftUI makes of 13; the
+                    // row still keeps the drawing's 26 for them.
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: Self.width, height: 26, alignment: .top)
             }
         }
         .frame(width: Self.width)
@@ -138,7 +293,9 @@ private struct ShelfTile: View {
                 } else {
                     PageGlyph().fill(Color.white.opacity(0.92))
                         .frame(width: 30, height: 38)
-                        .overlay(alignment: .bottom) {
+                        // The badge stands out of the page's lower left, as
+                        // drawn: eighteen in from the tile, twelve up from it.
+                        .overlay(alignment: .bottomLeading) {
                             if let badge = kind.badge(forName: item.name) {
                                 Text(badge)
                                     .font(SurfaceType.geist(8, .bold))
@@ -147,13 +304,106 @@ private struct ShelfTile: View {
                                     .frame(height: 11)
                                     .background(RoundedRectangle(cornerRadius: 3).fill(kind.colour))
                                     .fixedSize()
-                                    .offset(y: -2)
+                                    .offset(x: -5, y: 7)
                             }
                         }
                 }
             }
         }
-        .frame(width: Self.width, height: 64)
+        .frame(width: Self.width, height: 76)
+    }
+}
+
+/// A file's name in two lines at most, cut in the middle as Finder cuts it:
+/// the start, an ellipsis, and the last word — "Снимок экра… 12.41.png" —
+/// so the end that tells two screenshots apart stays. SwiftUI cuts in the
+/// middle only on one line, so the cut is made here, measured in the
+/// surface's own type.
+enum ShelfTileName {
+    static func fitted(_ name: String, width: CGFloat) -> String {
+        let font = SurfaceType.geistNSFont(11)
+        let style = NSMutableParagraphStyle()
+        style.alignment = .center
+        func fits(_ text: String) -> Bool {
+            let height = NSAttributedString(string: text, attributes: [.font: font, .paragraphStyle: style])
+                .boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin, .usesFontLeading])
+                .height
+            return height <= font.lineHeight * 2 + 0.5
+        }
+        guard !fits(name) else { return name }
+        let lastSpace = name.lastIndex(of: " ")
+        let tail = lastSpace.map { String(name[name.index(after: $0)...]) } ?? String(name.suffix(8))
+        let joint = lastSpace == nil ? "…" : "… "
+        let room = name.count - tail.count
+        var low = 0, high = max(room - 1, 0)
+        while low < high {
+            let middle = (low + high + 1) / 2
+            if fits(String(name.prefix(middle)) + joint + tail) { low = middle } else { high = middle - 1 }
+        }
+        return String(name.prefix(low)).trimmingCharacters(in: .whitespaces) + joint + tail
+    }
+}
+
+/// One Clipping: the start of what was copied, and when. A click puts it on
+/// the clipboard and says "Copied"; nothing is pasted. ✕ under the pointer.
+private struct ClippingCard: View {
+    let clipping: Clipping
+    let copied: Bool
+    @ObservedObject var pointer: SurfacePointer
+    let copy: () -> Void
+    let remove: () -> Void
+
+    static let width: CGFloat = 148
+
+    var body: some View {
+        PointerInside(pointer: pointer) { hovered in
+            Button(action: copy) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(shown)
+                        .font(SurfaceType.geist(12))
+                        .foregroundStyle(.white)
+                        .lineLimit(4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    Text(copied ? L("Copied") : clipping.copiedAt.formatted(date: .omitted, time: .shortened))
+                        .font(SurfaceType.geist(10, copied ? .semibold : .regular))
+                        .foregroundStyle(copied ? SurfaceType.green : SurfaceType.captionColour)
+                }
+                .padding(10)
+                .frame(width: Self.width, height: 108)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(hovered ? 0x2E / 255 : 0x1F / 255))
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .overlay(alignment: .topTrailing) {
+                if hovered {
+                    Button(action: remove) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 18, height: 18)
+                            .background(Circle().fill(Color(white: 0x3A / 255)))
+                            .overlay(Circle().strokeBorder(Color.black, lineWidth: 2).padding(-2))
+                    }
+                    .buttonStyle(.plain)
+                    .offset(x: 5, y: -5)
+                    .accessibilityLabel(L("Remove from the Shelf"))
+                }
+            }
+        }
+        .frame(width: Self.width)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(copied ? L("Copied") : shown)
+        .accessibilityHint(L("Puts it on the clipboard"))
+    }
+
+    /// Lines and runs of space folded, so four lines show the most of it.
+    private var shown: String {
+        clipping.text
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
     }
 }
 
@@ -181,9 +431,8 @@ private final class FileDragView: NSView, NSDraggingSource {
     var item: ShelfItem?
     var ended: () -> Void = {}
     private var pressedAt: NSPoint?
-    /// The image being dragged out, held for the drag: the provider keeps
-    /// its delegate weakly.
-    private var promised: PromisedFile?
+    /// The thing dragged is held only in memory, and leaves as a copy.
+    private var draggingCopy = false
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -203,12 +452,15 @@ private final class FileDragView: NSView, NSDraggingSource {
             dragged = NSDraggingItem(pasteboardWriter: url as NSURL)
             icon = NSWorkspace.shared.icon(forFile: url.path)
         case let .inMemory(name, data):
+            // Dragged as a file, which every application takes — a promise
+            // is refused by many, Chromium's among them. The file is written
+            // for the drag, into the Shelf's own folder (ADR 0005, amended).
+            guard let url = ShelfDragFiles.file(for: item) else { return }
+            dragged = NSDraggingItem(pasteboardWriter: url as NSURL)
             let type = UTType(filenameExtension: (name as NSString).pathExtension) ?? .png
-            let file = PromisedFile(name: name, data: data)
-            promised = file
-            dragged = NSDraggingItem(pasteboardWriter: NSFilePromiseProvider(fileType: type.identifier, delegate: file))
             icon = NSImage(data: data) ?? NSWorkspace.shared.icon(for: type)
         }
+        draggingCopy = item.url == nil
         let side: CGFloat = 48
         dragged.setDraggingFrame(NSRect(x: point.x - side / 2, y: point.y - side / 2, width: side, height: side), contents: icon)
         beginDraggingSession(with: [dragged], event: event, source: self)
@@ -221,40 +473,15 @@ private final class FileDragView: NSView, NSDraggingSource {
     func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
         // Onto the Shelf itself it would only rise to the front; elsewhere
         // the destination chooses, as it does for a drag from Finder.
-        context == .outsideApplication ? [.move, .copy, .generic, .link] : []
+        // Something held in memory leaves as a copy: moved, its file would
+        // be gone from the Shelf's folder for the next drag.
+        guard context == .outsideApplication else { return [] }
+        return draggingCopy ? [.copy, .generic] : [.move, .copy, .generic, .link]
     }
 
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
         // Finder moves a file a moment after the drop; look again once it has.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [ended] in ended() }
-        // The destination has written the file by the time the drag ends.
-        promised = nil
-    }
-}
-
-/// Something held in memory, dragged out and written wherever it is dropped.
-/// Its name and bytes are fixed when the drag starts, so writing them — on
-/// whatever queue the destination asks — touches nothing of the Shelf's.
-private final class PromisedFile: NSObject, NSFilePromiseProviderDelegate, Sendable {
-    let name: String
-    let data: Data
-
-    init(name: String, data: Data) {
-        self.name = name
-        self.data = data
-    }
-
-    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType fileType: String) -> String {
-        name
-    }
-
-    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, writePromiseTo url: URL, completionHandler: @escaping (Error?) -> Void) {
-        do {
-            try data.write(to: url)
-            completionHandler(nil)
-        } catch {
-            completionHandler(error)
-        }
     }
 }
 
@@ -308,20 +535,31 @@ private struct DropGlyph: Shape {
 }
 
 private struct ShelfEmptyZone: View {
+    let title: String
+    let detail: String
+
     var body: some View {
         VStack(spacing: 6) {
-            DropGlyph()
-                .stroke(SurfaceType.captionColour, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                .frame(width: 22, height: 22)
-            Text(L("Drag files here to keep them at hand"))
-                .font(SurfaceType.geist(13, .medium))
+            // Kapa looks up at where a file would come from; the drawing's
+            // arrow where Kapa is turned off.
+            WithKapa {
+                KapaView(expression: .curious, size: 34)
+            } otherwise: {
+                DropGlyph()
+                    .stroke(SurfaceType.captionColour, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                    .frame(width: 22, height: 22)
+            }
+            Text(title)
+                .font(SurfaceType.geist(15, .medium))
                 .foregroundStyle(.white)
-            Text(L("Up to 20 files. The Shelf empties when Capacity Notch quits."))
+            Text(detail)
                 .font(SurfaceType.geist(11))
                 .foregroundStyle(SurfaceType.captionColour)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 95)
+        .frame(height: 108)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color.white.opacity(0x40 / 255), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
@@ -334,13 +572,25 @@ private struct ShelfEmptyZone: View {
 struct ShelfDropZone: View {
     /// The tab's size, which the outline draws; this fills it.
     static let tab = CGSize(width: 196, height: 126)
+    /// When the file was let go, while Kapa is still eating it.
+    var swallowedAt: Date?
 
     var body: some View {
         VStack(spacing: 12) {
-            DropGlyph()
-                .stroke(.white, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                .frame(width: 16, height: 16)
-            Text(L("Release to put it\non the Shelf"))
+            // Paper "Notch — Compact — Dropping on the Shelf": Kapa opens its
+            // mouth for the file. The whole zone still takes the drop — the
+            // mouth is not a target to hit.
+            // Its eyes follow the file, its mouth opens wider the nearer the
+            // file comes, and the file it is given it eats.
+            WithKapa {
+                KapaView(expression: .dropReady, size: 48, showsBadge: false, swallowedAt: swallowedAt)
+                    .padding(.bottom, -6)
+            } otherwise: {
+                DropGlyph()
+                    .stroke(.white, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 16, height: 16)
+            }
+            Text(swallowedAt == nil ? L("Release to put it\non the Shelf") : L("On the Shelf"))
                 .font(SurfaceType.geist(11))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
@@ -428,6 +678,7 @@ struct PageSwitcher: View {
             .padding(.bottom, 8)
         } else {
             // One page, nothing to switch to: the row keeps the dots' height.
+            // Eight, four and eight: `NotchGeometry.pageSwitcherHeight`.
             Color.clear.frame(height: 8).padding(.top, 4).padding(.bottom, 8)
         }
     }
@@ -543,4 +794,9 @@ extension SurfacePage {
         case .shelf: .shelf
         }
     }
+}
+
+private extension NSFont {
+    /// One line of this type, as AppKit lays it out.
+    var lineHeight: CGFloat { NSLayoutManager().defaultLineHeight(for: self) }
 }

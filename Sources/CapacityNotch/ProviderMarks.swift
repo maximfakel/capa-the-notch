@@ -46,6 +46,40 @@ struct ClaudeMark: Shape {
     }
 }
 
+/// OpenCode's mark, from its own brand assets (MIT; THIRD_PARTY_NOTICES):
+/// the frame and the block in its lower half, in its 240 × 300 box, kept to
+/// one colour with the block a shade of it, as the dark original has it.
+struct OpenCodeMark: View {
+    var body: some View {
+        ZStack {
+            OpenCodeShape(part: .block).opacity(0.3)
+            OpenCodeShape(part: .frame).fill(style: FillStyle(eoFill: true))
+        }
+    }
+}
+
+private struct OpenCodeShape: Shape {
+    enum Part { case frame, block }
+    let part: Part
+
+    func path(in rect: CGRect) -> Path {
+        let scale = min(rect.width / 240, rect.height / 300)
+        let origin = CGPoint(x: rect.midX - 120 * scale, y: rect.midY - 150 * scale)
+        func box(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat) -> CGRect {
+            CGRect(x: origin.x + x * scale, y: origin.y + y * scale, width: width * scale, height: height * scale)
+        }
+        var path = Path()
+        switch part {
+        case .frame:
+            path.addRect(box(0, 0, 240, 300))
+            path.addRect(box(60, 60, 120, 180))
+        case .block:
+            path.addRect(box(60, 120, 120, 120))
+        }
+        return path
+    }
+}
+
 struct ProviderMark: View {
     let provider: Provider
     var size: CGFloat = 16
@@ -62,9 +96,11 @@ struct ProviderMark: View {
                     .scaledToFit()
             case .claudeCode:
                 ClaudeMark()
+            case .openCode:
+                OpenCodeMark()
             }
         }
-        // Both marks occupy the same box. Giving one a larger box to
+        // Every mark occupies the same box. Giving one a larger box to
         // compensate for its artwork made its card's header taller than the
         // other's, and pushed everything under it down.
         .frame(width: size, height: size)

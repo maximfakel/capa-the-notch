@@ -1,0 +1,16 @@
+# Kapa Is How Modules Look, Not a Module
+
+The author wanted something with feeling on the surface — one character — after OpenAI's Dots and the Coucou notch companion (`docs/research/coucou-character.md`). Kapa is that character: a cyan bell drawn in Paper ("Kapa — 01 Character sheet", "— 02 When to show"), with a pose for each thing the surface can already say honestly.
+
+Kapa is not a Module. It reads nothing new, asks for no permission and owns no page; it appears only inside what Modules already show — the Capacity cards, the Shelf's drop tab and header, the Music row and page, the Dictation Capsule — and says in a face what those already say in words. So it does not wait to be turned on as ADR 0003 asks of Modules: it is on, with one switch to turn it off (Settings ▸ General, `KapaPreference`). Making it a Module was the alternative, and would have put a permission-free decoration behind the same ceremony as a microphone.
+
+Four rules come with it:
+
+- **The compact strip stays Capacity's (ADR 0003).** Kapa never stands in it, and never near a running Teleprompter Row: nothing moves by the camera while a person reads.
+- **Only signals that exist.** Each pose maps from a Capacity Snapshot, a dictation's phase, a drag over the Shelf, a landing on it, or a track (`KapaMood`). Old numbers are not judged: stale and connecting look the same. No pose stands for something no Module reports — no "thinking". Kapa nods to music at a steady tempo of its own, since nothing measures the music's beat; it never claims to keep time with the track.
+- **The body never changes colour.** Meaning is carried by the eyes, the mouth and one sign; a pose that only colour told apart would be lost on anyone who does not see colour.
+- **Movement costs only while it moves.** Kapa is drawn as Coucou draws its character — a SwiftUI `Canvas` under a `TimelineView`, an engine stepped each frame — but on a schedule of its own: thirty frames a second while something moves (a blink, a glance, a nod, music, a file held near, a gulp), and nothing between, until the next thing due. Measured, one release build, one Kapa: 1.7% of a core at rest on a page, 3.6% worried, 5.8% nodding to music; at a steady thirty frames it had been 6.1% whatever it did. A new pose still arrives inside a blink rather than morphing. Nothing moves under Reduce Motion, on a page not shown, or beside the Teleprompter.
+
+**Amended 2026-10-03.** Kapa was first drawn with Core Animation, as the equaliser is, after a SwiftUI timeline redrawing the bars was measured at a fifth of a core. That kept it cheap and kept it stiff: the render server can play a blink but cannot follow a file or nod to music. The author chose Coucou's way for the movement it allows — eating a dropped file, nodding to music, eyes on the pointer, a boop — with the schedule above to keep its cost to its moments.
+
+Coucou's character, name, look and sounds are its author's, all rights reserved; none of them is used. Its techniques are, written afresh here under ADR 0002: the stepped `Canvas`, eyes placed as on a sphere, changing an expression while the eyes are shut, and scripted moments written as poses at a time. Its MIT licence is credited in `THIRD_PARTY_NOTICES.md`.

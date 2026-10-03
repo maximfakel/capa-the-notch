@@ -95,8 +95,8 @@ func aRestartOpensOnWhatWasThereAndAsksForTheRest() throws {
     )
 
     try expect(
-        restored.map(\.provider) == [.codex, .claudeCode],
-        "Both Providers still appear, in their order"
+        restored.map(\.provider) == Provider.allCases,
+        "Every Provider still appears, in their order"
     )
     try expect(
         restored[0].windows.count == 1,

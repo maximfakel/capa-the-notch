@@ -67,6 +67,30 @@ public enum Localization {
         }
     }
 
+    /// How many Clippings the Clipboard tab holds.
+    public static func clippingCount(_ count: Int, in language: AppLanguage = current) -> String {
+        switch language.resolved() {
+        case .russian:
+            let tens = count % 100, ones = count % 10
+            let word = (11...14).contains(tens) ? "текстов" : ones == 1 ? "текст" : (2...4).contains(ones) ? "текста" : "текстов"
+            return "\(count) \(word)"
+        case .english, .system:
+            return count == 1 ? "1 clipping" : "\(count) clippings"
+        }
+    }
+
+    /// How many screenshots and images the Screenshots tab holds.
+    public static func screenshotCount(_ count: Int, in language: AppLanguage = current) -> String {
+        switch language.resolved() {
+        case .russian:
+            let tens = count % 100, ones = count % 10
+            let word = (11...14).contains(tens) ? "скринов" : ones == 1 ? "скрин" : (2...4).contains(ones) ? "скрина" : "скринов"
+            return "\(count) \(word)"
+        case .english, .system:
+            return count == 1 ? "1 screenshot" : "\(count) screenshots"
+        }
+    }
+
     /// A Provider's window names arrive as English data ("5 hour", "Weekly");
     /// Russian says them itself, shortly, as the notch has little room.
     public static func windowLabel(_ label: String, in language: AppLanguage = current) -> String {
@@ -169,23 +193,52 @@ public enum Localization {
         "Shelf": "Полка",
         "Files at hand, dropped on the notch.": "Файлы под рукой — просто бросьте их на шторку.",
         "Files dropped on the notch stay at hand until you drag them away or Capacity Notch quits. Only a reference is kept; nothing is copied.": "Брошенные на шторку файлы остаются под рукой, пока вы их не утащите или не выйдете из Capacity Notch. Хранится только ссылка — сами файлы никуда не копируются.",
-        "empty": "пусто",
+        "Empty": "Пусто",
         "Image %@": "Изображение %@",
         "Images and files from the clipboard": "Картинки и файлы из буфера обмена",
-        "What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone.": "Скопированное само ложится на полку: скриншот, картинка со страницы, медиа или документ из мессенджера. Копирование в Finder, текст и пароли не трогаются.",
+        "What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone. New screenshots saved to a folder land under Screenshots too.": "Скопированное само ложится на полку: скриншот, картинка со страницы, медиа или документ из мессенджера. Копирование в Finder, текст и пароли не трогаются. Новые скриншоты, сохранённые в папку, тоже попадают во «Скрины».",
+        "macOS does not let Capacity Notch read the folder screenshots are saved to. Allow it in System Settings → Privacy & Security → Files & Folders. Screenshots you copy still arrive.": "macOS не даёт Capacity Notch читать папку, куда сохраняются скриншоты. Разрешите это в Системных настройках → Конфиденциальность и безопасность → Файлы и папки. Скопированные скриншоты по-прежнему приходят.",
         "macOS does not let Capacity Notch read the clipboard. Allow it in System Settings → Privacy & Security.": "macOS не даёт Capacity Notch читать буфер обмена. Разрешите это в Системных настройках → Конфиденциальность и безопасность.",
         "Clear": "Очистить",
+        "Clear %@": "Очистить: %@",
+        "Up to %d. Each goes after 24 hours, and all when Capacity Notch quits.": "До %d. Каждый уходит через 24 часа, все — при выходе из Capacity Notch.",
+        "Up to %d. All go when Capacity Notch quits.": "До %d. Все уходят при выходе из Capacity Notch.",
+        "Copied": "Скопировано",
+        "Remove from the Shelf": "Убрать с полки",
+        "Puts it on the clipboard": "Кладёт в буфер обмена",
+        "Text from the clipboard": "Текст из буфера обмена",
+        "Text you copy is kept under Clipboard, newest first, to put on the clipboard again. Passwords and anything marked secret are left alone.": "Скопированный текст хранится во вкладке «Буфер», новые сверху, — чтобы снова положить его в буфер. Пароли и всё, помеченное как секретное, не трогаются.",
+        "Keep": "Хранить",
+        "Forget each after 24 hours": "Забывать каждый через 24 часа",
+        "Never from these applications": "Никогда из этих приложений",
+        "Passwords and Keychain Access are always left alone.": "Пароли и Связка ключей не трогаются никогда.",
+        "Add Application…": "Добавить приложение…",
+        "Remove %@": "Убрать %@",
+        "Files": "Файлы",
+        "Screenshots": "Скрины",
+        "Clipboard": "Буфер",
+        "Screenshots and images you copy wait here": "Здесь ждут скопированные скриншоты и картинки",
+        "Text you copy can wait here": "Здесь может ждать скопированный текст",
+        "Up to 20. The Shelf empties when Capacity Notch quits.": "До 20. Полка очищается при выходе из Capacity Notch.",
+        "Turn on “Images and files from the clipboard” in Settings → Modules → Shelf.": "Включите «Картинки и файлы из буфера обмена» в Настройках → Модули → Полка.",
+        "Turn on text from the clipboard in Settings → Modules → Shelf.": "Включите текст из буфера в Настройках → Модули → Полка.",
         "File\nmoved": "Файл\nперемещён",
         "%@, moved": "%@, перемещён",
         "Remove %@ from the Shelf": "Убрать %@ с полки",
         "Drag files here to keep them at hand": "Перетащите сюда файлы, чтобы держать их под рукой",
         "Up to 20 files. The Shelf empties when Capacity Notch quits.": "До 20 файлов. Полка очищается при выходе из Capacity Notch.",
         "Release to put it\non the Shelf": "Отпустите, чтобы\nположить на полку",
+        "Show Kapa": "Показывать Капу",
+        "On the Shelf": "На полке",
         "%@ settings": "Настройки: %@",
         "Expanded": "Развёрнуто",
         "Collapsed": "Свёрнуто",
         "Open, the surface has a page for it. It is read through a part of macOS that Apple does not publish, which a macOS update could close.": "В раскрытом состоянии у неё своя страница.",
         "macOS no longer lets Capacity Notch read what's playing.": "macOS больше не даёт Capacity Notch узнать, что играет.",
+        "Nothing playing": "Ничего не играет",
+        "Play a track in any player and it shows up here": "Включите трек в любом плеере — он появится здесь",
+        "Played at %@": "Играло в %@",
+        "Played in %@ · %@": "Играло: %@ · %@",
         "Audio is never saved. Esc cancels without changing your clipboard.": "Аудиозаписи не сохраняются. Esc отменяет запись, не трогая буфер обмена.",
 
         // Teleprompter
@@ -286,15 +339,24 @@ public enum Localization {
         "Connect": "Подключить",
         "Connect this Provider": "Подключить провайдера",
         "Refresh %@ Capacity": "Обновить лимиты %@",
-        "%d%% left": "Осталось %d%%",
         "%d%% used": "Исп %d%%",
         "Fresh": "Свежие",
         "Stale": "Устарели",
         "reset time not reported": "время сброса неизвестно",
-        "resets in %@ · %@": "сброс через %@ · %@",
-        "Mock capacity": "Демо-лимиты",
-        "Read at %@": "Обновлено в %@",
-        "Last read at %@": "Последнее обновление в %@",
+        "resets in %@": "сброс через %@",
+        "No data": "Данных нет",
+        "Turn one off to turn this on.": "Отключите одного, чтобы включить этот.",
+        "Turn on OpenCode?": "Включить OpenCode?",
+        "Capacity Notch reads your OpenCode Go key from OpenCode's own file and asks opencode.ai only for your plan's percentages and reset times — every five minutes, and when you refresh. The key is kept nowhere and sent nowhere else.": "Capacity Notch читает ключ OpenCode Go из файла самого OpenCode и спрашивает у opencode.ai только проценты и время сброса вашего плана — раз в пять минут и когда вы обновляете. Ключ нигде не хранится и больше никуда не отправляется.",
+        "Turn On": "Включить",
+        "Month used up": "Месяц исчерпан",
+        "Monthly limit reached · until %@": "Месячный лимит исчерпан · до %@",
+        "Monthly limit reached": "Месячный лимит исчерпан",
+        "Turn on OpenCode in Settings to read its Capacity.": "Включите OpenCode в настройках, чтобы читать его лимиты.",
+        "Sign in to OpenCode with `opencode auth login`, then try again.": "Войдите в OpenCode командой `opencode auth login` и попробуйте снова.",
+        "OpenCode refused its key. Sign in again with `opencode auth login`.": "OpenCode не принял ключ. Войдите заново командой `opencode auth login`.",
+        "opencode.ai is not answering. Retrying.": "opencode.ai не отвечает. Пробуем снова.",
+        "OpenCode's answer was not understood. Update Capacity Notch.": "Ответ OpenCode не распознан. Обновите Capacity Notch.",
         "moments": "мгновение",
         "under a minute": "меньше минуты",
         "%dd %dh": "%d д %d ч",
@@ -373,7 +435,7 @@ public enum Localization {
         "Welcome": "Приветствие",
         "Welcome to Capacity Notch": "Добро пожаловать в Capacity Notch",
         "Connect a Provider": "Подключите провайдера",
-        "How much of Codex and Claude Code is left, right under the notch — and a few tools beside it.": "Сколько осталось лимитов Codex и Claude Code — прямо под вырезом экрана. И ещё несколько инструментов рядом.",
+        "How much of Codex, Claude Code and OpenCode is left, right under the notch — and a few tools beside it.": "Сколько осталось лимитов Codex, Claude Code и OpenCode — прямо под вырезом экрана. И ещё несколько инструментов рядом.",
         "Capacity Notch reads nothing until a Provider is on.": "Пока провайдер выключен, Capacity Notch ничего не читает.",
         "Control what's playing without leaving what you're doing.": "Управляйте музыкой, не отрываясь от работы.",
         "Read your Script beside the camera, without looking away.": "Читайте текст рядом с камерой, не отводя взгляд.",
@@ -401,12 +463,14 @@ public enum Localization {
         "Allow": "Разрешить",
         "Granted": "Разрешено",
         "Open Settings": "Открыть настройки",
+        "Connect up to two in Settings": "Подключите до двух — в настройках",
+        "Open Provider Settings": "Открыть настройки провайдеров",
         "Unavailable": "Недоступно",
         "Finish": "Готово",
         "Capacity": "Лимиты",
         "What is left of each window, and whether it will last.": "Сколько осталось в каждом лимите и хватит ли его.",
         "Settings and the notch speak it; you can change it at any time.": "На нём говорят настройки и шторка. Поменять можно в любой момент.",
-        "Claude Code is experimental. Capacity Notch says what it reads before reading anything.": "Claude Code — экспериментальный. Прежде чем что-то читать, Capacity Notch скажет, что именно.",
+        "Claude Code and OpenCode are experimental. Capacity Notch says what it reads before reading anything.": "Claude Code и OpenCode — экспериментальные. Прежде чем что-то читать, Capacity Notch скажет, что именно.",
         "Write or paste the Script in Settings, under Modules. The shortcuts can be changed there too.": "Текст можно написать или вставить в настройках, в разделе «Модули». Там же меняются сочетания клавиш.",
         "Copied text carries versions, the states of Providers and Dictation, and timings. It carries no credential, address, identifier, Provider message or dictated text — those cannot reach it.": "В скопированном тексте — версии, состояние провайдеров и диктовки, время. Учётных данных, адресов, идентификаторов, сообщений провайдеров и надиктованного текста в нём нет.",
     ]

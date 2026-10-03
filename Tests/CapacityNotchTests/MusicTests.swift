@@ -135,7 +135,7 @@ func theRowShowsWhilePlayingAndLingersBrieflyOnPause() throws {
         "Then the strip collapses"
     )
     try expect(
-        presence.loaded == paused,
+        presence.loaded(at: heardAt.addingTimeInterval(71)) == paused,
         "But the track is still loaded, so the expanded surface keeps its page"
     )
 
@@ -160,15 +160,69 @@ func nothingPlayingOrUnreadableShowsNoRow() throws {
 
     presence.observe(.item(track), at: heardAt)
     presence.observe(.nothing, at: heardAt.addingTimeInterval(1))
-    try expect(presence.shown(at: heardAt.addingTimeInterval(1)) == nil, "Nothing loaded shows nothing")
-    try expect(presence.loaded == nil, "And has no page")
+    let settled = heardAt.addingTimeInterval(1 + MusicPresence.vanishGrace)
+    try expect(presence.shown(at: settled) == nil, "Nothing loaded shows nothing")
+    try expect(presence.loaded(at: settled) == nil, "And has no page")
 
-    presence.observe(.item(track), at: heardAt.addingTimeInterval(2))
+    presence.observe(.item(track), at: heardAt.addingTimeInterval(20))
     presence.lose()
     try expect(
-        presence.shown(at: heardAt.addingTimeInterval(2)) == nil,
+        presence.shown(at: heardAt.addingTimeInterval(20)) == nil,
         "A reader that failed shows nothing rather than the last track it saw"
     )
+}
+
+/// Yandex Music, between one track and the next, reports nothing at all and
+/// then the next track, within the same second. The page must not go — its
+/// going sends the expanded surface back to Capacity.
+func aTrackChangeThroughNothingKeepsThePage() throws {
+    let next = NowPlaying(title: "Historia Morbi", artist: "Mgła", player: "ru.yandex.desktop.music", isPlaying: true)
+    var presence = MusicPresence()
+    presence.observe(.item(track), at: heardAt)
+    presence.observe(.nothing, at: heardAt.addingTimeInterval(1))
+    try expect(presence.loaded(at: heardAt.addingTimeInterval(1.2)) == track, "Nothing for a moment is not a track gone")
+    try expect(presence.shown(at: heardAt.addingTimeInterval(1.2)) == track, "Nor does the strip's row blink out")
+
+    presence.observe(.item(next), at: heardAt.addingTimeInterval(1.3))
+    try expect(presence.loaded(at: heardAt.addingTimeInterval(1.3)) == next, "The next track takes its place")
+    try expect(
+        presence.loaded(at: heardAt.addingTimeInterval(1.3 + MusicPresence.vanishGrace + 1)) == next,
+        "And stays: the nothing before it is forgotten"
+    )
+}
+
+/// The next track arrives without its artwork, which follows on its own a
+/// moment later. Until it does, the last cover stays, rather than the player's
+/// icon blinking in between; a track that never sends one gets the icon.
+func aTrackChangeKeepsTheLastCoverUntilItsOwnArrives() throws {
+    let cover = Data([1, 2, 3])
+    let nextCover = Data([4, 5, 6])
+    let first = NowPlaying(title: "Zima", artist: "annushkaa", player: "ru.yandex.desktop.music", isPlaying: true, artwork: cover)
+    let next = NowPlaying(title: "Historia Morbi", artist: "Mgła", player: "ru.yandex.desktop.music", isPlaying: true)
+    let nextWithCover = NowPlaying(title: "Historia Morbi", artist: "Mgła", player: "ru.yandex.desktop.music", isPlaying: true, artwork: nextCover)
+
+    var presence = MusicPresence()
+    presence.observe(.item(first), at: heardAt)
+    presence.observe(.item(next), at: heardAt.addingTimeInterval(1))
+    let between = presence.loaded(at: heardAt.addingTimeInterval(1.5))
+    try expect(between?.title == "Historia Morbi", "The new title is shown at once")
+    try expect(between?.artwork == cover, "The last cover stays while the new one is on its way")
+    try expect(presence.shown(at: heardAt.addingTimeInterval(1.5))?.artwork == cover, "In the strip's row too")
+
+    presence.observe(.item(nextWithCover), at: heardAt.addingTimeInterval(1.8))
+    try expect(presence.loaded(at: heardAt.addingTimeInterval(1.8))?.artwork == nextCover, "Its own cover replaces it")
+
+    presence.observe(.item(first), at: heardAt.addingTimeInterval(10))
+    presence.observe(.item(next), at: heardAt.addingTimeInterval(11))
+    try expect(
+        presence.loaded(at: heardAt.addingTimeInterval(11 + MusicPresence.vanishGrace))?.artwork == nil,
+        "A track that sends no cover does not keep someone else's"
+    )
+    try expect(!presence.isHolding(at: heardAt.addingTimeInterval(11 + MusicPresence.vanishGrace)), "Nor is anything held after the grace")
+
+    presence.observe(.nothing, at: heardAt.addingTimeInterval(20))
+    presence.observe(.item(next), at: heardAt.addingTimeInterval(30))
+    try expect(presence.loaded(at: heardAt.addingTimeInterval(30))?.artwork == nil, "Nor one from before a nothing that was believed")
 }
 
 func theSpeakerIsStruckThroughWhenNothingIsHeard() throws {
@@ -183,4 +237,42 @@ func mutingEmptiesTheBarAndKeepsTheLevel() throws {
     try expect(muted.shownLevel == 0, "The bar is empty while muted")
     try expect(muted.level == 0.6, "The level waits for the sound to come back")
     try expect(Speaker(level: 1.4).level == 1 && Speaker(level: -1).level == 0, "Never outside 0 to 1")
+}
+
+/// A track playing in a browser tab is reported by WebKit's GPU process, on
+/// behalf of the browser: the browser is the player a person knows.
+func aTrackInABrowserTabIsTheBrowsers() throws {
+    var stream = NowPlayingStream()
+    let line = #"{"type":"data","diff":false,"payload":{"title":"Zima","bundleIdentifier":"com.apple.WebKit.GPU","parentApplicationBundleIdentifier":"com.officecommun.search","playing":true}}"#
+    guard case let .item(item)? = stream.apply(line) else {
+        throw TestFailure(description: "A full payload is a track")
+    }
+    try expect(item.player == "com.officecommun.search", "The browser plays it, got \(String(describing: item.player))")
+}
+
+/// The music page stays while the Module is on, and once a track has gone it
+/// shows the last one, dimmed, with when it went — until another plays.
+func theLastTrackIsRememberedAfterItGoes() throws {
+    var presence = MusicPresence()
+    try expect(presence.remembered(at: heardAt) == nil, "Nothing has played yet")
+
+    presence.observe(.item(track), at: heardAt)
+    try expect(presence.remembered(at: heardAt) == nil, "While it is loaded it is not a memory")
+
+    presence.observe(.nothing, at: heardAt.addingTimeInterval(60))
+    let gone = heardAt.addingTimeInterval(60 + MusicPresence.vanishGrace)
+    try expect(presence.loaded(at: gone) == nil, "The track has gone")
+    let memory = presence.remembered(at: gone)
+    try expect(memory?.track.title == "Mad Technology", "But it is remembered")
+    try expect(memory?.track.isPlaying == false, "As not playing")
+    try expect(memory?.endedAt == heardAt.addingTimeInterval(60), "Since the moment nothing was first reported")
+
+    presence.observe(.item(paused), at: heardAt.addingTimeInterval(120))
+    try expect(presence.remembered(at: heardAt.addingTimeInterval(120)) == nil, "A track loaded again is no memory")
+
+    presence.lose(at: heardAt.addingTimeInterval(130))
+    try expect(presence.remembered(at: heardAt.addingTimeInterval(130))?.endedAt == heardAt.addingTimeInterval(130), "A reader that failed remembers too")
+
+    presence.forget()
+    try expect(presence.remembered(at: heardAt.addingTimeInterval(140)) == nil, "Switched off, it forgets")
 }

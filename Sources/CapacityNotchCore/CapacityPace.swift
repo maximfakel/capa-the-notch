@@ -100,3 +100,22 @@ public enum ResetCountdown {
         return remaining >= 60 ? Localization.format("%dm", minutes) : Localization.text("under a minute")
     }
 }
+
+/// What a gauge writes in its gap: the time of day the window comes back
+/// while that is within a day, how long until it once it is further off, and nothing
+/// known when the Provider did not say.
+public enum GaugeReset: Equatable, Sendable {
+    case at(Date)
+    case `in`(String)
+    case unknown
+
+    public init(resetsAt: Date?, at now: Date) {
+        guard let resetsAt else { self = .unknown; return }
+        let remaining = resetsAt.timeIntervalSince(now)
+        if remaining > 0, remaining < 24 * 3600 {
+            self = .at(resetsAt)
+        } else {
+            self = .in(ResetCountdown.text(until: resetsAt, at: now))
+        }
+    }
+}

@@ -32,8 +32,8 @@ struct CapacityNotchApplication: App {
             }
             .keyboardShortcut("q")
         } label: {
-            // The author's portrait, drawn as a template so macOS gives it
-            // the menu bar's own colour in light and dark.
+            // Kapa's silhouette, drawn as a template so macOS gives it the
+            // menu bar's own colour in light and dark.
             Image(nsImage: MenuBarIcon.image)
                 .accessibilityLabel("Capacity Notch")
         }
@@ -48,8 +48,10 @@ struct CapacityNotchApplication: App {
 enum MenuBarIcon {
     /// 18 points tall, the height of a menu bar item's image.
     @MainActor static let image: NSImage = {
-        let url = Bundle.main.url(forResource: "MenuBarIcon", withExtension: "svg")
-            ?? Bundle.module.url(forResource: "MenuBarIcon", withExtension: "svg")
+        // One file, drawn at 18 and 36 pixels tall, for the menu bar's two
+        // resolutions.
+        let url = Bundle.main.url(forResource: "MenuBarIcon", withExtension: "tiff")
+            ?? Bundle.module.url(forResource: "MenuBarIcon", withExtension: "tiff")
         guard let url, let image = NSImage(contentsOf: url) else {
             return NSImage(systemSymbolName: "gauge.with.dots.needle.67percent", accessibilityDescription: nil) ?? NSImage()
         }

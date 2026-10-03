@@ -124,6 +124,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
 
 private struct GeneralSection: View {
     @ObservedObject var model: SettingsModel
+    @AppStorage(KapaPreference.key) private var showsKapa = KapaPreference.defaultValue
 
     var body: some View {
         SettingsGroup(footnote: L("macOS keeps Capacity Notch out of the capture it controls. It cannot promise anything about a camera pointed at the screen.")) {
@@ -159,6 +160,9 @@ private struct GeneralSection: View {
                 }
             }
             SettingsToggleRow(L("Appear in screen sharing and recordings"), isOn: $model.screenSharingAllowed)
+            // Kapa is how the Modules already on look, not a Module, so it
+            // lives here rather than under Modules (ADR 0006).
+            SettingsToggleRow(L("Show Kapa"), isOn: $showsKapa)
         }
 
         SettingsGroup(footnote: L("Opens the latest release on GitHub. Capacity Notch does not check on its own.")) {
@@ -195,6 +199,7 @@ private struct ProvidersSection: View {
                         choice: choice,
                         snapshot: model.snapshot(for: choice.provider),
                         isOn: model.binding(for: choice.provider),
+                        canTurnOn: model.canConnect(choice.provider),
                         now: context.date,
                         refresh: { model.refresh(choice.provider) }
                     )
@@ -234,6 +239,9 @@ struct ProviderSettingsCard: View {
     let choice: ProviderChoice
     let snapshot: CapacitySnapshot?
     @Binding var isOn: Bool
+    /// False while two other Providers are on: at most two can be
+    /// (`ProviderSelection`), so the switch waits for one of them to go.
+    let canTurnOn: Bool
     let now: Date
     let refresh: () -> Void
 
@@ -241,7 +249,7 @@ struct ProviderSettingsCard: View {
         SettingsCard {
             SettingsRow(height: 52, spacing: 10) {
                 ProviderMark(provider: choice.provider, size: 18)
-                    .foregroundStyle(choice.provider == .codex ? SettingsPalette.text : SettingsPalette.orange)
+                    .foregroundStyle(choice.provider == .claudeCode ? SettingsPalette.orange : SettingsPalette.text)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(choice.name).font(SettingsType.bodyMedium)
@@ -262,9 +270,10 @@ struct ProviderSettingsCard: View {
 
                 Toggle(choice.name, isOn: $isOn)
                     .toggleStyle(SettingsSwitchStyle(standsAlone: true))
+                    .disabled(!isOn && !canTurnOn)
             }
 
-            if let reason {
+            if let reason = isOn || canTurnOn ? reason : L("Turn one off to turn this on.") {
                 Text(reason)
                     .font(SettingsType.caption)
                     .foregroundStyle(SettingsPalette.muted)
@@ -883,10 +892,12 @@ struct SettingsRow<Content: View>: View {
     }
 
     var body: some View {
+        // The height is the row's least: a caption that wraps makes the row
+        // taller rather than spilling over the next one.
         HStack(spacing: spacing) { content }
             .padding(.leading, 10 + indent)
             .padding(.trailing, 10)
-            .frame(height: height)
+            .frame(minHeight: height)
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(hovers && hovering ? SettingsPalette.hover : .clear)

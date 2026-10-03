@@ -24,18 +24,61 @@ enum CapacityNotchTestRunner {
             ("Localization.russianAlert", aRussianAlertSaysItAllInRussian),
             ("CompactStrip.oneProvider", theStripShowsTheOnlyProvidersShortWindowLeftAndLongRight),
             ("CompactStrip.bothProviders", theStripShowsEachProvidersFiveHoursWhenBothAreOn),
-            ("CompactStrip.nothingConnected", nothingConnectedLeavesTheStripEmptyAndTheSurfaceOpen),
+            ("CompactStrip.nothingConnected", nothingConnectedLeavesTheStripEmpty),
+            ("CompactStrip.oneOrder", providersStandInOneOrderWhateverOrderTheyArrive),
+            ("CompactStrip.twoAtMost", atMostTwoProvidersCanBeOn),
+            ("CompactStrip.onlyUnreadDashLeft", theOnlyProviderNotReadYetHasItsDashOnTheLeft),
+            ("OpenCode.openCodesRollingAndWeeklyAreItsTwoWindows", openCodesRollingAndWeeklyAreItsTwoWindows),
+            ("OpenCode.aRateLimitedWindowHasNothingLeft", aRateLimitedWindowHasNothingLeft),
+            ("OpenCode.aMonthUsedUpIsSaidOverGreenWindows", aMonthUsedUpIsSaidOverGreenWindows),
+            ("OpenCode.eachWayOpenCodeCannotBeReadSaysWhatToDo", eachWayOpenCodeCannotBeReadSaysWhatToDo),
+            ("OpenCode.onlyTheGoKeyIsTakenFromOpenCodesOwnFile", onlyTheGoKeyIsTakenFromOpenCodesOwnFile),
+            ("OpenCode.openCodeIsAskedAtMostEveryFiveMinutesUnlessAPersonAsks", openCodeIsAskedAtMostEveryFiveMinutesUnlessAPersonAsks),
+            ("OpenCode.aFailureAfterAReadingKeepsItAsStale", aFailureAfterAReadingKeepsItAsStale),
             ("Codex.chatGPTBundled", theCodexInChatGPTIsFoundWhereNewerReleasesKeepIt),
             ("Codex.environment", codexRunsWithThePathATerminalWouldGiveIt),
             ("Shelf.newestFirstAndTwenty", theShelfKeepsTheNewestFirstAndAtMostTwenty),
             ("Shelf.droppedAgainRises", aFileDroppedAgainRisesInsteadOfAppearingTwice),
-            ("Shelf.removeAndClear", aFileIsRemovedAloneAndClearingEmptiesTheShelf),
+            ("Shelf.removeAndClear", aFileIsRemovedAloneAndClearingEmptiesItsTab),
             ("Shelf.fileKinds", aFileIsDrawnByWhatKindItIs),
             ("Shelf.diagnostics", theShelfTellsDiagnosticsHowManyNeverWhich),
             ("Shelf.pageOrder", pagesRunCapacityMusicTeleprompterShelf),
             ("Shelf.dropTabOutline", theDropTabIsPartOfTheSurfacesOwnOutline),
             ("Shelf.fileCount", theShelfCountsItsFilesAsEachLanguageDoes),
             ("Shelf.imageInMemory", anImageWithoutAFileIsHeldInMemory),
+            ("Shelf.threeTabs", theShelfHasThreeTabsInOrder),
+            ("Shelf.copiedLandsByKind", whatIsCopiedLandsInTheTabForItsKind),
+            ("Shelf.limitPerTab", eachTabKeepsItsOwnLimit),
+            ("Shelf.clearOneTab", clearEmptiesOnlyTheTabItIsAskedFor),
+            ("Shelf.screenshotCount", theShelfCountsScreenshotsAsEachLanguageDoes),
+            ("Shelf.screenshotFolderLocation", theScreenshotFolderIsWhereMacOSSavesScreenshots),
+            ("Shelf.screenshotFolderNewOnly", onlyScreenshotsSavedAfterTheSwitchWasTurnedOnAreTaken),
+            ("Shelf.screenshotFolderNameAndType", aScreenshotIsKnownByTheNameAndTypeMacOSWasToldToUse),
+            ("Shelf.screenshotFolderSettings", theScreenshotSettingsAreReadFromMacOSsOwnKeys),
+            ("Shelf.screenshotFolderTarget", theFolderIsLookedAtOnlyWhileMacOSSavesScreenshotsToOne),
+            ("Kapa.capacity", kapaReadsCapacityOffTheWindowWithTheLeastLeft),
+            ("Kapa.noOldNumbers", kapaJudgesNoOldNumbers),
+            ("Kapa.oneAPage", oneKapaAPageOnTheCardThatNeedsALook),
+            ("Kapa.blink", kapaBlinksEveryTwoToFiveSecondsAndSometimesTwice),
+            ("Kapa.gaze", kapasEyesSitAsDrawnAndTurnWithTheHead),
+            ("Kapa.moreThanColour", everyKapaPoseSaysItWithMoreThanColour),
+            ("Kapa.frameRate", kapaFollowsATargetTheSameAtAnyFrameRate),
+            ("Kapa.music", kapaNodsOnEveryBeatOfTheMusic),
+            ("Kapa.lid", kapaBlinksShutAndOpenInAFifthOfASecond),
+            ("Kapa.appetite", kapaOpensWiderTheNearerAFileIsHeld),
+            ("Kapa.gulp", kapaEatsADroppedFileAndSettles),
+            ("Kapa.movementsEnd", kapasMovementsEndWhereTheyBegan),
+            ("Clipping.newestFirst", clippingsAreNewestFirstAndARepeatRises),
+            ("Clipping.limit", clippingsKeepTwentyOrFiftyOrAHundred),
+            ("Clipping.expiry", aClippingGoesAfterADayUnlessThatIsSwitchedOff),
+            ("Clipping.length", aTextTooLongOrEmptyIsNotKeptAtAll),
+            ("Clipping.remove", aClippingIsRemovedAloneAndClearingEmptiesThem),
+            ("Clipping.whatIsKept", onlyPlainTextCopiedElsewhereAndUnmarkedIsKept),
+            ("Clipping.outOfCapture", theSurfaceStaysOutOfCaptureWhileItHoldsAClipping),
+            ("Clipping.diagnostics", theShelfTellsDiagnosticsHowManyClippingsNeverWhich),
+            ("Clipping.preferences", textIntakeIsOffUntilAskedForAndKeepsADay),
+            ("Clipping.count", theClipboardTabCountsItsClippingsAsEachLanguageDoes),
+            ("Clipping.trim", fewerChosenTheOldestGoAtOnceAndTheRestStayAsTheyWere),
             ("Shelf.screenshotClipboard", aScreenshotOnTheClipboardIsOnePNGAndNothingElse),
             ("Shelf.screenshotName", aScreenshotIsNamedAsMacOSNamesOne),
             ("Shelf.clipboard", whatIsCopiedLandsOnTheShelfExceptFromFinder),
@@ -264,6 +307,10 @@ enum CapacityNotchTestRunner {
                 aDeliberateDisconnectOutlivesTheLaunchItWasMadeIn
             ),
             (
+                "PreferencesTests.preferencesRefuseAProviderPastTheLimit",
+                preferencesRefuseAProviderPastTheLimit
+            ),
+            (
                 "PreferencesTests.aChoiceMadeAnywhereIsTheSameChoice",
                 aChoiceMadeAnywhereIsTheSameChoice
             ),
@@ -306,6 +353,10 @@ enum CapacityNotchTestRunner {
             (
                 "SwitchedOffTests.onlyTheProvidersSwitchedOnHaveCards",
                 onlyTheProvidersSwitchedOnHaveCards
+            ),
+            (
+                "SwitchedOffTests.nothingConnectedOffersEveryProvidersMarkInOrder",
+                nothingConnectedOffersEveryProvidersMarkInOrder
             ),
             (
                 "SurfacePlacementTests.theBuiltInDisplayIsTheDefaultAndOneIsAlwaysChosen",
@@ -358,6 +409,10 @@ enum CapacityNotchTestRunner {
             (
                 "CapacityPaceTests.theCountdownSaysHowLongInTheFewestWords",
                 theCountdownSaysHowLongInTheFewestWords
+            ),
+            (
+                "CapacityPaceTests.aGaugeSaysWhenItResetsInOneShortThing",
+                aGaugeSaysWhenItResetsInOneShortThing
             ),
             (
                 "ClaudeUsageCommandTests.theUsageReportBecomesQuotaWindows",
@@ -416,12 +471,12 @@ enum CapacityNotchTestRunner {
                 anUnreadSurfaceShowsNoNumbersAtAll
             ),
             (
-                "NotchGeometryTests.theCompactSurfaceTakesItsHeightFromTheMenuBar",
-                theCompactSurfaceTakesItsHeightFromTheMenuBar
+                "NotchGeometryTests.everyOpenPageIsTheSameHeight",
+                everyOpenPageIsTheSameHeight
             ),
             (
-                "CodexAppServerProtocolTests.theSurfaceHeaderDescribesWhatItIsActuallyShowing",
-                theSurfaceHeaderDescribesWhatItIsActuallyShowing
+                "NotchGeometryTests.theCompactSurfaceTakesItsHeightFromTheMenuBar",
+                theCompactSurfaceTakesItsHeightFromTheMenuBar
             ),
             (
                 "CodexCapacityServiceTests.connectingCodexPublishesFreshCapacityFromTheAppServer",
@@ -590,6 +645,22 @@ enum CapacityNotchTestRunner {
             (
                 "MusicTests.nothingPlayingOrUnreadableShowsNoRow",
                 nothingPlayingOrUnreadableShowsNoRow
+            ),
+            (
+                "MusicTests.aTrackChangeThroughNothingKeepsThePage",
+                aTrackChangeThroughNothingKeepsThePage
+            ),
+            (
+                "MusicTests.aTrackChangeKeepsTheLastCoverUntilItsOwnArrives",
+                aTrackChangeKeepsTheLastCoverUntilItsOwnArrives
+            ),
+            (
+                "MusicTests.aTrackInABrowserTabIsTheBrowsers",
+                aTrackInABrowserTabIsTheBrowsers
+            ),
+            (
+                "MusicTests.theLastTrackIsRememberedAfterItGoes",
+                theLastTrackIsRememberedAfterItGoes
             ),
         ]
         let selection = CommandLine.arguments.dropFirst().first

@@ -63,7 +63,7 @@ for resource_bundle in "$binaries"/*.bundle; do
   ditto "$resource_bundle" "$app/Contents/Resources/${resource_bundle:t}"
 done
 install -m 644 Sources/CapacityNotch/Resources/OpenAIBlossom.svg "$app/Contents/Resources/OpenAIBlossom.svg"
-install -m 644 Sources/CapacityNotch/Resources/MenuBarIcon.svg "$app/Contents/Resources/MenuBarIcon.svg"
+install -m 644 Sources/CapacityNotch/Resources/MenuBarIcon.tiff "$app/Contents/Resources/MenuBarIcon.tiff"
 install -m 644 Packaging/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 install -m 644 Sources/CapacityNotch/Resources/DictationLicenses.txt "$app/Contents/Resources/DictationLicenses.txt"
 # Geist travels with its licence (SIL OFL 1.1), as the licence asks.

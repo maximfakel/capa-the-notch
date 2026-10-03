@@ -36,12 +36,12 @@ func theStripShowsEachProvidersFiveHoursWhenBothAreOn() throws {
     guard case .provider? = unread.left else { throw TestFailure(description: "A Provider not read yet keeps its dash") }
 }
 
-func nothingConnectedLeavesTheStripEmptyAndTheSurfaceOpen() throws {
+func nothingConnectedLeavesTheStripEmpty() throws {
     let off = UnreadCapacity.snapshots(capturedAt: readAt)
     let sides = CompactStrip.sides(off)
     try expect(sides.left == nil && sides.right == nil, "Nothing on, nothing in the strip")
-    try expect(SurfaceCards.nothingConnected(off), "Nothing on keeps the surface open")
-    try expect(!SurfaceCards.nothingConnected([UnreadCapacity.snapshot(for: .codex), reading(.claudeCode)]), "One on lets it close")
+    try expect(SurfaceCards.nothingConnected(off), "Nothing on is nothing connected")
+    try expect(!SurfaceCards.nothingConnected([UnreadCapacity.snapshot(for: .codex), reading(.claudeCode)]), "One on is not")
 }
 
 func theStripShowsTheWindowChosenInSettings() throws {
@@ -96,4 +96,43 @@ func theChosenWindowIsTheOneOfThatLengthNotTheShortestOrLongest() throws {
     )
     try expect(left(other, .fiveHour) == "day", "No five hours: the shortest")
     try expect(left(other, .weekly) == "month", "No week: the longest")
+}
+
+/// Providers stand in one order everywhere — Codex, Claude Code, then any
+/// later one — whatever order their readings arrive in, so each keeps its
+/// side of the strip and its place among the cards.
+func providersStandInOneOrderWhateverOrderTheyArrive() throws {
+    let sides = CompactStrip.sides([reading(.claudeCode), reading(.codex)])
+    guard case let .window(left, _)? = sides.left, case let .window(right, _)? = sides.right else {
+        throw TestFailure(description: "Two on, one window each, got \(sides)")
+    }
+    try expect(left == .codex && right == .claudeCode, "The first in order left, the second right")
+    try expect(
+        SurfaceCards.shown([reading(.claudeCode), reading(.codex)]).map(\.provider) == [.codex, .claudeCode],
+        "The cards in the same order"
+    )
+    try expect(ProviderSelection.ordered([.claudeCode, .codex]) == [.codex, .claudeCode], "One order, from the Provider list")
+}
+
+/// At most two Providers can be on: the surface has two sides and room for
+/// two cards. One already on can always stay on.
+func atMostTwoProvidersCanBeOn() throws {
+    try expect(ProviderSelection.visibleLimit == 2, "Two")
+    try expect(ProviderSelection.canTurnOn(.claudeCode, alreadyOn: [.codex]), "A second joins the first")
+    try expect(ProviderSelection.canTurnOn(.codex, alreadyOn: [.codex, .claudeCode]), "One already on stays on")
+    // Only two Providers exist yet, so the refusal is seen with a limit of one.
+    try expect(!ProviderSelection.canTurnOn(.claudeCode, alreadyOn: [.codex], limit: 1), "Past the limit, refused")
+    try expect(
+        ProviderSelection.toConnect([.claudeCode, .codex], limit: 1) == [.codex],
+        "More chosen than allowed — a setting from elsewhere — connects the first in order only"
+    )
+}
+
+/// One Provider on and not read yet: its dash stands on the left, where its
+/// five hours will stand once read, whichever Provider it is.
+func theOnlyProviderNotReadYetHasItsDashOnTheLeft() throws {
+    let unread = CapacitySnapshot(provider: .claudeCode, capturedAt: readAt, windows: [], connectionState: .connecting)
+    let sides = CompactStrip.sides([UnreadCapacity.snapshot(for: .codex), unread])
+    guard case let .provider(left)? = sides.left else { throw TestFailure(description: "A dash on the left, got \(sides)") }
+    try expect(left.provider == .claudeCode && sides.right == nil, "Claude Code's dash, and nothing on the right")
 }

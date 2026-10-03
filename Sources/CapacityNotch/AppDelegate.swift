@@ -49,6 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
         ])
     )
+    /// OpenCode's Go plan: its key read from OpenCode's own file at each
+    /// request, and only its usage asked of opencode.ai (ADR 0001, amended).
+    private let openCode = OpenCodeCapacityService()
+    private var openCodeSnapshots: Task<Void, Never>?
+    private var openCodeRefresh: Task<Void, Never>?
     private var panelController: NotchPanelController?
     private var codexSnapshots: Task<Void, Never>?
     private var codexRefresh: Task<Void, Never>?
@@ -86,6 +91,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.setActivationPolicy(.accessory)
         Localization.current = preferences.language
         SettingsType.registerFont()
+        // Files left from dragging, should the last run not have quit cleanly.
+        ShelfDragFiles.removeAll()
         if let state = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_PREVIEW_DICTATION"] {
             previewDictation(state)
             return
@@ -94,6 +101,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // so a microphone can be checked without holding the shortcut.
         if let seconds = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_MIC_TEST"].flatMap(Double.init) {
             testMicrophone(for: seconds)
+            return
+        }
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_KAPA"] {
+            KapaPictures.draw(into: folder)
+            NSApplication.shared.terminate(nil)
+            return
+        }
+        if let seconds = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_KAPA_PLAYGROUND"].flatMap(Double.init) {
+            KapaPictures.play(for: seconds)
             return
         }
         if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_DICTATION"] {
@@ -117,7 +133,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             teleprompter: teleprompter,
             shelf: shelf,
             connect: { [weak self] provider in self?.connect(provider) },
-            refresh: { [weak self] provider in self?.refresh(provider) }
+            refresh: { [weak self] provider in self?.refresh(provider) },
+            openProviderSettings: { [weak self] in self?.showSettings(section: .providers) }
         )
         self.panelController = panelController
         panelController.show()
@@ -153,6 +170,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let model = SettingsModel(preferences: preferences, application: self, store: store)
             for section in SettingsSection.allCases {
                 Self.drawSettings(model: model, section: section, height: 560, into: folder, named: "settings-\(section)")
+            }
+        }
+
+        // The Shelf's card with every switch on, from a stand-in, to hold
+        // against "Settings — Modules — Shelf".
+        if let folder = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_SETTINGS"] {
+            let suite = "capacity-notch-dump-\(UUID().uuidString)"
+            if let defaults = UserDefaults(suiteName: suite) {
+                let demo = Preferences(defaults: defaults)
+                demo.shelfEnabled = true
+                let standIn = ShelfController(preferences: demo)
+                standIn.setTakesClipboardImages(true)
+                standIn.setKeepsText(true)
+                standIn.setExcludedApplications(["com.apple.Safari"])
+                let model = SettingsModel(preferences: preferences, application: self, store: store, shelf: standIn)
+                model.expandedModule = .shelf
+                Self.drawSettings(model: model, section: .modules, height: 900, into: folder, named: "settings-shelf")
+                standIn.setEnabled(false)
+                UserDefaults.standard.removePersistentDomain(forName: suite)
             }
         }
 
@@ -203,6 +239,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         observeCodex()
         observeClaudeCode()
+        observeOpenCode()
 
         guard !preferences.needsOnboarding else {
             startOnboarding(force: false)
@@ -214,24 +251,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if ProcessInfo.processInfo.environment["CAPACITY_NOTCH_PREVIEW_DICTATION"] != nil || ProcessInfo.processInfo.environment["CAPACITY_NOTCH_DUMP_DICTATION"] != nil { return }
         archive.save(store.snapshots)
+        ShelfDragFiles.removeAll()
         panelController?.stopPointerTracking()
         music.stop()
         dictation.cancel()
         stopCodex()
         stopClaudeCode()
+        stopOpenCode()
     }
 
     // MARK: - The surface
 
-    // This and three more methods below switch on the Provider by hand. That
-    // is deliberate: there are two, their services connect differently —
-    // Claude Code through a request, Codex directly — and an exhaustive switch
-    // makes a third Provider a compile error at every place that must know
-    // about it. A shared Provider handle would be an abstraction for two.
+    // This and several methods below switch on the Provider by hand. Their
+    // services connect differently — Codex directly, Claude Code and OpenCode
+    // only after consent, OpenCode at its own five-minute pace — and an
+    // exhaustive switch makes each new Provider a compile error everywhere
+    // that must know about it. With three, the observe/connect/stop methods
+    // are close copies; a shared Provider handle is the next step if a fourth
+    // comes.
     private func isConnected(_ provider: Provider) -> Bool {
         switch provider {
         case .codex: codexRefresh != nil
         case .claudeCode: claudeRefresh != nil
+        case .openCode: openCodeRefresh != nil
         }
     }
 
@@ -260,9 +302,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Starts whatever the person left connected. Called once at launch and
     /// again when onboarding finishes, and starting a Provider that is already
     /// running is a no-op, so neither doubles anything.
+    ///
+    /// At most two, the first in order, should more have been chosen.
     func connectChosenProviders() {
-        if preferences.connectsAtLaunch(.codex) { connectCodex() }
-        if preferences.connectsAtLaunch(.claudeCode) { connectClaudeCode() }
+        for provider in ProviderSelection.toConnect(preferences.connectedProviders) {
+            switch provider {
+            case .codex: connectCodex()
+            case .claudeCode: connectClaudeCode()
+            case .openCode: connectOpenCode()
+            }
+        }
     }
 
     func connectCodex() {
@@ -599,6 +648,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             disconnectCodex()
         case .claudeCode:
             disconnectClaudeCode()
+        case .openCode:
+            disconnectOpenCode()
         }
     }
 
@@ -609,11 +660,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Starts one Provider from its own card.
     func connect(_ provider: Provider) {
+        // Wherever it is asked from — Settings, a card's refresh — a third
+        // Provider is not connected while two are on.
+        guard preferences.canConnect(provider) else { return }
         switch provider {
         case .codex:
             connectCodex()
         case .claudeCode:
             requestClaudeCodeConnection()
+        case .openCode:
+            requestOpenCodeConnection()
         }
     }
 
@@ -637,6 +693,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .claudeCode:
             let claude = claude
             Task { await claude.refresh() }
+        case .openCode:
+            // A person asked: answered at once, past the five-minute pace.
+            let openCode = openCode
+            Task { await openCode.refresh(force: true) }
         }
     }
 
@@ -646,9 +706,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let codex = codex
         let claude = claude
+        let openCode = openCode
         Task {
             await codex.refresh()
             await claude.refresh()
+            await openCode.refresh(force: true)
         }
     }
 
@@ -674,8 +736,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observations.append(
             TeleprompterModule.observation(enabled: preferences.teleprompterEnabled, script: preferences.script)
         )
-        observations.append(ShelfModule.observation(enabled: shelf.isEnabled, count: shelf.items.count))
+        observations.append(ShelfModule.observation(enabled: shelf.isEnabled, shelf: shelf.shelf, clippings: shelf.clippings))
         if shelf.isEnabled, shelf.clipboardRefused { observations.append("shelf-clipboard-refused") }
+        if shelf.isEnabled, shelf.screenshotFolderRefused { observations.append("shelf-screenshot-folder-refused") }
 
         return DiagnosticReport(
             applicationVersion: Self.applicationVersion,
@@ -745,6 +808,76 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.record(snapshot)
             }
         }
+    }
+
+    private func observeOpenCode() {
+        let stream = openCode.snapshots
+        openCodeSnapshots = Task { [weak self] in
+            for await snapshot in stream {
+                self?.store.apply(snapshot)
+                self?.record(snapshot)
+            }
+        }
+    }
+
+    func requestOpenCodeConnection() {
+        guard !preferences.openCodeConsentGiven else {
+            connectOpenCode()
+            return
+        }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = L("Turn on OpenCode?")
+        alert.informativeText = L("Capacity Notch reads your OpenCode Go key from OpenCode's own file and asks opencode.ai only for your plan's percentages and reset times — every five minutes, and when you refresh. The key is kept nowhere and sent nowhere else.")
+        alert.addButton(withTitle: L("Turn On"))
+        alert.addButton(withTitle: L("Cancel"))
+
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            // Declined: the switch Settings turned on goes back off, so no
+            // later launch reads the key unasked.
+            preferences.setConnectsAtLaunch(.openCode, false)
+            store.apply(UnreadCapacity.snapshot(for: .openCode))
+            return
+        }
+        preferences.openCodeConsentGiven = true
+        connectOpenCode()
+    }
+
+    /// Never without consent, from wherever it is called — the next launch
+    /// included (ADR 0001, amended).
+    func connectOpenCode() {
+        guard preferences.openCodeConsentGiven else { return }
+        guard preferences.setConnectsAtLaunch(.openCode, true) else { return }
+        openCodeRefresh?.cancel()
+
+        // Asked on the surface's pace like the others; the service itself
+        // keeps opencode.ai to once every five minutes.
+        openCodeRefresh = Task { [weak self, openCode] in
+            await openCode.connect()
+            while !Task.isCancelled {
+                guard let delay = self?.nextDelay(for: .openCode) else { return }
+                try? await Task.sleep(for: .seconds(delay))
+                guard !Task.isCancelled else { return }
+                await openCode.refresh()
+            }
+        }
+    }
+
+    /// A deliberate Disconnect: remembered, so the next launch honours it.
+    func disconnectOpenCode() {
+        preferences.setConnectsAtLaunch(.openCode, false)
+        stopOpenCode()
+        store.apply(UnreadCapacity.snapshot(for: .openCode))
+    }
+
+    private func stopOpenCode() {
+        openCodeRefresh?.cancel()
+        openCodeRefresh = nil
+
+        let openCode = openCode
+        Task { await openCode.disconnect() }
     }
 }
 

@@ -30,3 +30,7 @@ which to add.
   available without reading a token, and how stable that route is.
 - **The layout.** The compact strip has two sides; with three Providers on,
   what does it show?
+
+## Comments
+
+- 2026-10-02: OpenCode (its Go plan) is being added in `.scratch/surface-210/issues/04-opencode-provider.md`, as an amended exception to ADR 0001 (it has no Provider-owned way to report limits). The author settled one rule every further Provider must keep: at most two Providers can be on, shown in a fixed order (ticket surface-210/03). Google Flow and vidIQ were researched and set aside. This ticket stays open for the rest.

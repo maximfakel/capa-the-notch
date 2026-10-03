@@ -252,13 +252,13 @@ func whileItShowsTheSurfaceStaysOutOfCaptureAndHoverDoesNotOpenIt() throws {
 }
 
 func pagesRunCapacityMusicTeleprompter() throws {
-    let all = SurfacePageOrder.pages(musicLoaded: true, teleprompter: true)
+    let all = SurfacePageOrder.pages(music: true, teleprompter: true)
     try expect(all == [.capacity, .music, .teleprompter], "In that order: \(all)")
     try expect(
-        SurfacePageOrder.pages(musicLoaded: false, teleprompter: true) == [.capacity, .teleprompter],
-        "Without a track, no music page"
+        SurfacePageOrder.pages(music: false, teleprompter: true) == [.capacity, .teleprompter],
+        "With the Music Module off, no music page"
     )
-    try expect(SurfacePageOrder.pages(musicLoaded: false, teleprompter: false) == [.capacity], "Capacity alone")
+    try expect(SurfacePageOrder.pages(music: false, teleprompter: false) == [.capacity], "Capacity alone")
 
     try expect(SurfacePageOrder.step(from: .capacity, by: 1, in: all) == .music, "Next")
     try expect(SurfacePageOrder.step(from: .teleprompter, by: 1, in: all) == .teleprompter, "The last page holds")

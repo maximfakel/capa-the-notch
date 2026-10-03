@@ -20,9 +20,11 @@ public enum TeleprompterSurface {
 
     /// A Script on screen is never shared, whatever "Appear in screen
     /// sharing and recordings" says: a Script the audience can read is no
-    /// help to the one reading it.
-    public static func excludedFromCapture(sharingAllowed: Bool, teleprompterShowing: Bool) -> Bool {
-        teleprompterShowing || !sharingAllowed
+    /// help to the one reading it. Nor is the surface while the Shelf holds a
+    /// Clipping: that switch is there to show Capacity on a call, not the
+    /// token copied a minute ago (ADR 0005).
+    public static func excludedFromCapture(sharingAllowed: Bool, teleprompterShowing: Bool, holdsClippings: Bool = false) -> Bool {
+        teleprompterShowing || holdsClippings || !sharingAllowed
     }
 
     /// While the Script runs a pointer passing over the notch does not open

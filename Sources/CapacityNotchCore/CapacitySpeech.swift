@@ -98,6 +98,7 @@ public extension Provider {
         switch self {
         case .codex: "Codex"
         case .claudeCode: "Claude Code"
+        case .openCode: "OpenCode"
         }
     }
 }

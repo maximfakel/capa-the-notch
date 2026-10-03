@@ -1,4 +1,5 @@
 import AppKit
+import CapacityNotchCore
 import Combine
 import Murmur
 import SwiftUI
@@ -11,7 +12,7 @@ final class DictationPanelController {
 
     init(controller: DictationController) {
         panel = Self.makePanel()
-        panel.contentView = NSHostingView(rootView: FollowsLanguage { DictationCapsule(controller: controller).frame(width: 100, height: 100).padding(16) })
+        panel.contentView = NSHostingView(rootView: FollowsLanguage { DictationCapsule(controller: controller).padding(DictationCapsule.margin) })
         observation = controller.$presentation.receive(on: DispatchQueue.main).sink { [weak self] state in
             guard let self else { return }
             if state == .hidden { panel.orderOut(nil) }
@@ -43,10 +44,19 @@ final class DictationPanelController {
         return panel
     }
 
+    /// The orb centred under the surface, twelve points below it; Kapa,
+    /// when shown, beside it to the right.
     func anchor(to surface: NSRect) {
         frame = surface
         guard surface != .zero else { return }
-        panel.setFrame(NSRect(x: surface.midX - 66, y: surface.minY - 12 - 100 - 16, width: 132, height: 132), display: true)
+        let size = DictationCapsule.size(showingKapa: DictationCapsule.showsKapa)
+        let margin = DictationCapsule.margin
+        panel.setFrame(NSRect(
+            x: surface.midX - DictationCapsule.orb / 2 - margin,
+            y: surface.minY - 12 - size.height - margin,
+            width: size.width + margin * 2,
+            height: size.height + margin * 2
+        ), display: true)
     }
 }
 
@@ -64,6 +74,35 @@ struct DictationCapsule: View {
         case .recognizing: .thinking
         case .inserted, .copied: .success
         case .error: .error
+        }
+    }
+
+    static let orb: CGFloat = 100
+    static let margin: CGFloat = 16
+    /// Kapa beside the orb, four and a half times the corner it first sat
+    /// in: dictation is the moment it is most worth watching (ADR 0006).
+    static let kapaSize: CGFloat = 136
+    private static let gap: CGFloat = 6
+
+    static var showsKapa: Bool {
+        UserDefaults.standard.object(forKey: KapaPreference.key) as? Bool ?? KapaPreference.defaultValue
+    }
+
+    /// The orb alone, or the orb and Kapa side by side, tops level.
+    static func size(showingKapa: Bool) -> CGSize {
+        showingKapa ? CGSize(width: orb + gap + kapaSize, height: kapaSize) : CGSize(width: orb, height: orb)
+    }
+
+    @AppStorage(KapaPreference.key) private var showsKapa = KapaPreference.defaultValue
+
+    private var kapa: KapaExpression {
+        switch controller.presentation {
+        case .hidden: .rest
+        case .recording: .listening
+        case .recognizing: .thinking
+        case .inserted: .inserted
+        case .copied: .copied
+        case .error: .failed
         }
     }
 
@@ -85,23 +124,44 @@ struct DictationCapsule: View {
                 _details.wrappedValue.toggle()
             }
         } label: {
-            ZStack {
-                MurmurView(
-                    MurmurConfiguration(
-                        style: .limn,
-                        ink: MurmurRGBA(r: 23.0 / 255, g: 23.0 / 255, b: 23.0 / 255),
-                        // The orb's own state motion alone read as still
-                        // listening, so the outcome is also its colour.
-                        tone: tones.0,
-                        tone2: tones.1
-                    ),
-                    state: murmurState,
-                    signals: MurmurSignals(level: controller.presentation == .recording ? Double(audioLevel) : 0),
-                    animated: !reduced
-                )
-                    .frame(width: 100, height: 100)
+            HStack(alignment: .top, spacing: Self.gap) {
+                // Nothing at all while hidden. The panel is only ordered out,
+                // and a view in a window off screen still runs its timeline:
+                // the orb kept drawing thirty frames a second between
+                // dictations, most of what the idle application cost.
+                if controller.presentation != .hidden {
+                    MurmurView(
+                        MurmurConfiguration(
+                            style: .limn,
+                            ink: MurmurRGBA(r: 23.0 / 255, g: 23.0 / 255, b: 23.0 / 255),
+                            // The orb's own state motion alone read as still
+                            // listening, so the outcome is also its colour.
+                            tone: tones.0,
+                            tone2: tones.1
+                        ),
+                        state: murmurState,
+                        signals: MurmurSignals(level: controller.presentation == .recording ? Double(audioLevel) : 0),
+                        animated: !reduced
+                    )
+                    .frame(width: Self.orb, height: Self.orb)
+                    // Kapa beside the orb, looking at it: it listens, thinks,
+                    // nods at what went in, is puzzled at what did not. The
+                    // orb already turns green and red, so Kapa adds no sign.
+                    if showsKapa {
+                        KapaView(
+                            expression: kapa,
+                            size: Self.kapaSize,
+                            look: KapaLook(yaw: -0.3, pitch: 0.12),
+                            showsBadge: false,
+                            level: controller.presentation == .recording ? Double(audioLevel) : 0,
+                            // The capsule is a button; a tap on Kapa is a tap on it.
+                            isTappable: false
+                        )
+                        .allowsHitTesting(false)
+                    }
+                }
             }
-            .frame(width: 100, height: 100)
+            .frame(width: Self.size(showingKapa: showsKapa).width, height: Self.size(showingKapa: showsKapa).height, alignment: .topLeading)
             .shadow(color: .black.opacity(0.2), radius: 9, y: 5)
         }
         .buttonStyle(.plain)

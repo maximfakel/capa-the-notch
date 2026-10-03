@@ -2,7 +2,7 @@
 
 [Русский](README.md) · **English**
 
-Codex and Claude Code limits in the MacBook notch — beside the camera, at a
+Codex, Claude Code and OpenCode limits in the MacBook notch — beside the camera, at a
 glance. Music, a teleprompter and dictation live there too.
 
 **Website:** https://capacitynotch.vercel.app/ ·
@@ -12,8 +12,8 @@ A free beta for Apple Silicon Macs running macOS 14 or later.
 
 ## What it does
 
-- **Limits.** What is left in the five-hour and weekly windows of Codex and
-  Claude Code, when they reset, and whether it will last until then. An alert
+- **Limits.** What is left in the five-hour and weekly windows of Codex,
+  Claude Code and OpenCode (its Go plan) — any two at once — when they reset, and whether it will last until then. An alert
   when a window drops below 10%.
 - **Music.** What is playing, the artwork, seeking, the controls and the Mac's
   volume — for any player that shows its track in Control Center.
@@ -28,8 +28,13 @@ and Russian.
 
 ## Privacy
 
-- Capacity Notch **never reads a credential**. It asks Codex through Codex's
-  own App Server, and Claude Code through its `/usage` command.
+- Capacity Notch asks Codex and Claude Code **without their credentials**:
+  Codex through Codex's own App Server, Claude Code through its `/usage`
+  command.
+- **OpenCode is the one exception.** OpenCode has no way of its own to report
+  its limits, so with your consent Capacity Notch reads your OpenCode Go key
+  from OpenCode's own file and asks opencode.ai only for the plan's usage. The
+  key is kept nowhere and sent nowhere else.
 - **Dictation stays on the Mac.** Audio is never saved. A history of
   recognised text is off unless you turn it on.
 - Copied diagnostics carry versions, states and timings — no addresses,
@@ -99,6 +104,15 @@ The bridge keeps only the time, the percentages and the reset times, and
 discards everything else. See
 [Anthropic's status-line documentation](https://code.claude.com/docs/en/statusline).
 
+**OpenCode.** You need an OpenCode Go or Go Plus subscription. Sign in with
+`opencode auth login` and turn on OpenCode in Settings → Providers. Every five
+minutes, and when you refresh, Capacity Notch takes the key from
+`~/.local/share/opencode/auth.json` and asks `opencode.ai` for the five-hour
+and weekly windows. The monthly window is not drawn, but when it is used up
+the card says so in red.
+
+Any two of the three Providers can be on at once.
+
 ## Building from source
 
 Apple Silicon, macOS 14+, Xcode with the Metal Toolchain, and Swift 6.
@@ -116,4 +130,7 @@ than `@State`, whose macro plugin ships inside Xcode.
 ## License
 
 MIT. Third-party parts — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, the Geist
-font — are credited in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+font, the OpenCode logo — are credited in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+Capacity Notch is not affiliated with, or made by, OpenAI, Anthropic or the
+OpenCode team.

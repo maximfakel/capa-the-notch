@@ -15,6 +15,22 @@ public struct NotchGeometry: Equatable, Sendable {
         self.notchWidth = notchWidth
     }
 
+    /// The room every open page has under the strip, whatever it shows, so
+    /// the surface does not change height as pages turn ("Limits — C ·
+    /// Gauges", "Expanded — Playing", "Expanded — Shelf").
+    public static let pageHeight: CGFloat = 152
+    /// The page dots under it, at rest: the switcher's eight points and the
+    /// four above and eight below it (`PageSwitcher`).
+    public static let pageSwitcherHeight: CGFloat = 20
+    /// What a reading Teleprompter adds under the strip while closed: as tall
+    /// as an open page and its dots ("Compact — Teleprompter running").
+    public static let compactTeleprompterRow: CGFloat = pageHeight + pageSwitcherHeight
+
+    /// The open surface: 210 under the drawing's 38-point menu bar.
+    public var openHeight: CGFloat {
+        menuBarHeight + Self.pageHeight + Self.pageSwitcherHeight
+    }
+
     /// - Parameters:
     ///   - safeAreaTop: `NSScreen.safeAreaInsets.top`, which is the notch
     ///     height on a notched display and zero elsewhere.

@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Capacity Notch includes the following third-party code and assets: Murmur (MIT), mediaremote-adapter (BSD 3-Clause), sherpa-onnx (Apache-2.0), ONNX Runtime (MIT) and the Geist typeface (SIL Open Font License 1.1). The optional GigaAM model (MIT) is downloaded separately. No GPL-licensed implementation code is included.
+Capacity Notch includes the following third-party code and assets: Murmur (MIT), mediaremote-adapter (BSD 3-Clause), sherpa-onnx (Apache-2.0), ONNX Runtime (MIT) and the Geist typeface (SIL Open Font License 1.1) and the OpenCode logo (MIT). The optional GigaAM model (MIT) is downloaded separately. No GPL-licensed implementation code is included.
 
 ## Murmur
 
@@ -10,6 +10,26 @@ https://github.com/krispuckett/murmur. The app uses its SwiftUI presence orb
 and Metal shaders. A small local change resolves its shader bundle from the
 standard macOS app Resources directory so the signed app can load `default.metallib`.
 The MIT license is included at `Vendor/Murmur/LICENSE`.
+
+## Coucou (techniques only)
+
+Kapa (ADR 0006) uses techniques learned from Coucou,
+https://github.com/Louis-CFM/coucou at commit
+`835421c7fff260f0f0be48927591b96bfad81cad` (MIT, Copyright (c) 2026 Louis Raillé):
+a SwiftUI `Canvas` stepped by a small engine each frame; eyes placed as if on
+a sphere so a turn of the head moves and narrows them; a new expression
+swapped in while the eyes are shut; frame-rate-independent easing and a damped
+spring for the mouth; scripted moments, such as eating a dropped file, written
+as poses at a time; and a pointer left resting drawing a pleased reaction. The
+code is written afresh; no Coucou code, character, name, artwork or sound is
+included. Its character and sounds are all rights reserved by their author.
+
+## OpenCode logo
+
+OpenCode's mark, from `packages/console/app/src/asset/brand/opencode-logo-dark.svg`
+in https://github.com/anomalyco/opencode (MIT, Copyright (c) 2025 opencode),
+drawn from its own geometry in one colour to label OpenCode as a Provider.
+Capacity Notch is not affiliated with the OpenCode team.
 
 ## Geist
 

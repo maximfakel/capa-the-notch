@@ -26,7 +26,7 @@ for resource_bundle in "$binary_dir"/*.bundle; do
   ditto "$resource_bundle" "$app_bundle/Contents/Resources/${resource_bundle:t}"
 done
 install -m 644 "$project_root/Sources/CapacityNotch/Resources/OpenAIBlossom.svg" "$app_bundle/Contents/Resources/OpenAIBlossom.svg"
-install -m 644 "$project_root/Sources/CapacityNotch/Resources/MenuBarIcon.svg" "$app_bundle/Contents/Resources/MenuBarIcon.svg"
+install -m 644 "$project_root/Sources/CapacityNotch/Resources/MenuBarIcon.tiff" "$app_bundle/Contents/Resources/MenuBarIcon.tiff"
 install -m 644 "$project_root/Packaging/AppIcon.icns" "$app_bundle/Contents/Resources/AppIcon.icns"
 
 install -m 644 "$project_root/Sources/CapacityNotch/Resources/DictationLicenses.txt" "$app_bundle/Contents/Resources/DictationLicenses.txt"

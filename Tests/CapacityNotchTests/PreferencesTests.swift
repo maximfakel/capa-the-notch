@@ -132,3 +132,19 @@ func theAppearanceFollowsTheMacUntilChosen() throws {
         "Something stored that is not an appearance falls back to the Mac's"
     )
 }
+
+/// Preferences keep the two-at-most rule wherever a Provider is turned on.
+func preferencesRefuseAProviderPastTheLimit() throws {
+    let (preferences, _, _) = freshPreferences()
+    preferences.setConnectsAtLaunch(.claudeCode, true)
+    try expect(preferences.connectedProviders == [.codex, .claudeCode], "Codex by default, and Claude Code turned on")
+    try expect(preferences.canConnect(.codex) && preferences.canConnect(.claudeCode), "Both on, both may stay on")
+    try expect(!preferences.canConnect(.openCode), "Two on, a third may not")
+    try expect(!preferences.setConnectsAtLaunch(.openCode, true), "Turning it on is refused")
+    try expect(!preferences.connectsAtLaunch(.openCode), "And it stays off")
+    preferences.setConnectsAtLaunch(.codex, false)
+    try expect(preferences.connectedProviders == [.claudeCode], "One switched off")
+    try expect(preferences.canConnect(.codex), "And the other may come back")
+    try expect(preferences.setConnectsAtLaunch(.openCode, true), "Or OpenCode in its place")
+    try expect(preferences.connectedProviders == [.claudeCode, .openCode], "In surface order")
+}

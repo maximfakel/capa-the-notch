@@ -16,7 +16,9 @@ enum MusicType {
     /// edge: the closed surface is 92 with a track, as drawn.
     static let rowHeight: CGFloat = 54
     static let rowArtwork: CGFloat = 34
-    static let pageArtwork: CGFloat = 120
+    /// The page's height less the six points between the strip and it, so
+    /// the artwork stands the whole page tall: 146 ("Expanded — Playing").
+    static let pageArtwork: CGFloat = NotchGeometry.pageHeight - 6
 }
 
 // MARK: - Pieces
@@ -261,7 +263,13 @@ struct CompactMusicRow: View {
             }
             HStack(spacing: 20) {
                 MusicControls(isPlaying: track.isPlaying, small: 10, large: 14, send: send)
-                EqualizerBars(isPlaying: track.isPlaying, height: 30)
+                // Kapa in headphones where the bars stood — still decorative,
+                // and the artwork keeps its place (ADR 0006).
+                WithKapa {
+                    KapaView(expression: KapaMood.music(isPlaying: track.isPlaying), size: 32)
+                } otherwise: {
+                    EqualizerBars(isPlaying: track.isPlaying, height: 30)
+                }
             }
         }
         .frame(height: MusicType.rowArtwork)
@@ -295,7 +303,11 @@ struct MusicPage: View {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 20) {
                     TrackText(track: track)
-                    EqualizerBars(isPlaying: track.isPlaying && isVisible)
+                    WithKapa {
+                        KapaView(expression: KapaMood.music(isPlaying: track.isPlaying), size: 40, isAnimated: isVisible)
+                    } otherwise: {
+                        EqualizerBars(isPlaying: track.isPlaying && isVisible)
+                    }
                 }
                 .frame(height: 34)
 
@@ -326,6 +338,90 @@ struct MusicPage: View {
         .foregroundStyle(.white)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(CompactMusicRow.spoken(track))
+    }
+}
+
+/// The music page while nothing is loaded ("Notch — Expanded — Music,
+/// nothing playing"): the last track dimmed, with where and when it played,
+/// or — before anything has — a note on a quiet square. No controls: with
+/// nothing loaded there is nothing for them to act on. As tall as the page
+/// with a track, so the surface keeps its height as tracks come and go.
+struct MusicIdlePage: View {
+    let remembered: RememberedTrack?
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 20) {
+            if let remembered {
+                MusicArtwork(track: remembered.track, size: MusicType.pageArtwork, radius: 20)
+                    .opacity(0.35)
+            } else {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+                    .frame(width: MusicType.pageArtwork, height: MusicType.pageArtwork)
+                    .overlay {
+                        Image(systemName: "music.note")
+                            .font(.system(size: 40))
+                            .foregroundStyle(Color.white.opacity(0.22))
+                    }
+                    .accessibilityHidden(true)
+            }
+
+            VStack(alignment: .leading, spacing: 20) {
+                if let remembered {
+                    HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(remembered.track.title)
+                            .font(MusicType.title)
+                            .foregroundStyle(Color.white.opacity(0.6))
+                            .lineLimit(1)
+                        if let artist = remembered.track.artist {
+                            Text(artist)
+                                .font(MusicType.artist)
+                                .foregroundStyle(Color.white.opacity(0.38))
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // Headphones still on, waiting: the last track is loaded
+                    // in no player, so Kapa holds still.
+                    WithKapa {
+                        KapaView(expression: .paused, size: 38, isAnimated: false)
+                    }
+                    }
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L("Nothing playing"))
+                        .font(SurfaceType.geist(13, .medium))
+                        .foregroundStyle(Color.white.opacity(0.8))
+                    Text(caption)
+                        .font(MusicType.artist)
+                        .foregroundStyle(Color.white.opacity(0.45))
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 121)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 6)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var caption: String {
+        guard let remembered else { return L("Play a track in any player and it shows up here") }
+        let time = remembered.endedAt.formatted(date: .omitted, time: .shortened)
+        guard let player = Self.name(of: remembered.track.player) else {
+            return String(format: L("Played at %@"), time)
+        }
+        return String(format: L("Played in %@ · %@"), player, time)
+    }
+
+    private static func name(of bundleIdentifier: String?) -> String? {
+        guard
+            let bundleIdentifier,
+            let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+        else { return nil }
+        return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
     }
 }
 
@@ -550,10 +646,10 @@ final class SurfacePages: ObservableObject {
 /// The expanded surface's pages, side by side, one surface wide each.
 ///
 /// A layout rather than a stack, so that it stands as tall as the page shown
-/// and not as the tallest page: the panel measures it to decide how far to
-/// open, and the music page is 67 points shorter than Capacity. Both numbers
-/// animate — how far along the pages are, and how tall — so a turn slides the
-/// pages and changes the height in the same motion as the window.
+/// and not as the tallest page. Every page is now given the same room
+/// (`NotchGeometry.pageHeight`), so the height no longer changes on a turn;
+/// it is still followed, so a page given other room would turn smoothly.
+/// Both numbers animate — how far along the pages are, and how tall.
 struct PageStrip: Layout {
     /// 0 on the first page, 1 on the second, in between while moving.
     var position: CGFloat

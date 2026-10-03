@@ -16,8 +16,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private var scrollMonitor: Any?
     private var keyMonitor: Any?
     private var swipe: CGFloat = 0
+    private var swipeScrollsShelf = false
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
+    private let openProviderSettings: () -> Void
     private let metrics = SurfaceMetrics()
     private let shape = SurfaceShape()
     private var observers: Set<AnyCancellable> = []
@@ -46,7 +48,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         teleprompter: TeleprompterController,
         shelf: ShelfController,
         connect: @escaping (Provider) -> Void,
-        refresh: @escaping (Provider) -> Void
+        refresh: @escaping (Provider) -> Void,
+        openProviderSettings: @escaping () -> Void
     ) {
         self.store = store
         self.music = music
@@ -54,6 +57,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         self.shelf = shelf
         self.connect = connect
         self.refresh = refresh
+        self.openProviderSettings = openProviderSettings
 
         let panel = Self.makePanel()
         let root = NotchRootView(
@@ -66,7 +70,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             shape: shape,
             pointer: pointer,
             connect: connect,
-            refresh: refresh
+            refresh: refresh,
+            openProviderSettings: openProviderSettings
         )
         let host = SurfaceHostingView(rootView: FollowsLanguage { root })
         // The panel alone decides the window's size. As the window's content
@@ -96,15 +101,20 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             guard let self, self.shelf.isDropTargeted != targeted else { return }
             self.shelf.isDropTargeted = targeted
         }
+        // Kapa watches the file: where it is, in the surface's coordinates.
+        container.moved = { [weak host] point in
+            KapaDrag.shared.point = point.flatMap { host?.convert($0, from: nil) }
+        }
+        container.willDrop = { [weak self] in self?.shelf.swallow() }
         container.drop = { [weak self] urls in
             guard let self else { return }
             self.shelf.add(urls)
-            if self.store.presentation == .expanded { self.pages.select(.shelf) }
+            self.showDropped()
         }
         container.dropImage = { [weak self] name, data in
             guard let self else { return }
             self.shelf.addInMemory(named: name, data: data)
-            if self.store.presentation == .expanded { self.pages.select(.shelf) }
+            self.showDropped()
         }
 
         panel.delegate = self
@@ -173,20 +183,31 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         }
         .store(in: &observers)
 
-        // Which pages there are: a track loading or going, the Teleprompter
-        // or the Shelf switched on or off.
+        // While the Shelf holds a Clipping the surface is kept out of screen
+        // capture, whatever the switch says (ADR 0005).
+        shelf.$clippings
+            .map(\.items.isEmpty)
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.applySharing() }
+            .store(in: &observers)
+
+        // Which pages there are: a Module switched on or off. The music page
+        // stands while its Module is on, playing or not, so the surface keeps
+        // its height and its pages as tracks come and go.
         Publishers.CombineLatest3(
-            music.$loaded.map { $0 != nil }.removeDuplicates(),
+            music.$isOn.removeDuplicates(),
             teleprompter.$isEnabled.removeDuplicates(),
             shelf.$isEnabled.removeDuplicates()
         )
-        .sink { [weak self] loaded, teleprompter, shelf in
-            self?.pages.setAvailable(SurfacePageOrder.pages(musicLoaded: loaded, teleprompter: teleprompter, shelf: shelf))
+        .sink { [weak self] music, teleprompter, shelf in
+            self?.pages.setAvailable(SurfacePageOrder.pages(music: music, teleprompter: teleprompter, shelf: shelf))
         }
         .store(in: &observers)
 
         // A file held over the closed strip grows the drop tab under it.
-        shelf.$isDropTargeted
+        Publishers.CombineLatest(shelf.$isDropTargeted, shelf.$isSwallowing)
+            .map { $0 || $1 }
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -230,14 +251,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             }
             .store(in: &observers)
 
-        // Every Provider switched off: open, and it stays so until one is on.
-        store.$snapshots
-            .map(SurfaceCards.nothingConnected)
-            .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] nothing in if nothing { self?.store.expand() } }
-            .store(in: &observers)
-
         // A pinned surface has to be able to hear Escape and notice a click
         // elsewhere, and a borderless panel hears neither until it is key.
         store.$isPinned
@@ -264,6 +277,45 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         window?.orderFrontRegardless()
         startPointerTracking()
         dumpMetricsIfAsked()
+        swipeIfAsked()
+    }
+
+    /// Ends a swipe whose lift never arrived; see `settleIfTheSwipeGoesQuiet`.
+    private var swipeQuiet: Task<Void, Never>?
+
+    /// Open for `swipeIfAsked`, whatever the pointer does.
+    private var heldOpenForTest = false
+
+    /// Opens the surface and turns its pages as a two-finger swipe does,
+    /// back and forth, so a turn can be recorded and looked at frame by frame
+    /// without a trackpad (`CAPACITY_NOTCH_SWIPE_TEST=<seconds>`).
+    private func swipeIfAsked() {
+        guard let seconds = ProcessInfo.processInfo.environment["CAPACITY_NOTCH_SWIPE_TEST"].flatMap(Double.init) else { return }
+        // Open without a pin: a pin takes the keyboard, and losing it to the
+        // application in front would close the surface at once.
+        heldOpenForTest = true
+        store.expand()
+        Task { @MainActor [weak self] in
+            let until = Date().addingTimeInterval(seconds)
+            var direction: CGFloat = -1
+            try? await Task.sleep(for: .seconds(1))
+            while let self, Date() < until {
+                let available = self.pages.available
+                if let index = available.firstIndex(of: self.pages.selected) {
+                    if index == available.count - 1 { direction = 1 }
+                    if index == 0 { direction = -1 }
+                }
+                // Fingers travel 160 points in a quarter of a second, as a
+                // brisk swipe does, a frame at a time, and lift.
+                for step in 1 ... 15 {
+                    self.pages.follow(direction * CGFloat(step) * 160 / 15)
+                    try? await Task.sleep(for: .milliseconds(16))
+                }
+                self.pages.settle(direction * 160)
+                try? await Task.sleep(for: .seconds(0.9))
+            }
+            NSApplication.shared.terminate(nil)
+        }
     }
 
     /// Prints what the surface actually measures, so its size can be compared
@@ -321,6 +373,19 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         FileHandle.standardError.write(Data(
             "metrics: strip=\(metrics.geometry.menuBarHeight) card=\(card.fittingSize.height) detail=\(detail) column=\(column) width=\(width)\n".utf8
         ))
+        // Nothing connected: the three marks and the button to Settings.
+        let disconnected = height(of: NSHostingView(
+            rootView: SurfaceColumn(
+                snapshots: UnreadCapacity.snapshots(),
+                geometry: metrics.geometry,
+                now: Date(),
+                isExpanded: true,
+                connect: { _ in },
+                refresh: { _ in },
+                toggle: {}
+            )
+        ))
+        FileHandle.standardError.write(Data("disconnected: column=\(disconnected)\n".utf8))
 
         // The Music Module, measured against the drawing: the row under the
         // closed strip, the expanded page, and the open surface showing it.
@@ -346,8 +411,9 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 toggle: {}
             )
         ))
+        let idle = height(of: NSHostingView(rootView: MusicIdlePage(remembered: nil)))
         FileHandle.standardError.write(Data(
-            "music: row=\(row.fittingSize.height) page=\(page) open=\(playingColumn) closed=\(metrics.geometry.menuBarHeight + row.fittingSize.height)\n".utf8
+            "music: idle=\(idle) row=\(row.fittingSize.height) page=\(page) open=\(playingColumn) closed=\(metrics.geometry.menuBarHeight + row.fittingSize.height)\n".utf8
         ))
 
         // Pictures of both, to hold against the drawing, when asked for.
@@ -370,7 +436,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 let full = [sample, CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: sample.windows, connectionState: .fresh)]
                 for (state, expanded) in [("compact", false), ("expanded", true)] {
                     let width = expanded ? drawn.surfaceWidth() : drawn.compactWidth()
-                    let height = expanded ? CGFloat(252 - 38) + bar : bar
+                    let height = expanded ? drawn.openHeight : bar
                     let outline = NotchOutline(size: CGSize(width: width, height: height), radius: expanded ? 38 : 22)
                     picture(
                         ZStack(alignment: .top) {
@@ -390,6 +456,50 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             // A card with windows in it, which a fresh launch has not read yet.
             picture(ProviderCard(snapshot: sample, now: Date(), connect: {}, refresh: {}), width: 256, named: "card.png")
             drawShelf(into: folder, sample: [sample, CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: sample.windows, connectionState: .fresh)])
+            // The gauge states of "Limits — C": stale beside connecting, and a
+            // window used up beside a Provider that cannot be read.
+            let stale = CapacitySnapshot(provider: .codex, capturedAt: Date(), windows: sample.windows, connectionState: .stale)
+            let connecting = CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: [], connectionState: .connecting)
+            let exhausted = CapacitySnapshot(
+                provider: .codex, capturedAt: Date(),
+                windows: [
+                    QuotaWindow(id: "a", label: "5 hour", durationMinutes: 300, usedFraction: 1, resetsAt: Date().addingTimeInterval(2160)),
+                    QuotaWindow(id: "b", label: "Weekly", durationMinutes: 10_080, usedFraction: 0.6, resetsAt: Date().addingTimeInterval(187_200)),
+                ],
+                connectionState: .fresh
+            )
+            let unreadable = CapacitySnapshot.disconnected(provider: .claudeCode, capturedAt: Date(), reason: .claudeCodeNotInstalled)
+            for (pair, name) in [([stale, connecting], "expanded-stale-connecting.png"), ([exhausted, unreadable], "expanded-exhausted-no-data.png")] {
+                picture(
+                    SurfaceColumn(snapshots: pair, geometry: geometry, now: Date(), isExpanded: true,
+                                  connect: { _ in }, refresh: { _ in }, toggle: {}),
+                    width: geometry.surfaceWidth(), named: name
+                )
+            }
+            // OpenCode beside Codex, alone, and with its month used up:
+            // "Limits — C · OpenCode + Codex", "· OpenCode alone".
+            let openCodeWindows = [
+                QuotaWindow(id: "opencode-five-hour", label: "5 hour", durationMinutes: 300, usedFraction: 0.12, resetsAt: Date().addingTimeInterval(11_000)),
+                QuotaWindow(id: "opencode-weekly", label: "Weekly", durationMinutes: 10_080, usedFraction: 0.39, resetsAt: Date().addingTimeInterval(300_000)),
+            ]
+            let openCodeReading = CapacitySnapshot(provider: .openCode, capturedAt: Date(), windows: openCodeWindows, connectionState: .fresh)
+            let monthGone = CapacitySnapshot(
+                provider: .openCode, capturedAt: Date(), windows: openCodeWindows, connectionState: .fresh,
+                statusReason: .openCodeMonthlyLimitReached(until: Date().addingTimeInterval(2_500_000))
+            )
+            let openCodeOff = [UnreadCapacity.snapshot(for: .claudeCode)]
+            for (shown, name) in [
+                ([sample, openCodeReading] + openCodeOff, "expanded-opencode-codex.png"),
+                ([UnreadCapacity.snapshot(for: .codex), openCodeReading] + openCodeOff, "expanded-opencode-alone.png"),
+                ([sample, monthGone] + openCodeOff, "expanded-opencode-month.png"),
+                ([UnreadCapacity.snapshot(for: .codex), monthGone] + openCodeOff, "expanded-opencode-month-alone.png"),
+            ] {
+                picture(
+                    SurfaceColumn(snapshots: shown, geometry: geometry, now: Date(), isExpanded: true,
+                                  connect: { _ in }, refresh: { _ in }, toggle: {}),
+                    width: geometry.surfaceWidth(), named: name
+                )
+            }
             // One Provider on, the other off: "Notch — Compact/Expanded — One provider".
             let one = [
                 UnreadCapacity.snapshot(for: .codex),
@@ -431,6 +541,18 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 ),
                 width: geometry.surfaceWidth(), named: "expanded-playing.png"
             )
+            // Nothing loaded: the last track, and before anything has played.
+            let gone = RememberedTrack(track: track, endedAt: Date())
+            for (remembered, name) in [(Optional(gone), "expanded-music-last.png"), (nil, "expanded-music-none.png")] {
+                picture(
+                    SurfaceColumn(
+                        snapshots: store.snapshots, geometry: geometry, now: Date(),
+                        isExpanded: true, musicOn: true, remembered: remembered, page: .music,
+                        connect: { _ in }, refresh: { _ in }, toggle: {}
+                    ),
+                    width: geometry.surfaceWidth(), named: name
+                )
+            }
             picture(
                 SurfaceColumn(
                     snapshots: store.snapshots, geometry: geometry, now: Date(),
@@ -477,11 +599,14 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         let width = geometry.surfaceWidth()
 
         func settle() { RunLoop.current.run(until: Date().addingTimeInterval(0.3)) }
+        /// Measured as well as drawn, so each tab can be held to 210.
+        var heights: [String] = []
         func picture(_ view: some View, height: CGFloat? = nil, named name: String) {
             let host = NSHostingView(rootView: view.coordinateSpace(name: SurfacePointer.space).background(Color.black))
             host.frame = NSRect(x: 0, y: 0, width: width, height: 0)
             host.layoutSubtreeIfNeeded()
             host.frame.size = height.map { NSSize(width: width, height: $0) } ?? host.fittingSize
+            heights.append("\((name as NSString).deletingPathExtension)=\(host.frame.height)")
             // Hover reads frames measured on the way in; one more turn lets them land.
             settle()
             host.layoutSubtreeIfNeeded()
@@ -499,6 +624,16 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         }
 
         picture(column(), named: "shelf-empty.png")
+        // The other two tabs, empty: Screenshots with its intake off, then
+        // on; Clipboard, which says how to turn text intake on.
+        standIn.tab = .screenshots
+        picture(column(), named: "shelf-screenshots-off.png")
+        standIn.setTakesClipboardImages(true)
+        picture(column(), named: "shelf-screenshots-empty.png")
+        standIn.setTakesClipboardImages(false)
+        standIn.tab = .clipboard
+        picture(column(), named: "shelf-clipboard-empty.png")
+        standIn.tab = .files
 
         let files = FileManager.default.temporaryDirectory.appendingPathComponent("capacity-notch-shelf-sample")
         try? FileManager.default.createDirectory(at: files, withIntermediateDirectories: true)
@@ -525,6 +660,30 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         RunLoop.current.run(until: Date().addingTimeInterval(1.5))
 
         picture(column(), named: "shelf.png")
+        // A copied screenshot under its own tab; the files wait under theirs.
+        if let png = NSImage(size: NSSize(width: 112, height: 76), flipped: false, drawingHandler: { rect in
+            NSColor(red: 0.3, green: 0.4, blue: 0.5, alpha: 1).setFill()
+            rect.fill()
+            return true
+        }).tiffRepresentation.flatMap({ NSBitmapImageRep(data: $0)?.representation(using: .png, properties: [:]) }) {
+            standIn.addInMemory(named: ScreenshotClipboard.name(at: Date()), data: png, to: .screenshots)
+        }
+        standIn.tab = .screenshots
+        picture(column(), named: "shelf-screenshots.png")
+        // The Clipboard tab, on, empty and then holding Clippings.
+        standIn.setKeepsText(true)
+        standIn.tab = .clipboard
+        picture(column(), named: "shelf-clipboard-on-empty.png")
+        for (text, minutes) in [
+            ("ssh deploy@example.com -p 2222", 42.0),
+            ("Встреча перенесена на четверг, 15:00. Ссылка та же, повестка в документе.", 18),
+            ("https://github.com/anomalyco/opencode/pull/16513", 3),
+        ] {
+            standIn.keepClipping(text, at: Date().addingTimeInterval(-minutes * 60))
+        }
+        picture(column(), named: "shelf-clipboard.png")
+        standIn.tab = .files
+        FileHandle.standardError.write(Data("shelf: \(heights.joined(separator: " "))\n".utf8))
         // The pointer on the first tile, then over the switcher.
         let onTile = SurfacePointer()
         onTile.location = CGPoint(x: 60, y: 38 + 60)
@@ -635,6 +794,13 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         ))
     }
 
+    /// What was just dropped is shown: under Files, where a drop lands, and
+    /// on the Shelf's page when the surface is open.
+    private func showDropped() {
+        shelf.tab = .files
+        if store.presentation == .expanded { pages.select(.shelf) }
+    }
+
     /// Opens the surface, as finishing onboarding does: the first thing the
     /// person should see is the Capacity they just connected.
     func open() {
@@ -661,7 +827,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private func applySharing() {
         let excluded = TeleprompterSurface.excludedFromCapture(
             sharingAllowed: sharingAllowed,
-            teleprompterShowing: teleprompter.isShowingRow
+            teleprompterShowing: teleprompter.isShowingRow,
+            holdsClippings: !shelf.clippings.items.isEmpty
         )
         let type: NSWindow.SharingType = excluded ? .none : .readOnly
         // On macOS 27 a window kept out of capture never comes back: setting
@@ -839,8 +1006,9 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         presentTicks = 0
 
         // A pinned surface was asked for. It waits to be dismissed. With no
-        // Provider on it stays open, on the cards that connect one.
-        guard store.presentation == .expanded, !store.isPinned, !SurfaceCards.nothingConnected(store.snapshots) else {
+        // Provider on it closes like any other: the marks and the way to
+        // Settings are there whenever it is opened, without hanging open.
+        guard store.presentation == .expanded, !store.isPinned, !heldOpenForTest else {
             absentTicks = 0
             return
         }
@@ -1010,6 +1178,14 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     /// gesture is one page however long it runs.
     private func follow(swipe event: NSEvent) -> Bool {
         guard canTurnPages, event.hasPreciseScrollingDeltas else { return false }
+        // A swipe that starts over the Shelf's overflowing row is the row's,
+        // all of it, its glide included: the files scroll, the page stays.
+        if event.phase == .began {
+            swipeScrollsShelf = pointer.location.map { pointer.scrollableRow?.contains($0) ?? false } ?? false
+        }
+        // Decided again at the next swipe's start, so the glide after the
+        // fingers lift goes where the swipe went.
+        if swipeScrollsShelf { return false }
         guard abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) || swipe != 0 else { return false }
 
         // Fingers moving left bring the next page in, as on a phone,
@@ -1023,13 +1199,31 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         case .changed:
             swipe += event.scrollingDeltaX
             pages.follow(travel())
+            settleIfTheSwipeGoesQuiet(travel())
         case .ended, .cancelled:
+            swipeQuiet?.cancel()
             pages.settle(travel())
             swipe = 0
         default:
             break
         }
         return true
+    }
+
+    /// The end of a swipe can be lost: scrolling goes to whichever window is
+    /// under the pointer, and the panel lets the pointer through the moment
+    /// it judges it outside the shape, so the lift may land in the
+    /// application behind. The pages then stood part-turned, a neighbour's
+    /// edge showing inside the surface until the next swipe. Silence for a
+    /// third of a second ends the swipe where it is.
+    private func settleIfTheSwipeGoesQuiet(_ travel: CGFloat) {
+        swipeQuiet?.cancel()
+        swipeQuiet = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(0.35))
+            guard !Task.isCancelled, let self, self.swipe != 0 else { return }
+            self.pages.settle(travel)
+            self.swipe = 0
+        }
     }
 
     // MARK: - Placement
@@ -1075,11 +1269,11 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         }
         // A file held over it keeps the strip's give too, the drop tab
         // hanging from it ("Notch — Compact — Dropping on the Shelf").
-        if presentation == .compact, pointerNear || shelf.isDropTargeted {
+        if presentation == .compact, pointerNear || shelf.showsDropTab {
             size.width += Self.nearGrowth.width
             size.height += Self.nearGrowth.height
         }
-        let tab = presentation == .compact && shelf.isDropTargeted ? ShelfDropZone.tab : .zero
+        let tab = presentation == .compact && shelf.showsDropTab ? ShelfDropZone.tab : .zero
         surfaceFrame = Self.frame(of: size, on: screen)
         surfaceFrameChanged?(surfaceFrame)
         let radius: CGFloat = presentation == .expanded ? 38 : 22
@@ -1144,10 +1338,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         )
     }
 
-    /// The expanded surface follows its content and nothing else. A Provider
-    /// that is disconnected explains itself in a sentence, and a fixed height
-    /// would cut that sentence in half; a floor under it left the music page,
-    /// drawn at 185, standing 218 tall over 33 points of nothing.
+    /// The expanded surface as measured: every page is given the same room
+    /// (`NotchGeometry.pageHeight`), so this is the open height — 210 under a
+    /// 38-point menu bar — and only the page switcher, grown into buttons,
+    /// adds to it. A page too tall for its room is cut, not measured taller.
     private func expandedHeight(on screen: NSScreen, width: CGFloat) -> CGFloat {
         let measuring = NSHostingView(
             rootView: SurfaceColumn(
@@ -1156,6 +1350,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 now: Date(),
                 isExpanded: true,
                 loaded: music.loaded,
+                musicOn: music.isOn,
+                remembered: music.remembered,
                 teleprompter: teleprompter,
                 shelf: shelf,
                 page: pages.selected,
@@ -1184,6 +1380,10 @@ private final class SurfaceHostingView<Content: View>: NSHostingView<Content> {
 private final class SurfaceDropView: NSView {
     var accepts: (NSPoint) -> Bool = { _ in false }
     var targeted: (Bool) -> Void = { _ in }
+    /// Where the file is, in the window, or nil once it has gone.
+    var moved: (NSPoint?) -> Void = { _ in }
+    /// A drop is about to be taken: before the tab is told the drag is over.
+    var willDrop: () -> Void = {}
     var drop: ([URL]) -> Void = { _ in }
     /// An image with no file behind it, to hold in memory: its name, its bytes.
     var dropImage: (String, Data) -> Void = { _, _ in }
@@ -1219,7 +1419,11 @@ private final class SurfaceDropView: NSView {
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation { follow(sender) }
     // Leaving the shape is not leaving the tab's reach: the panel, which
     // follows the pointer, closes it. Only the drag's end does here.
-    override func draggingEnded(_ sender: NSDraggingInfo) { targeted(false) }
+    override func draggingEnded(_ sender: NSDraggingInfo) {
+        moved(nil)
+        targeted(false)
+    }
+    override func draggingExited(_ sender: NSDraggingInfo?) { moved(nil) }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         let urls = Self.files(in: sender)
@@ -1229,6 +1433,8 @@ private final class SurfaceDropView: NSView {
         let image = urls.isEmpty ? NSImage(pasteboard: sender.draggingPasteboard) : nil
         let counts = (!urls.isEmpty || !promises.isEmpty || image != nil) && accepts(sender.draggingLocation)
         Self.logger.info("Drop: \(urls.count) files, \(promises.count) promises, image \(image != nil), accepted \(counts)")
+        moved(nil)
+        if counts { willDrop() }
         targeted(false)
         guard counts else { return false }
         if !urls.isEmpty {
@@ -1296,7 +1502,11 @@ private final class SurfaceDropView: NSView {
     /// Only files, and only over the surface. The Shelf keeps a reference,
     /// so what the source is told is a copy — nothing of its is moved.
     private func follow(_ sender: NSDraggingInfo) -> NSDragOperation {
-        guard Self.carriesFiles(sender.draggingPasteboard.types ?? []), accepts(sender.draggingLocation) else { return [] }
+        guard Self.carriesFiles(sender.draggingPasteboard.types ?? []) else { return [] }
+        // Seen before it counts: Kapa looks at a file coming, not only at
+        // one already over the tab.
+        moved(sender.draggingLocation)
+        guard accepts(sender.draggingLocation) else { return [] }
         targeted(true)
         return .copy
     }

@@ -13,13 +13,29 @@ public final class Preferences: @unchecked Sendable {
         self.defaults = defaults
     }
 
+    // MARK: - Kapa
+
+    /// Whether Kapa is drawn (ADR 0006). The one default that is on: it asks
+    /// for nothing and reads nothing new.
+    public var showsKapa: Bool {
+        get { defaults.object(forKey: KapaPreference.key) as? Bool ?? KapaPreference.defaultValue }
+        set { defaults.set(newValue, forKey: KapaPreference.key) }
+    }
+
     // MARK: - Providers
 
     /// Whether this Provider is read without being asked for.
     ///
     /// Codex starts connected because it needs nothing from the person. Claude
     /// Code does not, because it is asked for once and explained first.
+    ///
+    /// Only the first two chosen, in surface order, are on: a third chosen
+    /// somewhere this rule was not kept is read as off (`ProviderSelection`).
     public func connectsAtLaunch(_ provider: Provider) -> Bool {
+        connectedProviders.contains(provider)
+    }
+
+    private func chosen(_ provider: Provider) -> Bool {
         let key = Self.connectKey(provider)
         guard defaults.object(forKey: key) != nil else {
             return provider == .codex
@@ -28,9 +44,23 @@ public final class Preferences: @unchecked Sendable {
     }
 
     /// Remembers a deliberate Connect or Disconnect, so it outlives the launch
-    /// it was made in.
-    public func setConnectsAtLaunch(_ provider: Provider, _ connects: Bool) {
+    /// it was made in. A Connect past the two-at-most rule is refused.
+    @discardableResult
+    public func setConnectsAtLaunch(_ provider: Provider, _ connects: Bool) -> Bool {
+        guard !connects || canConnect(provider) else { return false }
         defaults.set(connects, forKey: Self.connectKey(provider))
+        return true
+    }
+
+    /// The Providers to be read, in surface order, two at most.
+    public var connectedProviders: [Provider] {
+        ProviderSelection.toConnect(Provider.allCases.filter(chosen))
+    }
+
+    /// Whether this Provider may be turned on beside those already on
+    /// (`ProviderSelection`).
+    public func canConnect(_ provider: Provider) -> Bool {
+        ProviderSelection.canTurnOn(provider, alreadyOn: Set(connectedProviders))
     }
 
     private static func connectKey(_ provider: Provider) -> String {
@@ -152,6 +182,32 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "shelfTakesScreenshots") }
     }
 
+    /// Text copied lands under the Shelf's Clipboard tab. Off until asked for,
+    /// on its own switch (ADR 0005, amended 2026-10-02).
+    public var shelfKeepsText: Bool {
+        get { defaults.bool(forKey: "shelfKeepsText") }
+        set { defaults.set(newValue, forKey: "shelfKeepsText") }
+    }
+
+    /// How many Clippings are kept: 20 unless chosen.
+    public var clippingLimit: ClippingLimit {
+        get { ClippingLimit(rawValue: defaults.integer(forKey: "clippingLimit")) ?? .default }
+        set { defaults.set(newValue.rawValue, forKey: "clippingLimit") }
+    }
+
+    /// Each Clipping goes after a day, unless this is switched off.
+    public var clippingsExpire: Bool {
+        get { !defaults.bool(forKey: "clippingsKeptPastADay") }
+        set { defaults.set(!newValue, forKey: "clippingsKeptPastADay") }
+    }
+
+    /// Applications nothing is kept from while they are in front, chosen in
+    /// Settings, by bundle identifier.
+    public var clipboardExcludedApplications: [String] {
+        get { defaults.stringArray(forKey: "clipboardExcludedApplications") ?? [] }
+        set { defaults.set(newValue, forKey: "clipboardExcludedApplications") }
+    }
+
     /// The Teleprompter Module. Off until asked for (ADR 0003): while off, no
     /// shortcut is registered and nothing is shown.
     public var teleprompterEnabled: Bool {
@@ -250,6 +306,13 @@ public final class Preferences: @unchecked Sendable {
     public var claudeConsentGiven: Bool {
         get { defaults.bool(forKey: "claudeCodeConsentGiven") }
         set { defaults.set(newValue, forKey: "claudeCodeConsentGiven") }
+    }
+
+    /// The person agreed that Capacity Notch reads OpenCode's key from its
+    /// own file to ask for its Go plan's usage (ADR 0001, amended).
+    public var openCodeConsentGiven: Bool {
+        get { defaults.bool(forKey: "openCodeConsentGiven") }
+        set { defaults.set(newValue, forKey: "openCodeConsentGiven") }
     }
 }
 
