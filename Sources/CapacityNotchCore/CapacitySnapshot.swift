@@ -44,7 +44,7 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case let .providerUnavailable(detail):
             "Codex is not answering — \(detail)"
         case .providerAnswerNotUnderstood:
-            "Codex answered in a form Capacity Notch cannot read. Update Capacity Notch."
+            "Codex answered in a form CapaTheNotch cannot read. Update CapaTheNotch."
         case let .providerCouldNotRead(detail):
             "Codex could not read its Capacity — \(detail.hasSuffix(".") ? detail : detail + ".") Retrying."
         case .codexDisconnected:
@@ -54,13 +54,13 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case .claudeStatusLineStale:
             "Run Claude Code in a terminal to update its last published Capacity."
         case .claudeStatusLineUnavailable:
-            "Claude Code has not published Capacity yet. Configure the Capacity Notch status-line bridge, then run Claude Code in a terminal."
+            "Claude Code has not published Capacity yet. Configure the CapaTheNotch status-line bridge, then run Claude Code in a terminal."
         case .claudeCodeNotInstalled:
             "Install Claude Code, then try again."
         case .claudeUsageFailed:
             "Claude Code did not answer. Check that it is signed in, then refresh."
         case .claudeUsageNotUnderstood:
-            "Claude Code's usage report has changed and Capacity Notch cannot read it. Update Capacity Notch."
+            "Claude Code's usage report has changed and CapaTheNotch cannot read it. Update CapaTheNotch."
         case .openCodeDisconnected:
             "Turn on OpenCode in Settings to read its Capacity."
         case .openCodeNotSignedIn:
@@ -70,11 +70,11 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case .openCodeUnreachable:
             "opencode.ai is not answering. Retrying."
         case .openCodeAnswerNotUnderstood:
-            "OpenCode's answer was not understood. Update Capacity Notch."
+            "OpenCode's answer was not understood. Update CapaTheNotch."
         case .openCodeMonthlyLimitReached:
             "Monthly limit reached"
         case .staleFromArchive:
-            "Last seen before Capacity Notch restarted. Refreshing."
+            "Last seen before CapaTheNotch restarted. Refreshing."
         }
     }
 

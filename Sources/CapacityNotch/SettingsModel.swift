@@ -85,7 +85,7 @@ final class SettingsModel: ObservableObject {
         didSet { application.setMusicEnabled(musicEnabled) }
     }
 
-    /// macOS stopped telling Capacity Notch what is playing (ADR 0004).
+    /// macOS stopped telling CapaTheNotch what is playing (ADR 0004).
     @Published private(set) var musicUnreadable = false
 
     /// The Teleprompter Module, observed directly: its Script, speed and

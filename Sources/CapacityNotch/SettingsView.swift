@@ -103,7 +103,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
 
     private var englishSubtitle: String {
         switch self {
-        case .general: "Where Capacity Notch appears, and how it starts and updates."
+        case .general: "Where CapaTheNotch appears, and how it starts and updates."
         case .providers: "Where Capacity comes from, and whether it is being read."
         case .alerts: "A notification when a window is about to run out."
         case .modules: "What the notch shows besides Capacity. Each one is off until you turn it on."
@@ -125,9 +125,10 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
 private struct GeneralSection: View {
     @ObservedObject var model: SettingsModel
     @AppStorage(KapaPreference.key) private var showsKapa = KapaPreference.defaultValue
+    @AppStorage(SoundPreference.key) private var playsSounds = SoundPreference.defaultValue
 
     var body: some View {
-        SettingsGroup(footnote: L("macOS keeps Capacity Notch out of the capture it controls. It cannot promise anything about a camera pointed at the screen.")) {
+        SettingsGroup(footnote: L("macOS keeps CapaTheNotch out of the capture it controls. It cannot promise anything about a camera pointed at the screen.")) {
             // Settings and the menu follow it; the notch and notifications
             // stay in English for now.
             SettingsRow {
@@ -163,12 +164,15 @@ private struct GeneralSection: View {
             // Kapa is how the Modules already on look, not a Module, so it
             // lives here rather than under Modules (ADR 0006).
             SettingsToggleRow(L("Show Kapa"), isOn: $showsKapa)
+            // A file taken, dictation's outcome and a Capacity Alert; never
+            // while the Teleprompter runs (ADR 0007).
+            SettingsToggleRow(L("Play sounds"), isOn: $playsSounds)
         }
 
-        SettingsGroup(footnote: L("Opens the latest release on GitHub. Capacity Notch does not check on its own.")) {
+        SettingsGroup(footnote: L("Opens the latest release on GitHub. CapaTheNotch does not check on its own.")) {
             SettingsRow {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Capacity Notch")
+                    Text("CapaTheNotch")
                     Text(L("Version %@", model.version))
                         .font(SettingsType.caption)
                         .foregroundStyle(SettingsPalette.muted)

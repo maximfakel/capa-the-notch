@@ -64,6 +64,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Consecutive failures worth retrying, per Provider. A Provider waiting
     /// on a person is not counted here: backing off does not help it.
     private var transientFailures: [Provider: Int] = [:]
+    /// Each Provider's last state, to hear one that stops answering once.
+    private var lastConnection: [Provider: CapacityConnectionState] = [:]
     /// How often Claude Code itself is asked. Capacity moves slowly and the
     /// question costs a process, so it is asked far less often than the
     /// surface refreshes.
@@ -138,6 +140,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         self.panelController = panelController
         panelController.show()
+        // Quiet while a Script is read aloud (ADR 0007); drawn ahead of use.
+        Sounds.shared.isQuiet = { [weak self] in self?.teleprompter.playback.state == .running }
+        Sounds.shared.prepare()
         let capsule = DictationPanelController(controller: dictation)
         dictationPanel = capsule
         panelController.surfaceFrameChanged = { [weak capsule] frame in capsule?.anchor(to: frame) }
@@ -242,10 +247,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observeOpenCode()
 
         guard !preferences.needsOnboarding else {
+            // A first launch has no bridge of the old application's to move.
+            preferences.claudeBridgeMoveSettled = true
             startOnboarding(force: false)
             return
         }
         connectChosenProviders()
+        DispatchQueue.main.async { [weak self] in self?.offerToMoveClaudeBridge() }
+    }
+
+    // MARK: - The bridge, after the rename
+
+    /// Once, on the first launch as CapaTheNotch.app: Claude Code's settings
+    /// may still run the status-line bridge from CapacityNotch.app, and its
+    /// status line stops when that bundle goes. Asked only where the bridge
+    /// has run — it leaves its reading in this application's own folder — and
+    /// Claude Code's settings are opened only after a yes (ADR 0001, amended).
+    private func offerToMoveClaudeBridge() {
+        guard !preferences.claudeBridgeMoveSettled else { return }
+        let bundle = Bundle.main.bundleURL
+        // An installed copy only: a build run from .build/ is not where the
+        // status line should point, and must not settle the question either.
+        guard bundle.pathExtension == "app", bundle.lastPathComponent != ClaudeBridgeMove.oldBundle,
+              bundle.deletingLastPathComponent().lastPathComponent == "Applications" else { return }
+        preferences.claudeBridgeMoveSettled = true
+
+        let folder = ClaudeStatusLineBridge.defaultSnapshotURL.deletingLastPathComponent()
+        let bridgeHasRun = ["claude-capacity.json", "claude-bridge-last-unreadable.json"].contains {
+            FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+        }
+        let bridge = bundle.appendingPathComponent(ClaudeBridgeMove.bridgeInBundle).path
+        // A path with a space would split the status line's command in two.
+        guard bridgeHasRun, !bridge.contains(where: \.isWhitespace) else { return }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = L("Move Claude Code's status line to CapaTheNotch?")
+        alert.informativeText = L("Capacity Notch is now CapaTheNotch.app. If ~/.claude/settings.json runs the status-line bridge from CapacityNotch.app, Claude Code's status line stops once that app is gone — yours too, if it runs through the bridge. CapaTheNotch can point that one path at this copy. It opens Claude Code's settings only for this, keeps nothing it reads and changes nothing else.")
+        alert.addButton(withTitle: L("Update Path"))
+        alert.addButton(withTitle: L("Leave It"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        let result = NSAlert()
+        result.alertStyle = .informational
+        do {
+            let moved = try ClaudeBridgeMove.move(home: FileManager.default.homeDirectoryForCurrentUser, to: bridge)
+            if moved.isEmpty {
+                result.messageText = L("Nothing to change")
+                result.informativeText = L("No path to CapacityNotch.app was found in Claude Code's settings.")
+            } else {
+                result.messageText = L("Claude Code's status line now runs the bridge from this copy.")
+                result.informativeText = L("Changed: %@. CapacityNotch.app can go to the Trash.", moved.map { "~/.claude/" + $0.lastPathComponent }.joined(separator: ", "))
+            }
+        } catch {
+            result.alertStyle = .warning
+            result.messageText = L("Claude Code's settings were not changed")
+            result.informativeText = error.localizedDescription
+        }
+        result.runModal()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -360,7 +420,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.alertStyle = .informational
         alert.messageText = "Turn on Claude Code?"
-        alert.informativeText = "Capacity Notch asks Claude Code for its /usage — the report you see when you type /usage — and reads the Capacity in it, and the status line where Claude Code publishes one. It never reads Claude credentials, sessions, prompts or transcripts, and never talks to Anthropic itself."
+        alert.informativeText = "CapaTheNotch asks Claude Code for its /usage — the report you see when you type /usage — and reads the Capacity in it, and the status line where Claude Code publishes one. It never reads Claude credentials, sessions, prompts or transcripts, and never talks to Anthropic itself."
         alert.addButton(withTitle: "Turn On")
         alert.addButton(withTitle: "Cancel")
 
@@ -445,7 +505,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let model = OnboardingModel(preferences: preferences, application: self, store: store, notifications: notifications)
         onboarding = Self.settingsWindow(
-            titled: L("Welcome to Capacity Notch"),
+            titled: L("Welcome to CapaTheNotch"),
             content: OnboardingView(model: model)
         )
         onboarding?.window?.makeKeyAndOrderFront(nil)
@@ -470,8 +530,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Settings redraw themselves; only the window's own title is AppKit's.
     func applyLanguage() {
-        settings?.window?.title = L("Capacity Notch Settings")
-        onboarding?.window?.title = L("Welcome to Capacity Notch")
+        settings?.window?.title = L("CapaTheNotch Settings")
+        onboarding?.window?.title = L("Welcome to CapaTheNotch")
     }
 
     /// Light, dark, or the Mac's own, for every window the application opens.
@@ -609,7 +669,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let model = SettingsModel(preferences: preferences, application: self, store: store)
         if forDictation { configureDictationSettings(model) }
-        settings = Self.settingsWindow(titled: L("Capacity Notch Settings"), content: SettingsView(model: model, section: section ?? .general))
+        settings = Self.settingsWindow(titled: L("CapaTheNotch Settings"), content: SettingsView(model: model, section: section ?? .general))
         settings?.window?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
@@ -784,6 +844,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) {
             notifications?.send(alert)
         }
+        if !alertDecider.recovered.isEmpty { Sounds.shared.play(.capacityRecovered) }
+
+        // A Provider that was answering and stopped: once, on the change,
+        // and not for a blip that is retried, nor one never connected this
+        // session — that would sound at every launch (ADR 0007).
+        let stopped: Bool
+        switch snapshot.connectionState {
+        case let .disconnected(reason): stopped = !reason.isTransient
+        // Old numbers alone are only time passing; a reason is a failure.
+        case .stale: stopped = snapshot.statusReason.map { !$0.isTransient } ?? false
+        case .mock, .connecting, .fresh: stopped = false
+        }
+        if stopped, lastConnection[snapshot.provider] == .fresh { Sounds.shared.play(.providerStopped) }
+        lastConnection[snapshot.provider] = snapshot.connectionState
 
         switch snapshot.connectionState {
         case .fresh:
@@ -830,7 +904,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.alertStyle = .informational
         alert.messageText = L("Turn on OpenCode?")
-        alert.informativeText = L("Capacity Notch reads your OpenCode Go key from OpenCode's own file and asks opencode.ai only for your plan's percentages and reset times — every five minutes, and when you refresh. The key is kept nowhere and sent nowhere else.")
+        alert.informativeText = L("CapaTheNotch reads your OpenCode Go key from OpenCode's own file and asks opencode.ai only for your plan's percentages and reset times — every five minutes, and when you refresh. The key is kept nowhere and sent nowhere else.")
         alert.addButton(withTitle: L("Turn On"))
         alert.addButton(withTitle: L("Cancel"))
 

@@ -73,7 +73,7 @@ public struct DiagnosticReport: Sendable {
 
     public func text(formatter: ISO8601DateFormatter = DiagnosticReport.timestamps()) -> String {
         var lines = [
-            "Capacity Notch \(applicationVersion)",
+            "CapaTheNotch \(applicationVersion)",
             "macOS \(systemVersion)",
             "generated \(formatter.string(from: generatedAt))",
             "",

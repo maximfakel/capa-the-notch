@@ -40,7 +40,7 @@ final class OnboardingModel: ObservableObject {
 
         private var englishTitle: String {
             switch self {
-            case .welcome: "Welcome to Capacity Notch"
+            case .welcome: "Welcome to CapaTheNotch"
             case .permissions: "Permissions"
             case .providers: "Connect a Provider"
             case .music: "Music"
@@ -55,7 +55,7 @@ final class OnboardingModel: ObservableObject {
             switch self {
             case .welcome: "How much of Codex, Claude Code and OpenCode is left, right under the notch — and a few tools beside it."
             case .permissions: "Everything macOS will ask about, at once, so nothing interrupts you later."
-            case .providers: "Capacity Notch reads nothing until a Provider is on."
+            case .providers: "CapaTheNotch reads nothing until a Provider is on."
             case .music: "Control what's playing without leaving what you're doing."
             case .teleprompter: "Read your Script beside the camera, without looking away."
             case .dictation: "Speech becomes text on this Mac. The speech model is downloaded once."
@@ -154,6 +154,7 @@ final class OnboardingModel: ObservableObject {
     }
 
     func finish() {
+        Sounds.shared.play(.onboardingFinished)
         preferences.hasFinishedOnboarding = true
         application.finishOnboarding()
     }
@@ -350,7 +351,7 @@ struct OnboardingView: View {
                         }
                     }
                 }
-                Text(L("Claude Code and OpenCode are experimental. Capacity Notch says what it reads before reading anything."))
+                Text(L("Claude Code and OpenCode are experimental. CapaTheNotch says what it reads before reading anything."))
                     .font(SettingsType.caption)
                     .foregroundStyle(SettingsPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)

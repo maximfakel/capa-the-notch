@@ -229,7 +229,7 @@ func capacityNotchOnlyEverSendsCodexReadMethods() async throws {
     )
     try expect(
         methods.allSatisfy { !$0.contains("login") && !$0.contains("logout") && !$0.contains("Token") },
-        "Capacity Notch must never touch a Codex credential method"
+        "CapaTheNotch must never touch a Codex credential method"
     )
 
     let accountRead = transport.lines.first { $0.contains("account/read") }
@@ -389,7 +389,7 @@ func aCodexAnswerInAShapeNotKnownKeepsTheLastCapacityAndSaysWhy() async throws {
     await service.refresh()
 
     guard let held = await iterator.next() else {
-        throw TestFailure(description: "An answer Capacity Notch cannot read should still publish a state")
+        throw TestFailure(description: "An answer CapaTheNotch cannot read should still publish a state")
     }
     try expect(held.connectionState == .stale, "Codex answered, so what it said last is Stale Capacity, got \(held.connectionState)")
     try expect(held.windows.first?.remainingPercentage == 30, "The numbers last read should stay on the surface")

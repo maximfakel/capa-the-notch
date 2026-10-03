@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where OpenCode keeps its sign-in, and the one thing Capacity Notch takes
+/// Where OpenCode keeps its sign-in, and the one thing CapaTheNotch takes
 /// from it: the Go plan's key, read at each request and kept nowhere
 /// (ADR 0001, amended 2026-10-02).
 public enum OpenCodeAuth {
@@ -10,7 +10,7 @@ public enum OpenCodeAuth {
     }
 
     /// The Go plan's key in OpenCode's file, and nothing else: the ADR lets
-    /// Capacity Notch take that one key, not another of OpenCode's entries.
+    /// CapaTheNotch take that one key, not another of OpenCode's entries.
     public static func key(in file: Data) -> String? {
         guard
             let entries = try? JSONSerialization.jsonObject(with: file) as? [String: Any],

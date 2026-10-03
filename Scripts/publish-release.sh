@@ -38,7 +38,7 @@ slug="$(grep -o 'github.com/[^/]*/[^/]*/releases' Sources/CapacityNotchCore/Rele
 version="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Packaging/Info.plist)"
 tag="v$version"
 notes="docs/releases/$version.md"
-archive="CapacityNotch-$version.zip"
+archive="CapaTheNotch-$version.zip"
 [[ -f "$notes" ]] || fail "$notes does not exist; write the release notes first."
 
 if gh release view "$tag" --repo "$slug" >/dev/null 2>&1; then
@@ -65,7 +65,7 @@ git -C "$clone" add -A
 [[ -n "$(git -C "$clone" status --porcelain)" ]] || fail "the published repository already has this tree."
 GIT_AUTHOR_NAME="$author_name" GIT_AUTHOR_EMAIL="$author" GIT_AUTHOR_DATE="$source_date" \
 GIT_COMMITTER_NAME="$author_name" GIT_COMMITTER_EMAIL="$author" GIT_COMMITTER_DATE="$source_date" \
-  git -C "$clone" commit -q -m "Capacity Notch $version"
+  git -C "$clone" commit -q -m "CapaTheNotch $version"
 [[ "$(git -C "$clone" rev-parse HEAD^{tree})" == "$(git rev-parse HEAD^{tree})" ]] \
   || fail "the snapshot's tree is not HEAD's."
 
@@ -116,13 +116,13 @@ read -r answer
 [[ "$answer" == "publish" ]] || fail "not published."
 
 git -C "$clone" push -q origin HEAD
-git -C "$clone" tag -a "$tag" -m "Capacity Notch $version"
+git -C "$clone" tag -a "$tag" -m "CapaTheNotch $version"
 git -C "$clone" push -q origin "$tag"
 # The archive alone. A checksum beside it proves nothing a download from the
 # same release could not fake, and GitHub shows each asset's digest itself;
 # the reproducibility check above is where the checksum does its work.
 gh release create "$tag" --repo "$slug" --latest \
-  --title "Capacity Notch $version (beta)" --notes-file "$notes" \
+  --title "CapaTheNotch $version (beta)" --notes-file "$notes" \
   "$clone/dist/$archive"
 
 print "== checking the release as a download"

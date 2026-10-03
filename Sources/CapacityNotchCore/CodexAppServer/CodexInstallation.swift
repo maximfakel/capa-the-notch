@@ -14,7 +14,7 @@ public enum CodexInstallation {
     ]
 
     /// Returns the first executable Codex binary, or `nil` when Codex is not
-    /// installed. Capacity Notch reads no Codex file other than this binary.
+    /// installed. CapaTheNotch reads no Codex file other than this binary.
     public static func locate(
         searchPaths: [String] = defaultSearchPaths,
         isExecutable: (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) }

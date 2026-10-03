@@ -48,7 +48,7 @@ final class TeleprompterController: ObservableObject {
 
     /// What the pictures are drawn with: the mockup's own words.
     static let sampleScript = """
-    Добрый день. Сегодня я покажу, как Capacity Notch держит лимиты Claude и Codex прямо у камеры, и почему это удобнее, чем вкладка со счётчиком, открытая весь день.
+    Добрый день. Сегодня я покажу, как CapaTheNotch держит лимиты Claude и Codex прямо у камеры, и почему это удобнее, чем вкладка со счётчиком, открытая весь день.
 
     Сначала — как выглядит полоса. Потом — что происходит, когда лимит подходит к концу.
     """

@@ -148,3 +148,24 @@ func aRussianAlertSaysItAllInRussian() throws {
     try expect(ResetCountdown.text(until: alertAt.addingTimeInterval(187_200), at: alertAt) == "2 д 4 ч", "Days and hours, shortly")
     try expect(ResetCountdown.text(until: alertAt.addingTimeInterval(30), at: alertAt) == "меньше минуты", "Under a minute")
 }
+
+func aWindowThatRecoversAfterItsAlertIsGoodNews() throws {
+    var decider = CapacityAlertDecider()
+    _ = decider.alerts(for: snapshot(used: 0.96), at: alertAt, isEnabled: always)
+    try expect(decider.recovered.isEmpty, "Falling is not recovering")
+    _ = decider.alerts(for: snapshot(used: 0.96), at: alertAt, isEnabled: always)
+    try expect(decider.recovered.isEmpty, "Still low is not recovering")
+    _ = decider.alerts(for: snapshot(used: 0.2), at: alertAt, isEnabled: always)
+    try expect(decider.recovered.count == 1 && decider.recovered[0].windowID == "five-hour", "Back up after an alert is news")
+    _ = decider.alerts(for: snapshot(used: 0.2), at: alertAt, isEnabled: always)
+    try expect(decider.recovered.isEmpty, "And news once")
+
+    var silenced = CapacityAlertDecider()
+    _ = silenced.alerts(for: snapshot(used: 0.96), at: alertAt, isEnabled: { _ in false })
+    _ = silenced.alerts(for: snapshot(used: 0.2), at: alertAt, isEnabled: { _ in false })
+    try expect(silenced.recovered.isEmpty, "No recovery is heard for an alert that was never sent")
+
+    var fine = CapacityAlertDecider()
+    _ = fine.alerts(for: snapshot(used: 0.2), at: alertAt, isEnabled: always)
+    try expect(fine.recovered.isEmpty, "A window that was never low has nothing to recover from")
+}

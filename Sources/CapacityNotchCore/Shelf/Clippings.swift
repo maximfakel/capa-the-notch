@@ -73,10 +73,10 @@ public struct Clippings: Equatable, Sendable {
 /// Whether a text on the clipboard is kept as a Clipping (ADR 0005): plain
 /// text, not a copied file's name, nothing a password manager marks, nothing
 /// copied while Passwords, Keychain Access or a chosen application is in
-/// front, and nothing Capacity Notch put there itself — whether it wrote it,
+/// front, and nothing CapaTheNotch put there itself — whether it wrote it,
 /// or someone pressed ⌘C in one of its windows.
 public enum ClipboardText {
-    /// The type Capacity Notch adds to everything it puts on the clipboard,
+    /// The type CapaTheNotch adds to everything it puts on the clipboard,
     /// so that its own copies are never kept.
     public static let ownMarker = "app.capacitynotch.own"
 
@@ -87,7 +87,7 @@ public enum ClipboardText {
     ///   - frontmost: the application in front when it was copied; macOS
     ///     does not say which one wrote it.
     ///   - excluded: the applications chosen in Settings.
-    ///   - ownApplication: Capacity Notch's own identifier.
+    ///   - ownApplication: CapaTheNotch's own identifier.
     public static func isKept(types: [[String]], frontmost: String?, excluded: Set<String>, ownApplication: String?) -> Bool {
         let all = Set(types.flatMap { $0 })
         guard !all.isDisjoint(with: textTypes),

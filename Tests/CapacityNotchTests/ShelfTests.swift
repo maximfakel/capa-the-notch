@@ -75,26 +75,6 @@ private func unwrap<T>(_ value: T?) throws -> T {
 
 // MARK: - The outline with a drop tab
 
-func theDropTabIsPartOfTheSurfacesOwnOutline() throws {
-    let rect = CGRect(x: 0, y: 0, width: 600, height: 300)
-    let strip = CGSize(width: 410, height: 38)
-    let tab = CGSize(width: 184, height: 110)
-    let outline = SurfaceOutline.path(in: rect, size: strip, radius: 22, tab: tab)
-    // y runs down, as SwiftUI draws.
-    try expect(outline.contains(CGPoint(x: 300, y: 20)), "The strip is inside")
-    try expect(outline.contains(CGPoint(x: 300, y: 38 + 100)), "The tab is inside, in the same path")
-    try expect(!outline.contains(CGPoint(x: 300 - 92 - 30, y: 38 + 40)), "Beside the tab, under the strip, is outside")
-    // The inverse corner: the outline curves out from the tab into the strip,
-    // so just outside the tab's side, just under the strip, is filled.
-    try expect(outline.contains(CGPoint(x: 300 - 92 - 3, y: 38 + 1.5)), "The inverse corner fills the angle")
-    try expect(!outline.contains(CGPoint(x: 300 - 92 - 11, y: 38 + 11)), "And is a curve, not a square")
-    try expect(!outline.contains(CGPoint(x: 300 - 92 + 2, y: 38 + 108)), "The tab's own corner is rounded")
-
-    let none = SurfaceOutline.path(in: rect, size: strip, radius: 22, tab: .zero)
-    try expect(!none.contains(CGPoint(x: 300, y: 38 + 20)), "No tab, nothing under the strip")
-    try expect(none.contains(CGPoint(x: 300 - 205 - 2, y: 1)), "The shoulders stay either way")
-}
-
 func theShelfCountsItsFilesAsEachLanguageDoes() throws {
     try expect(Localization.fileCount(1, in: .english) == "1 file", "One file")
     try expect(Localization.fileCount(5, in: .english) == "5 files", "Files")

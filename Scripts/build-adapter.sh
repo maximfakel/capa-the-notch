@@ -53,7 +53,7 @@ cat > "$framework/Versions/A/Resources/Info.plist" <<'PLIST'
 </plist>
 PLIST
 # Ad-hoc, as the adapter's own build signs it. It is loaded by /usr/bin/perl,
-# not by Capacity Notch, so Hardened Runtime is not this signature's to set.
+# not by CapaTheNotch, so Hardened Runtime is not this signature's to set.
 codesign --force --sign - "$framework"
 
 mkdir -p "${test_client:h}"

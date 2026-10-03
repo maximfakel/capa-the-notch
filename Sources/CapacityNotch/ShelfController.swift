@@ -19,19 +19,23 @@ final class ShelfController: ObservableObject {
     @Published private(set) var missing: Set<ShelfItem.ID> = []
     /// Thumbnails of the images on the Shelf, drawn once each.
     @Published private(set) var thumbnails: [ShelfItem.ID: NSImage] = [:]
-    /// A file is being held over the closed notch, so the drop tab shows.
+    /// A file is being carried over the surface: it has opened on the Shelf,
+    /// and the Shelf shows where to drop it.
     @Published var isDropTargeted = false
-    /// A file was just dropped on the closed notch and Kapa is eating it: the
-    /// drop tab stays the length of the gulp, then folds (ADR 0006).
+    /// The file has come near the drop area: its words go, and Kapa grows to
+    /// the dashes to take it (ADR 0006).
+    @Published var isDropNear = false
+    /// A file was just dropped and Kapa is eating it: the drop area stays the
+    /// length of the gulp, then gives way to what the Shelf holds.
     @Published private(set) var isSwallowing = false
     /// When it was dropped, which starts the gulp.
     @Published private(set) var swallowedAt: Date?
 
-    /// The drop tab hangs from the closed strip: a file over it, or one being
+    /// The Shelf shows its drop area: a file carried over it, or one being
     /// eaten.
-    var showsDropTab: Bool { isDropTargeted || isSwallowing }
+    var showsDropArea: Bool { isDropTargeted || isSwallowing }
 
-    /// Holds the drop tab open while Kapa eats what was dropped on it — only
+    /// Holds the drop area while Kapa eats what was dropped on it — only
     /// where Kapa is shown, since without it there is nothing to watch.
     func swallow() {
         guard UserDefaults.standard.object(forKey: KapaPreference.key) as? Bool ?? KapaPreference.defaultValue,
@@ -99,7 +103,7 @@ final class ShelfController: ObservableObject {
     }
 
     /// Its own switch, off by default: what a person copies is the most
-    /// sensitive thing Capacity Notch could keep (ADR 0005). Off, the
+    /// sensitive thing CapaTheNotch could keep (ADR 0005). Off, the
     /// Clippings go at once.
     func setKeepsText(_ keeps: Bool) {
         preferences.shelfKeepsText = keeps
@@ -130,6 +134,7 @@ final class ShelfController: ObservableObject {
     func copy(_ clipping: Clipping) {
         OwnClipboard.copy(clipping.text)
         justCopied = clipping.id
+        Sounds.shared.play(.clippingCopied)
         copiedFade?.cancel()
         copiedFade = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1.2))
@@ -487,6 +492,11 @@ final class SurfacePointer: ObservableObject {
     /// rather than turning the page. Not published: only the panel reads it,
     /// when a swipe begins.
     var scrollableRow: CGRect?
+    /// The Shelf's drop area, in the same coordinates, while it shows: the
+    /// panel reads it to tell when a carried file has come near. Kept here,
+    /// not on the Shelf, because the column is also built off screen to be
+    /// measured, and that copy would report a place nobody sees.
+    var dropArea: CGRect?
 
     static let space = "surface"
 }

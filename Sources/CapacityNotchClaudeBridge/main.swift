@@ -43,7 +43,7 @@ do {
     recordUnreadable("missingRateLimits", from: input)
 } catch {
     recordUnreadable("\(error)", from: input)
-    FileHandle.standardError.write(Data("Capacity Notch bridge: \(error)\n".utf8))
+    FileHandle.standardError.write(Data("CapaTheNotch bridge: \(error)\n".utf8))
 }
 
 let arguments = Array(CommandLine.arguments.dropFirst())
@@ -64,7 +64,7 @@ if arguments.first == "--", arguments.count > 1 {
         process.waitUntilExit()
         exit(process.terminationStatus)
     } catch {
-        FileHandle.standardError.write(Data("Capacity Notch passthrough: \(error)\n".utf8))
+        FileHandle.standardError.write(Data("CapaTheNotch passthrough: \(error)\n".utf8))
         exit(1)
     }
 }

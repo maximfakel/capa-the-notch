@@ -37,7 +37,17 @@ struct ShelfPage: View {
         VStack(alignment: .leading, spacing: 12) {
             header
 
-            if held == 0 {
+            if shelf.showsDropArea {
+                // A file carried over the surface: the Shelf's own zone, in
+                // place of whatever the tab holds, until Kapa has eaten it.
+                ShelfDropArea(
+                    title: L("Drag files here to keep them at hand"),
+                    detail: L("Up to 20 files. The Shelf empties when CapaTheNotch quits."),
+                    near: shelf.isDropNear || shelf.isSwallowing,
+                    swallowedAt: shelf.isSwallowing ? shelf.swallowedAt : nil,
+                    placed: { pointer.dropArea = $0 }
+                )
+            } else if held == 0 {
                 ShelfEmptyZone(title: emptyTitle, detail: emptyDetail)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -94,7 +104,10 @@ struct ShelfPage: View {
         // An empty tab — shown, or just cleared — has no row to scroll.
         .onChange(of: held == 0) { _, empty in if empty { pointer.scrollableRow = nil } }
         .onChange(of: shelf.tab) { _, _ in if held == 0 { pointer.scrollableRow = nil } }
-        .onDisappear { pointer.scrollableRow = nil }
+        .onDisappear {
+            pointer.scrollableRow = nil
+            pointer.dropArea = nil
+        }
         .onChange(of: kept) { before, after in
             guard after > before else { return }
             // Twenty dropped at once land as one: one gulp, held 1.8 seconds
@@ -122,7 +135,7 @@ struct ShelfPage: View {
                 Text(count)
                     .font(SurfaceType.geist(12))
                     .foregroundStyle(SurfaceType.captionColour)
-                if landed {
+                if landed, !shelf.showsDropArea {
                     WithKapa {
                         KapaView(expression: .received, size: 22, isAnimated: isVisible)
                             .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
@@ -186,16 +199,16 @@ struct ShelfPage: View {
     private var emptyDetail: String {
         switch shelf.tab {
         case .files:
-            return L("Up to 20 files. The Shelf empties when Capacity Notch quits.")
+            return L("Up to 20 files. The Shelf empties when CapaTheNotch quits.")
         case .screenshots:
             return shelf.takesClipboardImages
-                ? L("Up to 20. The Shelf empties when Capacity Notch quits.")
+                ? L("Up to 20. The Shelf empties when CapaTheNotch quits.")
                 : L("Turn on “Images and files from the clipboard” in Settings → Modules → Shelf.")
         case .clipboard:
             guard shelf.keepsText else { return L("Turn on text from the clipboard in Settings → Modules → Shelf.") }
             return shelf.clippingsExpire
-                ? L("Up to %d. Each goes after 24 hours, and all when Capacity Notch quits.", shelf.clippingLimit.rawValue)
-                : L("Up to %d. All go when Capacity Notch quits.", shelf.clippingLimit.rawValue)
+                ? L("Up to %d. Each goes after 24 hours, and all when CapaTheNotch quits.", shelf.clippingLimit.rawValue)
+                : L("Up to %d. All go when CapaTheNotch quits.", shelf.clippingLimit.rawValue)
         }
     }
 
@@ -567,43 +580,82 @@ private struct ShelfEmptyZone: View {
     }
 }
 
-/// Paper "Notch — Compact — Dropping on the Shelf": what the drop tab under
-/// the closed strip holds while a file is over it.
-struct ShelfDropZone: View {
-    /// The tab's size, which the outline draws; this fills it.
-    static let tab = CGSize(width: 196, height: 126)
+/// The Shelf's own zone held open for a file being carried over the surface
+/// — Kapa, its line and its detail, as the empty Shelf draws them. As the
+/// file comes near, the words go and Kapa grows to the dashes, eyes on the
+/// file and mouth opening for it, so the eating can be watched; let go, it
+/// eats it there. The whole zone takes the drop — the mouth is not a target.
+struct ShelfDropArea: View {
+    let title: String
+    let detail: String
+    /// The file is near, or being eaten.
+    let near: Bool
     /// When the file was let go, while Kapa is still eating it.
     var swallowedAt: Date?
+    /// Where the zone stands, in the window's coordinates from its top left
+    /// (`SurfacePointer.space`), as the pointer is read.
+    var placed: (CGRect) -> Void = { _ in }
+
+    /// Kapa as the empty Shelf draws it, and close up: as large as the
+    /// dashes allow with a little room inside them.
+    static let restSize: CGFloat = 34
+    static let nearSize: CGFloat = 98
+
+    @AppStorage(KapaPreference.key) private var showsKapa = KapaPreference.defaultValue
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var spot
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Paper "Notch — Compact — Dropping on the Shelf": Kapa opens its
-            // mouth for the file. The whole zone still takes the drop — the
-            // mouth is not a target to hit.
-            // Its eyes follow the file, its mouth opens wider the nearer the
-            // file comes, and the file it is given it eats.
-            WithKapa {
-                KapaView(expression: .dropReady, size: 48, showsBadge: false, swallowedAt: swallowedAt)
-                    .padding(.bottom, -6)
-            } otherwise: {
-                DropGlyph()
-                    .stroke(.white, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 16, height: 16)
+        // Without Kapa there is nothing to grow, and the words stay.
+        let close = near && showsKapa
+        ZStack {
+            VStack(spacing: 6) {
+                // Where Kapa stands at rest, or the drawing's arrow.
+                ZStack {
+                    Color.clear.matchedGeometryEffect(id: "rest", in: spot, properties: .position)
+                    if !showsKapa {
+                        DropGlyph()
+                            .stroke(.white, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                            .frame(width: 22, height: 22)
+                    }
+                }
+                .frame(width: Self.restSize, height: Self.restSize)
+                Text(title)
+                    .font(SurfaceType.geist(15, .medium))
+                    .foregroundStyle(.white)
+                Text(detail)
+                    .font(SurfaceType.geist(11))
+                    .foregroundStyle(SurfaceType.captionColour)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
-            Text(swallowedAt == nil ? L("Release to put it\non the Shelf") : L("On the Shelf"))
-                .font(SurfaceType.geist(11))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
+            .opacity(close ? 0 : 1)
+
+            Color.clear.matchedGeometryEffect(id: "near", in: spot, properties: .position)
+
+            if showsKapa {
+                // Drawn at its close-up size and scaled down at rest, so it
+                // grows without being drawn anew.
+                KapaView(expression: .dropReady, size: Self.nearSize, showsBadge: false, swallowedAt: swallowedAt)
+                    .scaleEffect(close ? 1 : Self.restSize / Self.nearSize)
+                    .matchedGeometryEffect(id: close ? "near" : "rest", in: spot, properties: .position, isSource: false)
+            }
         }
-        .frame(width: 160, height: 100)
+        .frame(maxWidth: .infinity)
+        .frame(height: 108)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color.white.opacity(0xB3 / 255), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
         )
-        .padding(.top, 8)
-        .padding(.horizontal, 18)
-        .padding(.bottom, 18)
-        .frame(width: Self.tab.width, height: Self.tab.height, alignment: .top)
+        .background(
+            GeometryReader { geometry in
+                let frame = geometry.frame(in: .named(SurfacePointer.space))
+                Color.clear
+                    .onAppear { placed(frame) }
+                    .onChange(of: frame) { _, now in placed(now) }
+            }
+        )
+        .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.72), value: close)
         .accessibilityElement(children: .combine)
     }
 }

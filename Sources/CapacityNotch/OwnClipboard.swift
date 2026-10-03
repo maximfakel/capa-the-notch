@@ -1,7 +1,7 @@
 import AppKit
 import CapacityNotchCore
 
-/// Everything Capacity Notch puts on the clipboard goes through here, with a
+/// Everything CapaTheNotch puts on the clipboard goes through here, with a
 /// mark of its own, so the Shelf never keeps it as a Clipping: Dictation's
 /// text, a copied diagnostics report, a Clipping chosen again (ADR 0005).
 enum OwnClipboard {

@@ -8,7 +8,7 @@ import Foundation
 public enum MusicModule {
     /// Under 32 characters, so `Redaction` leaves it in the report.
     public static let unreadableCode = "music-unreadable"
-    public static let unreadableGuidance = "macOS no longer lets Capacity Notch read what's playing."
+    public static let unreadableGuidance = "macOS no longer lets CapaTheNotch read what's playing."
 }
 
 /// A control, as the arguments mediaremote-adapter takes for it: `send` with

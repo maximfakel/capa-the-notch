@@ -308,11 +308,19 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "claudeCodeConsentGiven") }
     }
 
-    /// The person agreed that Capacity Notch reads OpenCode's key from its
+    /// The person agreed that CapaTheNotch reads OpenCode's key from its
     /// own file to ask for its Go plan's usage (ADR 0001, amended).
     public var openCodeConsentGiven: Bool {
         get { defaults.bool(forKey: "openCodeConsentGiven") }
         set { defaults.set(newValue, forKey: "openCodeConsentGiven") }
+    }
+
+    /// Whether moving Claude Code's status-line bridge to the renamed
+    /// application has been settled: offered once and answered, or found to
+    /// have nothing to move. A question re-asked is not consent.
+    public var claudeBridgeMoveSettled: Bool {
+        get { defaults.bool(forKey: "claudeBridgeMoveSettled") }
+        set { defaults.set(newValue, forKey: "claudeBridgeMoveSettled") }
     }
 }
 

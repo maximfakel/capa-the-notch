@@ -70,7 +70,7 @@ func onlyPlainTextCopiedElsewhereAndUnmarkedIsKept() throws {
     try expect(!keeps(["public.utf8-plain-text"], front: "com.apple.Passwords"), "Copied while Passwords is in front")
     try expect(!keeps(["public.utf8-plain-text"], front: "com.apple.keychainaccess"), "or Keychain Access")
     try expect(!keeps(["public.utf8-plain-text"], front: "ru.bank.app", excluded: ["ru.bank.app"]), "or an application chosen in Settings")
-    try expect(!keeps(["public.utf8-plain-text", ClipboardText.ownMarker]), "Never what Capacity Notch put there itself")
+    try expect(!keeps(["public.utf8-plain-text", ClipboardText.ownMarker]), "Never what CapaTheNotch put there itself")
     try expect(
         !keeps(["public.utf8-plain-text"], front: "app.capacitynotch.CapacityNotch"),
         "Nor what is copied with ⌘C in its own windows — Dictation's history, the report"

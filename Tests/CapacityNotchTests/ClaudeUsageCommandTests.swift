@@ -53,7 +53,7 @@ func theUsageReportBecomesQuotaWindows() throws {
 func proseThatNoLongerParsesIsNotAReading() throws {
     try expect(
         ClaudeUsageOutput.reading(from: "Session usage: 24 percent\n", capturedAt: readAt) == nil,
-        "Wording Capacity Notch does not know must produce nothing, never a guess"
+        "Wording CapaTheNotch does not know must produce nothing, never a guess"
     )
     try expect(
         ClaudeUsageOutput.reading(from: "", capturedAt: readAt) == nil,
@@ -76,7 +76,7 @@ func aWindowInWordingNotKnownRefusesTheWholeReport() throws {
 
     try expect(
         ClaudeUsageOutput.reading(from: reworded, capturedAt: readAt) == nil,
-        "A window Capacity Notch cannot name means the report changed; showing the one it still knows would silently drop the other"
+        "A window CapaTheNotch cannot name means the report changed; showing the one it still knows would silently drop the other"
     )
 }
 
@@ -91,7 +91,7 @@ func windowsLeftOutOnPurposeOrNotPrintedAreNotAChangedReport() throws {
     try expect(
         ClaudeUsageOutput.reading(from: withAModelWeek, capturedAt: readAt)?.windows.map(\.id)
             == ["claude-five-hour", "claude-seven-day"],
-        "A per-model week is left out knowingly, and must not read as a report Capacity Notch no longer understands"
+        "A per-model week is left out knowingly, and must not read as a report CapaTheNotch no longer understands"
     )
 
     try expect(

@@ -31,8 +31,12 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     /// The drag pasteboard as it stood while no button was held, so a drag
     /// that starts is told from one that ended long ago.
     private var dragCountAtRest = NSPasteboard(name: .drag).changeCount
-    /// When the button was let go over the drop tab, before the drop arrived.
+    /// When the button was let go during a drop, before the drop arrived.
     private var dragReleasedAt: Date?
+    /// A file being carried over the surface: the page it showed before the
+    /// Shelf took over, whether it was closed then, and whether the file was
+    /// dropped — not dropped, it goes back as it was.
+    private var fileDrop: (page: SurfacePage, opened: Bool, dropped: Bool)?
 
     private static let pointerInterval: TimeInterval = 0.1
     /// A pointer passing over the strip on its way somewhere else has not
@@ -89,23 +93,29 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
 
         super.init(window: panel)
 
-        // Files held over the surface: over the closed strip, or its drop tab
-        // once it shows, or anywhere on the open surface.
+        // Files held over the surface, closed or open: the Shelf takes them.
         container.accepts = { [weak self] point in
             guard let self, self.shelf.isEnabled, let panel = self.window else { return false }
-            // The tab counts whether or not it is still drawn: the drop comes
-            // after the button is let go, and the tab may be folding by then.
-            return self.surfaceRegionContains(panel.convertPoint(toScreen: point), withTab: true)
+            return self.surfaceRegionContains(panel.convertPoint(toScreen: point))
         }
+        // A drag that arrives straight over the surface opens the Shelf as
+        // one carried near it does. Its end is the panel's to settle: the
+        // drop, if there is one, comes after.
         container.targeted = { [weak self] targeted in
-            guard let self, self.shelf.isDropTargeted != targeted else { return }
-            self.shelf.isDropTargeted = targeted
+            if targeted { self?.beginFileDrop() }
         }
         // Kapa watches the file: where it is, in the surface's coordinates.
         container.moved = { [weak host] point in
             KapaDrag.shared.point = point.flatMap { host?.convert($0, from: nil) }
         }
-        container.willDrop = { [weak self] in self?.shelf.swallow() }
+        container.willDrop = { [weak self] in
+            guard let self else { return }
+            self.fileDrop?.dropped = true
+            Sounds.shared.play(.shelfTook)
+            self.shelf.swallow()
+            self.shelf.isDropTargeted = false
+            self.shelf.isDropNear = false
+        }
         container.drop = { [weak self] urls in
             guard let self else { return }
             self.shelf.add(urls)
@@ -204,17 +214,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             self?.pages.setAvailable(SurfacePageOrder.pages(music: music, teleprompter: teleprompter, shelf: shelf))
         }
         .store(in: &observers)
-
-        // A file held over the closed strip grows the drop tab under it.
-        Publishers.CombineLatest(shelf.$isDropTargeted, shelf.$isSwallowing)
-            .map { $0 || $1 }
-            .removeDuplicates()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self, self.store.presentation == .compact else { return }
-                self.positionPanel(for: .compact, animated: true)
-            }
-            .store(in: &observers)
 
         // Open, the page shown decides the height, and a page arriving or
         // going changes the dots.
@@ -615,10 +614,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             try? rep.representation(using: .png, properties: [:])?
                 .write(to: URL(fileURLWithPath: folder).appendingPathComponent(name))
         }
-        func column(pointer: SurfacePointer = SurfacePointer(), dropping: Bool = false, expanded: Bool = true, buttons: Bool = false) -> some View {
+        func column(pointer: SurfacePointer = SurfacePointer(), expanded: Bool = true, buttons: Bool = false) -> some View {
             SurfaceColumn(
                 snapshots: sample, geometry: geometry, now: Date(), isExpanded: expanded,
-                teleprompter: teleprompter, shelf: standIn, pointer: pointer, dropping: dropping,
+                teleprompter: teleprompter, shelf: standIn, pointer: pointer,
                 page: .shelf, controlsShown: buttons, connect: { _ in }, refresh: { _ in }, toggle: {}
             )
         }
@@ -700,22 +699,14 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         onButton.location = CGPoint(x: width / 2 - 13, y: bottom + PageSwitcher.growth - 19)
         picture(column(pointer: onButton, buttons: true), named: "switcher-hover.png")
 
-        // Closed, with a file held over it: the strip and its drop tab.
-        let tab = ShelfDropZone.tab
-        // At its give, as the strip is while a file is held near it.
-        let strip = CGSize(width: geometry.compactWidth() + Self.nearGrowth.width, height: geometry.menuBarHeight + Self.nearGrowth.height)
-        let outline = NotchOutline(size: strip, radius: 22, tab: tab)
-        picture(
-            ZStack(alignment: .top) {
-                Color(white: 0.16)
-                outline.fill(Color.black)
-                column(dropping: true, expanded: false)
-                    .frame(width: width, height: strip.height + tab.height, alignment: .top)
-                    .clipShape(outline)
-            },
-            height: strip.height + tab.height + 20,
-            named: "shelf-dropping.png"
-        )
+        // A file carried over the surface: the Shelf's drop area in place of
+        // its tiles, and close up, with the words gone and Kapa grown.
+        standIn.isDropTargeted = true
+        picture(column(), named: "shelf-dropping.png")
+        standIn.isDropNear = true
+        picture(column(), named: "shelf-dropping-near.png")
+        standIn.isDropNear = false
+        standIn.isDropTargeted = false
         try? FileManager.default.removeItem(at: files)
     }
 
@@ -947,7 +938,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             height: shape.size.height
         )
         let mouse = NSEvent.mouseLocation
-        let overSurface = surfaceRegionContains(mouse, withTab: shelf.isDropTargeted)
+        let overSurface = surfaceRegionContains(mouse)
         if panel.ignoresMouseEvents == overSurface { panel.ignoresMouseEvents = !overSurface }
 
         followPageSwitcher(surface: surface, mouse: mouse)
@@ -969,10 +960,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 width: metrics.geometry.compactWidth(),
                 height: metrics.geometry.menuBarHeight
             )
-        // A file carried towards the closed strip grows the drop tab while
-        // the pointer is still near — as the strip would give a little —
-        // not once it is over the strip: carried any higher, macOS takes the
-        // top edge for its own Spaces bar before the drop can happen.
+        // A file carried towards the closed strip opens the Shelf while the
+        // pointer is still near — not once it is over the strip: carried any
+        // higher, macOS takes the top edge for its own Spaces bar before the
+        // drop can happen. Open, the drop area is well below that edge.
         followFileDrag(near: region, mouse: mouse)
 
         // Closed, the surface grows a little as the pointer comes near it,
@@ -1008,7 +999,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         // A pinned surface was asked for. It waits to be dismissed. With no
         // Provider on it closes like any other: the marks and the way to
         // Settings are there whenever it is opened, without hanging open.
-        guard store.presentation == .expanded, !store.isPinned, !heldOpenForTest else {
+        // Nor while a file is carried over it: the drag decides, in
+        // `followFileDrag`, and a pointer that wanders a little off the
+        // shape on its way to the drop area has not left.
+        guard store.presentation == .expanded, !store.isPinned, !heldOpenForTest, fileDrop == nil else {
             absentTicks = 0
             return
         }
@@ -1071,39 +1065,70 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         return board.changeCount != dragCountAtRest && SurfaceDropView.carriesFiles(board.types ?? [])
     }
 
-    /// Opens the drop tab while a file is carried near the closed strip, and
-    /// keeps it open while the pointer is over the tab it opened.
-    private func followFileDrag(near strip: NSRect, mouse: NSPoint) {
-        guard shelf.isEnabled, store.presentation == .compact, fileDragUnderWay else {
-            // Let go, the drop is delivered a moment later; the tab stays
-            // until then, or the drop lands on a tab that is no longer there.
-            // The drop view closes it when the drag ends; this is the fallback.
-            if shelf.isDropTargeted {
+    /// Opens the Shelf while a file is carried near the closed strip, or over
+    /// the open surface, and lets it go when the file goes elsewhere.
+    private func followFileDrag(near region: NSRect, mouse: NSPoint) {
+        guard shelf.isEnabled, fileDragUnderWay else {
+            // Let go, the drop is delivered a moment later; the Shelf stays
+            // until then, and goes back as it was if none came.
+            if fileDrop != nil {
                 if dragReleasedAt == nil { dragReleasedAt = Date() }
                 if let released = dragReleasedAt, Date().timeIntervalSince(released) > 0.6 {
-                    shelf.isDropTargeted = false
+                    endFileDrop()
                     dragReleasedAt = nil
                 }
             }
             return
         }
         dragReleasedAt = nil
-        let approach = strip.insetBy(dx: -Self.nearDistance, dy: -Self.nearDistance)
-        let tab = ShelfDropZone.tab
-        let hanging = NSRect(
-            x: strip.midX - tab.width / 2 - Self.nearDistance,
-            y: strip.minY - tab.height - Self.nearDistance,
-            width: tab.width + Self.nearDistance * 2,
-            height: tab.height + Self.nearDistance
-        )
-        let wanted = approach.contains(mouse) || (shelf.isDropTargeted && hanging.contains(mouse))
-        if wanted != shelf.isDropTargeted { shelf.isDropTargeted = wanted }
+        let wanted = region.insetBy(dx: -Self.nearDistance, dy: -Self.nearDistance).contains(mouse)
+        if wanted, fileDrop == nil {
+            beginFileDrop()
+        } else if !wanted, fileDrop != nil {
+            endFileDrop()
+        }
+        followDropArea(mouse: mouse)
     }
 
-    /// The shape as it stands, in screen coordinates, with the Shelf's drop
-    /// tab at its full size when asked — measured at the size it is growing
-    /// to, so a pointer moving down into it is not lost while it grows.
-    private func surfaceRegionContains(_ point: NSPoint, withTab: Bool) -> Bool {
+    /// Near the drop area, the area makes room for Kapa to take the file.
+    /// Read from the pointer on the panel's own beat, as hover is, rather
+    /// than from the drag's updates: those stop for a while when the drag
+    /// pauses, and the area went back to its words with the file inside it.
+    private func followDropArea(mouse: NSPoint) {
+        guard let panel = window else { return }
+        let near = fileDrop != nil && shelf.isDropTargeted
+            && (pointer.dropArea?.insetBy(dx: -Self.dropAreaReach, dy: -Self.dropAreaReach)
+                .contains(CGPoint(x: mouse.x - panel.frame.minX, y: panel.frame.maxY - mouse.y)) ?? false)
+        if near != shelf.isDropNear { shelf.isDropNear = near }
+    }
+
+    /// The Shelf, open on its Files, showing where to drop: the closed surface
+    /// opens for it, an open one turns to it.
+    private func beginFileDrop() {
+        guard shelf.isEnabled, fileDrop == nil else { return }
+        fileDrop = (pages.selected, store.presentation == .compact, false)
+        shelf.tab = .files
+        pages.select(.shelf)
+        shelf.isDropTargeted = true
+        if store.presentation == .compact { store.expand() }
+    }
+
+    /// The file went elsewhere, or was let go and dropped: either way the
+    /// drop area goes. Not dropped, the surface goes back as it was — closed
+    /// if the file opened it, on the page it showed.
+    private func endFileDrop() {
+        guard let drop = fileDrop else { return }
+        fileDrop = nil
+        shelf.isDropTargeted = false
+        shelf.isDropNear = false
+        KapaDrag.shared.point = nil
+        guard !drop.dropped else { return }
+        if drop.opened, store.presentation == .expanded, !store.isPinned { store.collapse() }
+        if pages.available.contains(drop.page) { pages.select(drop.page) }
+    }
+
+    /// The shape as it stands, in screen coordinates.
+    private func surfaceRegionContains(_ point: NSPoint) -> Bool {
         guard let panel = window else { return false }
         let top = panel.frame.maxY
         let surface = NSRect(
@@ -1112,15 +1137,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             width: shape.size.width,
             height: shape.size.height
         )
-        if surface.contains(point) { return true }
-        guard withTab, store.presentation == .compact else { return false }
-        let tab = ShelfDropZone.tab
-        return NSRect(
-            x: panel.frame.midX - tab.width / 2,
-            y: top - shape.size.height - tab.height,
-            width: tab.width,
-            height: tab.height
-        ).contains(point)
+        return surface.contains(point)
     }
 
     // MARK: - Pages
@@ -1239,6 +1256,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     /// How close the pointer comes before the closed surface grows, and by
     /// how much ("Screen — 16″ more space — Compact": 410 by 38 to 420 by 42).
     private static let nearDistance: CGFloat = 60
+    /// How close to the drop area a file comes before Kapa makes ready for it.
+    private static let dropAreaReach: CGFloat = 28
     private static let nearGrowth = CGSize(width: 10, height: 4)
 
     private func positionPanel(
@@ -1267,13 +1286,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         case .expanded:
             NSSize(width: openWidth, height: expandedHeight(on: screen, width: openWidth))
         }
-        // A file held over it keeps the strip's give too, the drop tab
-        // hanging from it ("Notch — Compact — Dropping on the Shelf").
-        if presentation == .compact, pointerNear || shelf.showsDropTab {
+        if presentation == .compact, pointerNear {
             size.width += Self.nearGrowth.width
             size.height += Self.nearGrowth.height
         }
-        let tab = presentation == .compact && shelf.showsDropTab ? ShelfDropZone.tab : .zero
         surfaceFrame = Self.frame(of: size, on: screen)
         surfaceFrameChanged?(surfaceFrame)
         let radius: CGFloat = presentation == .expanded ? 38 : 22
@@ -1286,7 +1302,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         // and grows, without animation, only if the content outgrows it.
         let room = NSSize(
             width: max(panel.frame.width, geometry.surfaceWidth() + Self.overshoot * 2),
-            height: max(panel.frame.height, size.height + tab.height + Self.overshoot, Self.minimumRoomHeight)
+            height: max(panel.frame.height, size.height + Self.overshoot, Self.minimumRoomHeight)
         )
         let frame = Self.frame(of: room, on: screen)
         if panel.frame != frame {
@@ -1296,7 +1312,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         guard animated else {
             shape.size = size
             shape.radius = radius
-            shape.tab = tab
             return
         }
 
@@ -1308,7 +1323,6 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         withAnimation(motion) {
             shape.size = size
             shape.radius = radius
-            shape.tab = tab
         }
     }
 

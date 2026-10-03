@@ -52,7 +52,7 @@ done
 binaries="$scratch/release"
 
 stage="$scratch/stage"
-app="$stage/CapacityNotch.app"
+app="$stage/CapaTheNotch.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 install -m 755 "$binaries/CapacityNotch" "$app/Contents/MacOS/CapacityNotch"
 install -m 755 "$binaries/CapacityNotchClaudeBridge" "$app/Contents/MacOS/CapacityNotchClaudeBridge"
@@ -97,7 +97,7 @@ codesign --force --options runtime --sign - \
   -r='designated => identifier "app.capacitynotch.CapacityNotch"' "$app"
 find "$app" -exec touch -h -t "$stamp" {} +
 
-archive="CapacityNotch-$version.zip"
+archive="CapaTheNotch-$version.zip"
 mkdir -p "$dist"
 rm -f "$dist/$archive" "$dist/$archive.sha256"
 # Sorted entries, no extra attributes: zip's own order would follow the file
@@ -105,7 +105,7 @@ rm -f "$dist/$archive" "$dist/$archive.sha256"
 # Symbolic links stored as links (-y): followed, they turned the adapter
 # framework's Versions/Current and Resources into copies and empty folders,
 # and its signature no longer held.
-(cd "$stage" && find CapacityNotch.app | LC_ALL=C sort | zip -X -y -q -@ "$dist/$archive")
+(cd "$stage" && find CapaTheNotch.app | LC_ALL=C sort | zip -X -y -q -@ "$dist/$archive")
 (cd "$dist" && shasum -a 256 "$archive" > "$archive.sha256")
 
 print "$dist/$archive"

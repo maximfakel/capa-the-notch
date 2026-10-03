@@ -9,7 +9,7 @@ import Foundation
 /// output beside its input, and a Bluetooth headset such as the WH-1000XM4
 /// is two devices at two rates — a 16 kHz headset microphone, a 44.1 kHz
 /// stereo output. The engine kept reconfiguring between them with coreaudiod,
-/// holding the main thread until Capacity Notch stopped responding. A queue
+/// holding the main thread until CapaTheNotch stopped responding. A queue
 /// asks for 16 kHz mono itself and never touches the output.
 final class DictationMicrophone: @unchecked Sendable {
     /// What the input was when capture (re)started, for the diagnostic log.

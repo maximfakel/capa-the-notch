@@ -142,7 +142,7 @@ struct NotchRootView: View {
         // which is what made the spring stutter. The window is one size, the
         // open surface's and a little more; around the shape it is
         // transparent and lets the pointer through.
-        let outline = NotchOutline(size: shape.size, radius: shape.radius, tab: shape.tab)
+        let outline = NotchOutline(size: shape.size, radius: shape.radius)
 
         ZStack(alignment: .top) {
             outline.fill(Color.black)
@@ -164,7 +164,6 @@ struct NotchRootView: View {
                     teleprompter: teleprompter,
                     shelf: shelf,
                     pointer: pointer,
-                    dropping: shelf.showsDropTab && store.presentation == .compact,
                     page: pages.selected,
                     travel: pages.travel,
                     controlsShown: pages.controlsShown,
@@ -177,6 +176,7 @@ struct NotchRootView: View {
                     // A click asks for the surface to stay, and a second
                     // one lets it go again.
                     store.togglePin()
+                    Sounds.shared.play(.surfacePinned)
                 }
             }
             // The second way between pages, for VoiceOver: nothing on
@@ -198,25 +198,23 @@ struct NotchRootView: View {
 }
 
 /// The surface's outline (`SurfaceOutline`), centred in whatever the window
-/// is, with the drop tab under it while a file is held over the closed notch.
+/// is.
 struct NotchOutline: Shape {
     var size: CGSize
     var radius: CGFloat
-    var tab: CGSize = .zero
 
-    var animatableData: AnimatablePair<AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
-        get { AnimatablePair(AnimatablePair(AnimatablePair(size.width, size.height), radius), AnimatablePair(tab.width, tab.height)) }
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat> {
+        get { AnimatablePair(AnimatablePair(size.width, size.height), radius) }
         set {
-            size = CGSize(width: newValue.first.first.first, height: newValue.first.first.second)
-            radius = newValue.first.second
-            tab = CGSize(width: newValue.second.first, height: newValue.second.second)
+            size = CGSize(width: newValue.first.first, height: newValue.first.second)
+            radius = newValue.second
         }
     }
 
     static let shoulder = SurfaceOutline.shoulder
 
     func path(in rect: CGRect) -> Path {
-        Path(SurfaceOutline.path(in: rect, size: size, radius: radius, tab: tab))
+        Path(SurfaceOutline.path(in: rect, size: size, radius: radius))
     }
 }
 
@@ -226,9 +224,6 @@ struct NotchOutline: Shape {
 final class SurfaceShape: ObservableObject {
     @Published var size: CGSize = .zero
     @Published var radius: CGFloat = 28
-    /// The Shelf's drop tab under the closed strip; zero when no file is
-    /// held over it.
-    @Published var tab: CGSize = .zero
 }
 
 /// The column on its own, with the height it wants and no filling.
@@ -256,8 +251,6 @@ struct SurfaceColumn: View {
     var shelf: ShelfController? = nil
     /// Where the pointer is, for what lights under it; none while measuring.
     var pointer = SurfacePointer()
-    /// A file is held over the closed strip: the drop tab shows under it.
-    var dropping = false
     var page: SurfacePage = .capacity
     /// A swipe under way, in points; see `SurfacePages.travel`.
     var travel: CGFloat = 0
@@ -303,12 +296,6 @@ struct SurfaceColumn: View {
                         if let playing { CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send) }
                     case .none:
                         EmptyView()
-                    }
-                    // Beneath whatever the strip already shows, in the tab
-                    // the outline grows for it.
-                    // It hangs from the strip at its give, four points lower.
-                    if dropping {
-                        ShelfDropZone(swallowedAt: shelf?.isSwallowing == true ? shelf?.swallowedAt : nil).padding(.top, 4)
                     }
                 }
                 .environment(\.kapaAwake, !isExpanded)

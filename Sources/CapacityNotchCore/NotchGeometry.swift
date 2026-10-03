@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// The shape of the strip Capacity Notch shares with the menu bar.
+/// The shape of the strip CapaTheNotch shares with the menu bar.
 ///
 /// The compact surface belongs to that strip, so it takes its height from the
 /// menu bar rather than from a number chosen by eye, and it keeps its content

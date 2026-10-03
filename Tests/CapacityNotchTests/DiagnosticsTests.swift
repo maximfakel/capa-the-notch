@@ -161,7 +161,7 @@ func theReportSaysWhatAMaintainerNeedsToKnow() throws {
     ).text()
 
     for expected in [
-        "Capacity Notch 0.1.0", "macOS 26.6.2", "generated 2023-11-14",
+        "CapaTheNotch 0.1.0", "macOS 26.6.2", "generated 2023-11-14",
         "codex:", "state fresh", "windows 1", "retries 2",
         "note claude-bridge-snapshot-missing",
     ] {

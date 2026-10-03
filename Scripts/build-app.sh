@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir="${0:A:h}"
 project_root="${script_dir:h}"
-app_bundle="$project_root/.build/CapacityNotch.app"
+app_bundle="$project_root/.build/CapaTheNotch.app"
 
 if [[ -n "${CAPACITY_NOTCH_SDKROOT:-}" ]]; then
   export SDKROOT="$CAPACITY_NOTCH_SDKROOT"

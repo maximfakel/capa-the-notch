@@ -1,7 +1,7 @@
 import CapacityNotchCore
 import Foundation
 
-/// Reads the archive this machine's Capacity Notch actually wrote. Skipped
+/// Reads the archive this machine's CapaTheNotch actually wrote. Skipped
 /// unless CAPACITY_NOTCH_LIVE_ARCHIVE=1.
 func liveArchiveReadsBackWhatTheAppWrote() throws {
     guard ProcessInfo.processInfo.environment["CAPACITY_NOTCH_LIVE_ARCHIVE"] == "1" else {

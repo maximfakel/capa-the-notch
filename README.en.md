@@ -1,12 +1,12 @@
-# Capacity Notch
+# CapaTheNotch
 
 [Русский](README.md) · **English**
 
 Codex, Claude Code and OpenCode limits in the MacBook notch — beside the camera, at a
 glance. Music, a teleprompter and dictation live there too.
 
-**Website:** https://capacitynotch.vercel.app/ ·
-**Download:** [latest release](https://github.com/maximfakel/capacity-notch/releases/latest)
+**Website:** https://capathenotch.tech/ ·
+**Download:** [latest release](https://github.com/maximfakel/capa-the-notch/releases/latest)
 
 A free beta for Apple Silicon Macs running macOS 14 or later.
 
@@ -28,11 +28,11 @@ and Russian.
 
 ## Privacy
 
-- Capacity Notch asks Codex and Claude Code **without their credentials**:
+- CapaTheNotch asks Codex and Claude Code **without their credentials**:
   Codex through Codex's own App Server, Claude Code through its `/usage`
   command.
 - **OpenCode is the one exception.** OpenCode has no way of its own to report
-  its limits, so with your consent Capacity Notch reads your OpenCode Go key
+  its limits, so with your consent CapaTheNotch reads your OpenCode Go key
   from OpenCode's own file and asks opencode.ai only for the plan's usage. The
   key is kept nowhere and sent nowhere else.
 - **Dictation stays on the Mac.** Audio is never saved. A history of
@@ -50,27 +50,33 @@ that is a paid membership this project does not have. So:
   to turn Gatekeeper off, and you should not;
 - **what you allow is kept across updates.**
 
-1. Download `CapacityNotch-<version>.zip` from the
-   [latest release](https://github.com/maximfakel/capacity-notch/releases/latest).
-2. Open the zip and move `CapacityNotch.app` to Applications.
+1. Download `CapaTheNotch-<version>.zip` from the
+   [latest release](https://github.com/maximfakel/capa-the-notch/releases/latest).
+2. Open the zip and move `CapaTheNotch.app` to Applications.
 3. Open it. macOS says it could not verify the application; close that
    message.
 4. Open **System Settings → Privacy & Security**, scroll down, and click
-   **Open Anyway** beside Capacity Notch. When the warning comes back, click
+   **Open Anyway** beside CapaTheNotch. When the warning comes back, click
    **Open**.
 
 **Updating.** Choose **Check for Updates…** in Settings → General; it opens
-the latest release on GitHub. Capacity Notch never checks on its own. Quit the
+the latest release on GitHub. CapaTheNotch never checks on its own. Quit the
 running copy and repeat the steps above with the new zip — step 4 likely
 again.
+
+**Coming from Capacity Notch 0.3.0 or earlier.** The application is now
+`CapaTheNotch.app`; delete `CapacityNotch.app` from Applications. What you
+allowed is kept. If Claude Code's status line runs the bridge from
+`CapacityNotch.app`, CapaTheNotch offers on its first launch to point that
+path at itself — and opens `~/.claude/settings.json` only after you say yes.
 
 ## Connecting
 
 **Codex.** Sign in with `codex login` and turn on Codex in Settings →
-Providers. Capacity Notch starts its own `codex app-server` and reads the
+Providers. CapaTheNotch starts its own `codex app-server` and reads the
 limits from it.
 
-**Claude Code.** Turn on Claude Code in Settings → Providers. Capacity Notch
+**Claude Code.** Turn on Claude Code in Settings → Providers. CapaTheNotch
 asks `claude /usage` at most once every five minutes — a local command that
 sends nothing to the model. It works wherever you work: a terminal, the
 desktop app, VS Code.
@@ -82,7 +88,7 @@ limits at once. Add this to `~/.claude/settings.json`:
 {
   "statusLine": {
     "type": "command",
-    "command": "/Applications/CapacityNotch.app/Contents/MacOS/CapacityNotchClaudeBridge",
+    "command": "/Applications/CapaTheNotch.app/Contents/MacOS/CapacityNotchClaudeBridge",
     "refreshInterval": 60
   }
 }
@@ -94,7 +100,7 @@ If you already have a status line, pass it after `--` and it keeps working:
 {
   "statusLine": {
     "type": "command",
-    "command": "/Applications/CapacityNotch.app/Contents/MacOS/CapacityNotchClaudeBridge -- /Users/you/.claude/statusline.sh",
+    "command": "/Applications/CapaTheNotch.app/Contents/MacOS/CapacityNotchClaudeBridge -- /Users/you/.claude/statusline.sh",
     "refreshInterval": 60
   }
 }
@@ -106,7 +112,7 @@ discards everything else. See
 
 **OpenCode.** You need an OpenCode Go or Go Plus subscription. Sign in with
 `opencode auth login` and turn on OpenCode in Settings → Providers. Every five
-minutes, and when you refresh, Capacity Notch takes the key from
+minutes, and when you refresh, CapaTheNotch takes the key from
 `~/.local/share/opencode/auth.json` and asks `opencode.ai` for the five-hour
 and weekly windows. The monthly window is not drawn, but when it is used up
 the card says so in red.
@@ -119,8 +125,8 @@ Apple Silicon, macOS 14+, Xcode with the Metal Toolchain, and Swift 6.
 
 ```sh
 swift run CapacityNotchTests      # checks
-./Scripts/build-app.sh            # .build/CapacityNotch.app, ad-hoc signed
-./Scripts/build-release.sh        # dist/CapacityNotch-<version>.zip
+./Scripts/build-app.sh            # .build/CapaTheNotch.app, ad-hoc signed
+./Scripts/build-release.sh        # dist/CapaTheNotch-<version>.zip
 ```
 
 The release archive is reproducible: the same commit and Swift toolchain give
@@ -132,5 +138,5 @@ than `@State`, whose macro plugin ships inside Xcode.
 MIT. Third-party parts — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, the Geist
 font, the OpenCode logo — are credited in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Capacity Notch is not affiliated with, or made by, OpenAI, Anthropic or the
+CapaTheNotch is not affiliated with, or made by, OpenAI, Anthropic or the
 OpenCode team.

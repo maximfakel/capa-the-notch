@@ -8,8 +8,8 @@ import Foundation
 /// quietly stopped moving.
 public enum ClaudeUsageOutput {
     /// Turns the printed report into a reading, or nothing when no line in it
-    /// is one of the windows Capacity Notch shows — or when one of its windows
-    /// is worded in a way Capacity Notch does not know. That is what a changed
+    /// is one of the windows CapaTheNotch shows — or when one of its windows
+    /// is worded in a way CapaTheNotch does not know. That is what a changed
     /// report looks like, and reading only the lines still recognised would
     /// drop a window without a word.
     public static func reading(
@@ -70,7 +70,7 @@ public enum ClaudeUsageOutput {
     }
 
     /// A line with a window's form — a name, a colon, a percentage used — that
-    /// is neither a window Capacity Notch shows nor one it knowingly leaves out.
+    /// is neither a window CapaTheNotch shows nor one it knowingly leaves out.
     private static func isUnknownWindow(_ line: String) -> Bool {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         guard

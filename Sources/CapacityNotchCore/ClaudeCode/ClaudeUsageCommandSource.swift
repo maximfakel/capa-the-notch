@@ -9,7 +9,7 @@ public enum ClaudeUsageCommandError: Error, Equatable, Sendable {
 /// Asks Claude Code for its own usage.
 ///
 /// `/usage` is a local command: it sends no prompt to the model. Claude Code
-/// makes the request with the credential it already holds, so Capacity Notch
+/// makes the request with the credential it already holds, so CapaTheNotch
 /// reads no credential and speaks to nothing but the binary. This is the only
 /// source that does not depend on where the person works, because Capacity
 /// Notch runs it rather than waiting to be handed something.
@@ -70,7 +70,7 @@ public struct ClaudeUsageCommandSource: ClaudeCapacitySource, Sendable {
         return reading
     }
 
-    /// Somewhere of Capacity Notch's own for Claude Code to be run from.
+    /// Somewhere of CapaTheNotch's own for Claude Code to be run from.
     private static func scratchDirectory() -> URL {
         let directory = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Application Support/CapacityNotch", isDirectory: true)
@@ -88,7 +88,7 @@ public struct ClaudeUsageCommandSource: ClaudeCapacitySource, Sendable {
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         // A working directory of its own. Without one the child inherits
-        // Capacity Notch's, and Claude Code reaches around whatever directory
+        // CapaTheNotch's, and Claude Code reaches around whatever directory
         // it is started in — which is how a Capacity reading came to ask macOS
         // for the Documents folder. One fixed directory also means Claude Code
         // keys at most one project folder on it, rather than a fresh one per

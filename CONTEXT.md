@@ -1,4 +1,4 @@
-# Capacity Notch
+# CapaTheNotch
 
 A glanceable macOS surface in the notch that hosts Modules — built-in features, off until asked for. The first, the Capacity Module, keeps AI-service Capacity visible and reveals detailed usage on demand. It is initially designed for its creator and a small group of developers.
 
@@ -6,8 +6,11 @@ A glanceable macOS surface in the notch that hosts Modules — built-in features
 
 ### The surface
 
-**Capacity Notch**:
-The application.
+**CapaTheNotch**:
+The application, CapaTheNotch.app, shipped as CapaTheNotch-<version>.zip. Called Capacity Notch,
+and CapacityNotch.app, until 3 October 2026 (0.3.0); its identifiers, bundle identifier, binaries
+(CapacityNotchClaudeBridge among them) and Application Support folder keep the old name.
+_Avoid_: Capacity Notch
 
 **Notch Surface**:
 The persistent top-of-screen surface in the notch: a compact strip while idle, expandable to show a Module in full.
@@ -18,7 +21,7 @@ One built-in feature the Notch Surface hosts. Every Module except the Capacity M
 _Avoid_: Plugin, widget, extension
 
 **Capacity Module**:
-The Module that shows AI-service Capacity; the one Capacity Notch started as. The terms under Capacity are its language.
+The Module that shows AI-service Capacity; the one CapaTheNotch started as. The terms under Capacity are its language.
 
 **Kapa**:
 The surface's one character: a cyan bell whose face says what the Module it stands in already says — calm, worried, listening, pleased. Part of how Modules look, never a Module itself, and never in the compact strip (ADR 0006).
@@ -68,7 +71,7 @@ _Avoid_: Snippet (read as something saved on purpose), clip, entry
 ### Capacity
 
 **Provider**:
-An AI service whose capacity information is presented by Capacity Notch.
+An AI service whose capacity information is presented by CapaTheNotch.
 _Avoid_: Vendor, integration
 
 **Capacity**:

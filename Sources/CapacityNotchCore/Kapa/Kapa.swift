@@ -336,3 +336,11 @@ public enum KapaPreference {
     public static let defaultValue = true
 }
 
+/// Whether CapaTheNotch plays its sounds (ADR 0007): on, with one switch to
+/// turn them off, as Kapa has.
+public enum SoundPreference {
+    public static let key = "playsSounds"
+    public static let defaultValue = true
+    public static var isOn: Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? defaultValue }
+}
+

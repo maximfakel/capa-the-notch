@@ -1,12 +1,12 @@
-# Capacity Notch
+# CapaTheNotch
 
 **Русский** · [English](README.en.md)
 
 Лимиты Codex, Claude Code и OpenCode в шторке MacBook — рядом с камерой, одним
 взглядом. Там же музыка, телесуфлёр и диктовка.
 
-**Сайт:** https://capacitynotch.vercel.app/ ·
-**Скачать:** [последний выпуск](https://github.com/maximfakel/capacity-notch/releases/latest)
+**Сайт:** https://capathenotch.tech/ ·
+**Скачать:** [последний выпуск](https://github.com/maximfakel/capa-the-notch/releases/latest)
 
 Бесплатная бета для Mac на Apple Silicon с macOS 14 или новее.
 
@@ -28,11 +28,11 @@
 
 ## Приватность
 
-- Codex и Claude Code Capacity Notch спрашивает **без их учётных данных**:
+- Codex и Claude Code CapaTheNotch спрашивает **без их учётных данных**:
   Codex — через его собственный App Server, Claude Code — через его команду
   `/usage`.
 - **OpenCode — единственное исключение.** Своего способа отдать лимиты у
-  OpenCode нет, поэтому Capacity Notch с вашего согласия читает ключ OpenCode
+  OpenCode нет, поэтому CapaTheNotch с вашего согласия читает ключ OpenCode
   Go из файла самого OpenCode и спрашивает у opencode.ai только расход плана.
   Ключ нигде не хранится и больше никуда не отправляется.
 - **Диктовка не уходит с Mac.** Аудио не сохраняется. История распознанного
@@ -50,24 +50,30 @@
   Gatekeeper не нужно и не стоит;
 - **разрешения сохраняются между обновлениями.**
 
-1. Скачайте `CapacityNotch-<версия>.zip` из
-   [последнего выпуска](https://github.com/maximfakel/capacity-notch/releases/latest).
-2. Откройте архив и перенесите `CapacityNotch.app` в «Программы».
+1. Скачайте `CapaTheNotch-<версия>.zip` из
+   [последнего выпуска](https://github.com/maximfakel/capa-the-notch/releases/latest).
+2. Откройте архив и перенесите `CapaTheNotch.app` в «Программы».
 3. Откройте его. macOS скажет, что не может проверить приложение, — закройте
    это сообщение.
 4. Откройте **Системные настройки → Конфиденциальность и безопасность**,
-   прокрутите вниз и нажмите **Всё равно открыть** рядом с Capacity Notch.
+   прокрутите вниз и нажмите **Всё равно открыть** рядом с CapaTheNotch.
    Когда предупреждение появится снова, нажмите **Открыть**.
 
 **Обновление.** В Настройках → Основные нажмите **Проверить обновления…** —
-откроется последний выпуск на GitHub. Сам Capacity Notch ничего не проверяет.
+откроется последний выпуск на GitHub. Сам CapaTheNotch ничего не проверяет.
 Закройте запущенную копию и повторите шаги выше с новым архивом; шаг 4,
 скорее всего, понадобится снова.
+
+**Если у вас Capacity Notch 0.3.0 или старше.** Приложение теперь называется
+`CapaTheNotch.app`; `CapacityNotch.app` из «Программ» удалите. Разрешения
+сохранятся. Если строка состояния Claude Code запускает мост из
+`CapacityNotch.app`, при первом запуске CapaTheNotch предложит перенести этот
+путь на себя — и только после вашего «да» откроет `~/.claude/settings.json`.
 
 ## Подключение
 
 **Codex.** Войдите через `codex login` и включите Codex в Настройках →
-Провайдеры. Capacity Notch запустит свой `codex app-server` и будет читать
+Провайдеры. CapaTheNotch запустит свой `codex app-server` и будет читать
 лимиты из него.
 
 **Claude Code.** Включите Claude Code в Настройках → Провайдеры. Capacity
@@ -82,7 +88,7 @@ Notch раз в пять минут спрашивает `claude /usage` — л�
 {
   "statusLine": {
     "type": "command",
-    "command": "/Applications/CapacityNotch.app/Contents/MacOS/CapacityNotchClaudeBridge",
+    "command": "/Applications/CapaTheNotch.app/Contents/MacOS/CapacityNotchClaudeBridge",
     "refreshInterval": 60
   }
 }
@@ -95,7 +101,7 @@ Notch раз в пять минут спрашивает `claude /usage` — л�
 {
   "statusLine": {
     "type": "command",
-    "command": "/Applications/CapacityNotch.app/Contents/MacOS/CapacityNotchClaudeBridge -- /Users/you/.claude/statusline.sh",
+    "command": "/Applications/CapaTheNotch.app/Contents/MacOS/CapacityNotchClaudeBridge -- /Users/you/.claude/statusline.sh",
     "refreshInterval": 60
   }
 }
@@ -120,8 +126,8 @@ Notch раз в пять минут и при обновлении берёт к
 
 ```sh
 swift run CapacityNotchTests      # проверки
-./Scripts/build-app.sh            # .build/CapacityNotch.app с подписью ad-hoc
-./Scripts/build-release.sh        # dist/CapacityNotch-<версия>.zip
+./Scripts/build-app.sh            # .build/CapaTheNotch.app с подписью ad-hoc
+./Scripts/build-release.sh        # dist/CapaTheNotch-<версия>.zip
 ```
 
 Архив выпуска воспроизводим: из того же коммита тем же Swift получаются те же
@@ -133,5 +139,5 @@ swift run CapacityNotchTests      # проверки
 MIT. Сторонние компоненты — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, шрифт
 Geist, логотип OpenCode — перечислены в [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Capacity Notch не связан с OpenAI, Anthropic и командой OpenCode и не
+CapaTheNotch не связан с OpenAI, Anthropic и командой OpenCode и не
 создан ими.

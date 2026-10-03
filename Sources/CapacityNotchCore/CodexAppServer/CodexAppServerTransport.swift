@@ -54,7 +54,7 @@ public final class CodexProcessTransport: CodexAppServerTransport, @unchecked Se
         process.standardInput = inbound
         process.standardOutput = outbound
         // Codex logs to stderr. It is discarded unless the person running
-        // Capacity Notch asks for it by naming a file, so nothing Codex says
+        // CapaTheNotch asks for it by naming a file, so nothing Codex says
         // is stored behind their back.
         process.standardError = Self.log(at: logURL) ?? FileHandle.nullDevice
 

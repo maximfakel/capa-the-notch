@@ -5,7 +5,7 @@ import UserNotifications
 /// Puts a Capacity Alert in front of the person, and brings them back to the
 /// window it was about.
 ///
-/// Permission is asked for in onboarding, with everything else Capacity Notch
+/// Permission is asked for in onboarding, with everything else CapaTheNotch
 /// needs, or at the moment someone switches alerts on — never at launch.
 @MainActor
 final class CapacityNotifications: NSObject, UNUserNotificationCenterDelegate {
@@ -41,6 +41,8 @@ final class CapacityNotifications: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func send(_ alert: CapacityAlert) {
+        // The banner itself is silent; the alert's sound is CapaTheNotch's own.
+        Sounds.shared.play(.capacityAlert)
         let content = UNMutableNotificationContent()
         content.title = alert.title
         content.body = alert.body

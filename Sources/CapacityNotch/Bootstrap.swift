@@ -27,7 +27,7 @@ struct CapacityNotchApplication: App {
 
             Divider()
 
-            Button(word("Quit Capacity Notch")) {
+            Button(word("Quit CapaTheNotch")) {
                 appDelegate.quit()
             }
             .keyboardShortcut("q")
@@ -35,7 +35,7 @@ struct CapacityNotchApplication: App {
             // Kapa's silhouette, drawn as a template so macOS gives it the
             // menu bar's own colour in light and dark.
             Image(nsImage: MenuBarIcon.image)
-                .accessibilityLabel("Capacity Notch")
+                .accessibilityLabel("CapaTheNotch")
         }
         .menuBarExtraStyle(.menu)
     }

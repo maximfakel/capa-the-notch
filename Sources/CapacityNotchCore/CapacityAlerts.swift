@@ -27,6 +27,8 @@ public struct CapacityAlertDecider: Sendable {
     private struct Spoken: Equatable {
         var wasCritical: Bool
         var alertedForResetAt: Date?
+        /// An alert was actually sent, not only decided while alerts were off.
+        var alerted = false
     }
 
     /// Which window: a window id is only unique within its Provider.
@@ -36,6 +38,10 @@ public struct CapacityAlertDecider: Sendable {
     }
 
     private var history: [WindowKey: Spoken] = [:]
+
+    /// The windows the last reading found recovered after an alert was sent
+    /// about them: the good news after the bad (ADR 0007).
+    public private(set) var recovered: [(provider: Provider, windowID: String)] = []
 
     public init() {}
 
@@ -50,6 +56,7 @@ public struct CapacityAlertDecider: Sendable {
     ) -> [CapacityAlert] {
         // Only a Fresh reading may speak. A Stale one is describing the past,
         // a disconnected one knows nothing, and neither is news.
+        recovered = []
         guard snapshot.connectionState == .fresh else { return [] }
 
         var raised: [CapacityAlert] = []
@@ -63,6 +70,8 @@ public struct CapacityAlertDecider: Sendable {
 
             guard isCritical else {
                 // Recovered. The next fall is news again.
+                if spoken.wasCritical, spoken.alerted { recovered.append((snapshot.provider, window.id)) }
+                spoken.alerted = false
                 spoken.wasCritical = false
                 spoken.alertedForResetAt = nil
                 continue
@@ -84,6 +93,7 @@ public struct CapacityAlertDecider: Sendable {
             // while they were off.
             guard isEnabled(snapshot.provider) else { continue }
 
+            spoken.alerted = true
             raised.append(
                 CapacityAlert(
                     provider: snapshot.provider,

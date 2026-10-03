@@ -79,7 +79,7 @@ final class FakeAppServerTransport: CodexAppServerTransport, @unchecked Sendable
     }
 }
 
-/// Canned App Server replies for the handshake Capacity Notch performs.
+/// Canned App Server replies for the handshake CapaTheNotch performs.
 enum FakeAppServerScript {
     static func initializeResult(id: Int) -> String {
         #"{"id":\#(id),"result":{"userAgent":{"name":"codex","version":"0.115.0"}}}"#

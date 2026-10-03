@@ -168,7 +168,12 @@ enum KapaPictures {
         let teleprompter = TeleprompterController(preferences: demo, registersShortcuts: false)
         let places: [(String, CGSize, AnyView)] = [
             ("place-teleprompter.png", CGSize(width: 560, height: 152), AnyView(TeleprompterPage(teleprompter: teleprompter))),
-            ("place-drop.png", ShelfDropZone.tab, AnyView(ShelfDropZone(swallowedAt: nil))),
+            ("place-drop.png", CGSize(width: 524, height: 108), AnyView(ShelfDropArea(
+                title: L("Drag files here to keep them at hand"),
+                detail: L("Up to 20 files. The Shelf empties when CapaTheNotch quits."), near: false))),
+            ("place-drop-near.png", CGSize(width: 524, height: 108), AnyView(ShelfDropArea(
+                title: L("Drag files here to keep them at hand"),
+                detail: L("Up to 20 files. The Shelf empties when CapaTheNotch quits."), near: true))),
             ("place-cards.png", CGSize(width: 560, height: 152), AnyView(DetailCapacityView(snapshots: [low, fine], now: now, connect: { _ in }, refresh: { _ in }))),
             ("place-nothing-connected.png", CGSize(width: 560, height: 152), AnyView(DetailCapacityView(snapshots: UnreadCapacity.snapshots(), now: now, connect: { _ in }, refresh: { _ in }))),
             ("place-music-row.png", CGSize(width: 410, height: MusicType.rowHeight), AnyView(CompactMusicRow(track: track, width: 410, send: { _ in }))),

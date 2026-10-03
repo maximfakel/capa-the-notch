@@ -1,8 +1,8 @@
 import Foundation
 
-/// The subset of the Codex App Server protocol that Capacity Notch speaks.
+/// The subset of the Codex App Server protocol that CapaTheNotch speaks.
 ///
-/// Capacity Notch only reads. It never calls a login, logout, or token method,
+/// CapaTheNotch only reads. It never calls a login, logout, or token method,
 /// so it cannot copy, persist, or refresh Codex credentials even by accident.
 public enum CodexAppServerMethod {
     public static let initialize = "initialize"
@@ -12,7 +12,7 @@ public enum CodexAppServerMethod {
     public static let rateLimitsUpdated = "account/rateLimits/updated"
 
     /// Every method this client is allowed to send. Anything outside this list
-    /// would move Capacity Notch beyond reading Capacity.
+    /// would move CapaTheNotch beyond reading Capacity.
     public static let permittedOutbound: Set<String> = [
         initialize,
         initialized,
@@ -35,7 +35,7 @@ public struct CodexClientInfo: Sendable {
     }
 }
 
-/// `GetAccountResponse` — only the fields Capacity Notch needs.
+/// `GetAccountResponse` — only the fields CapaTheNotch needs.
 ///
 /// `requiresOpenaiAuth` is decoded though nothing reads it, because it is the
 /// one field the App Server's own schema requires. `account` may be absent
@@ -75,7 +75,7 @@ public struct CodexRateLimitSnapshot: Decodable, Equatable, Sendable {
     }
 }
 
-/// `GetAccountRateLimitsResponse` — the single-bucket view Capacity Notch reads.
+/// `GetAccountRateLimitsResponse` — the single-bucket view CapaTheNotch reads.
 public struct CodexRateLimitsResponse: Decodable, Equatable, Sendable {
     public let rateLimits: CodexRateLimitSnapshot
 }

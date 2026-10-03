@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Capacity Notch includes the following third-party code and assets: Murmur (MIT), mediaremote-adapter (BSD 3-Clause), sherpa-onnx (Apache-2.0), ONNX Runtime (MIT) and the Geist typeface (SIL Open Font License 1.1) and the OpenCode logo (MIT). The optional GigaAM model (MIT) is downloaded separately. No GPL-licensed implementation code is included.
+CapaTheNotch includes the following third-party code and assets: Murmur (MIT), mediaremote-adapter (BSD 3-Clause), sherpa-onnx (Apache-2.0), ONNX Runtime (MIT), the Geist typeface (SIL Open Font License 1.1), the OpenCode logo (MIT), and sound recipes and a sound player adapted from procedural-sounds, @web-kits/audio and cuelume (MIT). The optional GigaAM model (MIT) is downloaded separately. No GPL-licensed implementation code is included.
 
 ## Murmur
 
@@ -24,12 +24,50 @@ as poses at a time; and a pointer left resting drawing a pleased reaction. The
 code is written afresh; no Coucou code, character, name, artwork or sound is
 included. Its character and sounds are all rights reserved by their author.
 
+## procedural-sounds, @web-kits/audio and cuelume (sounds)
+
+CapaTheNotch's five sounds (ADR 0007) are recipes chosen in procedural-sounds,
+https://github.com/m1ckc3s/procedural-sounds at commit
+`bab3f31d0132972bec64b0856e72f09cb295ab3f` (MIT, Copyright (c) 2026 Mick
+Cesanek), exported as it exports them and kept as exported in
+`Sources/CapacityNotchCore/Sound/SoundRecipes.swift`. `SoundSynth` and
+`SoundFile` render them as its player and WAV export do (`lib/audio/synth.ts`,
+`effects.ts`, `export/wav.ts`), translated to Swift and trimmed to what those
+recipes use. That player is in turn adapted from @web-kits/audio,
+https://github.com/raphaelsalaja/audio at commit
+`3a9fe941c589d26d3487db17f5183eb9cecf3258` (MIT, Copyright (c) 2026 Raphael
+Salaja) — the oscillator, noise, envelope and filter paths — and its echo from
+cuelume, https://github.com/Danilaa1/cuelume v0.1.0 (MIT, Copyright (c) 2026
+Daniel Belyi). Each project is under this licence:
+
+```
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## OpenCode logo
 
 OpenCode's mark, from `packages/console/app/src/asset/brand/opencode-logo-dark.svg`
 in https://github.com/anomalyco/opencode (MIT, Copyright (c) 2025 opencode),
 drawn from its own geometry in one colour to label OpenCode as a Provider.
-Capacity Notch is not affiliated with the OpenCode team.
+CapaTheNotch is not affiliated with the OpenCode team.
 
 ## Geist
 

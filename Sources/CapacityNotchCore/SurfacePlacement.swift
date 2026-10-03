@@ -1,6 +1,6 @@
 import Foundation
 
-/// One display Capacity Notch could sit on.
+/// One display CapaTheNotch could sit on.
 public struct DisplayDescriptor: Equatable, Sendable, Identifiable {
     public let id: UInt32
     public let name: String

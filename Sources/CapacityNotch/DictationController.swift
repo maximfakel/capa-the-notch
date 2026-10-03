@@ -107,7 +107,7 @@ final class DictationController: ObservableObject {
         }
     }
     /// macOS's own question, which it asks only once; onboarding asks it
-    /// before Dictation is on, with the rest of what Capacity Notch needs.
+    /// before Dictation is on, with the rest of what CapaTheNotch needs.
     func askForMicrophone() async {
         DiagnosticLog.record(.microphoneRequested(Self.microphoneStatus))
         microphoneAllowed = await AVCaptureDevice.requestAccess(for: .audio)
@@ -153,6 +153,7 @@ final class DictationController: ObservableObject {
                 try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
                 try Task.checkCancellation()
                 modelReady = true
+                Sounds.shared.play(.dictationModelReady)
                 DiagnosticLog.record(.dictationModelInstalled)
             } catch is CancellationError {
                 DiagnosticLog.record(.dictationDownloadCancelled)
@@ -195,7 +196,7 @@ final class DictationController: ObservableObject {
         guard isEnabled, session.phase == .idle else { return }
         refreshPermissions()
         guard modelReady else { DiagnosticLog.record(.recordingRefused(reason: "model-missing")); fail("Download the speech model in Dictation settings before recording."); return }
-        guard microphoneAllowed else { DiagnosticLog.record(.recordingRefused(reason: "mic-\(Self.microphoneStatus.rawValue)")); fail("Microphone access is required. Allow Capacity Notch in System Settings → Privacy & Security → Microphone."); return }
+        guard microphoneAllowed else { DiagnosticLog.record(.recordingRefused(reason: "mic-\(Self.microphoneStatus.rawValue)")); fail("Microphone access is required. Allow CapaTheNotch in System Settings → Privacy & Security → Microphone."); return }
         guard let id = session.begin() else { return }
         sessionReplacements = replacements
         dismiss?.cancel(); target = DictationDelivery.capture(); error = nil; deliveryMessage = nil; remaining = 60
@@ -243,6 +244,7 @@ final class DictationController: ObservableObject {
                 let delivery = target; target = nil
                 deliveryMessage = await delivery?.insert(result) ?? DictationDelivery.lastCaptureFailure ?? "No external application was captured when recording began."
                 presentation = deliveryMessage == nil ? .inserted : .copied
+                Sounds.shared.play(deliveryMessage == nil ? .dictationInserted : .dictationCopied)
                 DiagnosticLog.record(.delivered(inserted: deliveryMessage == nil))
                 hotKey?.captureEscape(false)
                 history.append(result, enabled: keepsHistory); preferences.dictationHistory = history
@@ -269,6 +271,7 @@ final class DictationController: ObservableObject {
         // An earlier error's timer would hide this one early.
         dismiss?.cancel(); dismiss = nil
         target = nil; error = message; presentation = .error; hotKey?.captureEscape(true)
+        Sounds.shared.play(.dictationFailed)
         guard let delay else { return }
         dismiss = Task { [weak self] in
             do { try await Task.sleep(for: delay) } catch { return }

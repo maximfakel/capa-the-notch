@@ -131,7 +131,7 @@ private struct ShelfCard: View {
         SettingsCard {
             ModuleHeader(module: .shelf, expanded: expanded, expand: expand, isOn: Binding(get: { shelf.isEnabled }, set: { shelf.setEnabled($0) }))
             if expanded {
-                Text(L("Files dropped on the notch stay at hand until you drag them away or Capacity Notch quits. Only a reference is kept; nothing is copied."))
+                Text(L("Files dropped on the notch stay at hand until you drag them away or CapaTheNotch quits. Only a reference is kept; nothing is copied."))
                     .font(SettingsType.caption).foregroundStyle(SettingsPalette.muted)
                     .fixedSize(horizontal: false, vertical: true).padding(.leading, 54).padding(.trailing, 10).padding(.bottom, 10)
                 if shelf.isEnabled {
@@ -149,7 +149,7 @@ private struct ShelfCard: View {
                             .toggleStyle(SettingsSwitchStyle(standsAlone: true))
                     }
                     if shelf.screenshotFolderRefused {
-                        Text(L("macOS does not let Capacity Notch read the folder screenshots are saved to. Allow it in System Settings → Privacy & Security → Files & Folders. Screenshots you copy still arrive."))
+                        Text(L("macOS does not let CapaTheNotch read the folder screenshots are saved to. Allow it in System Settings → Privacy & Security → Files & Folders. Screenshots you copy still arrive."))
                             .font(SettingsType.caption).foregroundStyle(SettingsPalette.destructive)
                             .fixedSize(horizontal: false, vertical: true).padding(.leading, 54).padding(.trailing, 10).padding(.bottom, 10)
                     }
@@ -170,7 +170,7 @@ private struct ShelfCard: View {
                         ClippingSettings(shelf: shelf)
                     }
                     if shelf.clipboardRefused {
-                        Text(L("macOS does not let Capacity Notch read the clipboard. Allow it in System Settings → Privacy & Security."))
+                        Text(L("macOS does not let CapaTheNotch read the clipboard. Allow it in System Settings → Privacy & Security."))
                             .font(SettingsType.caption).foregroundStyle(SettingsPalette.destructive)
                             .fixedSize(horizontal: false, vertical: true).padding(.leading, 54).padding(.trailing, 10).padding(.bottom, 10)
                     }

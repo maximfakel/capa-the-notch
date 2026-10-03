@@ -3,7 +3,7 @@ import AppKit
 import AVFoundation
 import UserNotifications
 
-/// Everything Capacity Notch asks macOS for, asked for together in
+/// Everything CapaTheNotch asks macOS for, asked for together in
 /// onboarding so nothing interrupts work later: notifications for Capacity
 /// Alerts, the microphone for Dictation, Accessibility to insert its text,
 /// and System Events for the paste Dictation falls back on.
@@ -161,7 +161,7 @@ final class SystemAccess: ObservableObject {
         watching = nil
     }
 
-    /// Whether Capacity Notch may send System Events its paste. Asking needs
+    /// Whether CapaTheNotch may send System Events its paste. Asking needs
     /// System Events running; without asking, a System Events that is not
     /// running cannot say, and is treated as not asked — asking then launches
     /// it and, when access was already given, returns without a prompt.

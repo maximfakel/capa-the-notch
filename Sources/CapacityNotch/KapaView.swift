@@ -77,9 +77,13 @@ struct KapaView: View {
         .onTapGesture {
             guard isTappable else { return }
             engine.boop()
+            Sounds.shared.play(.kapaTapped)
             nudge += 1
         }
         .allowsHitTesting(running)
+        // Hello, heard once a launch: when Kapa first waves where it is seen.
+        .onAppear { if running { sayHello() } }
+        .onChange(of: running) { _, now in if now { sayHello() } }
         .background(
             GeometryReader { geometry in
                 let frame = geometry.frame(in: .global)
@@ -90,6 +94,14 @@ struct KapaView: View {
         )
         // Decorative: what Kapa shows, the surface already says in words.
         .accessibilityHidden(true)
+    }
+
+    @MainActor private static var greeted = false
+
+    private func sayHello() {
+        guard expression == .hello, !Self.greeted else { return }
+        Self.greeted = true
+        Sounds.shared.play(.kapaHello)
     }
 
     private var face: KapaFace {
