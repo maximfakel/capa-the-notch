@@ -1,0 +1,17 @@
+[package]
+name = "capa-shelf"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+capa-core = { path = "../core" }
+base64.workspace = true
+chrono.workspace = true
+# TIFF too: what the clipboard holds as TIFF is kept as PNG (`PngCodec`).
+image = { workspace = true, features = ["tiff"] }
+# gdk-pixbuf (glycin), opened at run time, reads HEIC/HEIF where it is installed.
+libloading.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
