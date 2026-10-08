@@ -192,6 +192,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "capa-daemon"
+version = "0.3.1"
+dependencies = [
+ "capa-core",
+ "capa-hub",
+ "futures-util",
+ "serde_json",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
 name = "capa-dictation"
 version = "0.3.1"
 dependencies = [
@@ -207,6 +219,24 @@ dependencies = [
  "tokio",
  "ureq",
  "zbus",
+]
+
+[[package]]
+name = "capa-hub"
+version = "0.3.1"
+dependencies = [
+ "capa-core",
+ "capa-dictation",
+ "capa-music",
+ "capa-platform",
+ "capa-services",
+ "capa-settings",
+ "capa-shelf",
+ "capa-teleprompter",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

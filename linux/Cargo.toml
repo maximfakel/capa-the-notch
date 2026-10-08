@@ -2,15 +2,9 @@
 resolver = "2"
 # The Linux version. The Swift app at the root of the repository builds with SwiftPM, apart from this.
 members = [
-    "crates/core",
-    "crates/services",
-    "crates/platform",
-    "claude-bridge",
-    "crates/music",
-    "crates/shelf",
-    "crates/teleprompter",
-    "crates/dictation",
-    "crates/settings",
+    "crates/core", "crates/services", "crates/hub", "crates/platform",
+    "crates/music", "crates/teleprompter", "crates/shelf", "crates/dictation", "crates/settings",
+    "daemon", "claude-bridge",
 ]
 
 [workspace.package]
