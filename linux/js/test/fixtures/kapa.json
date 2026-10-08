@@ -1,0 +1,2163 @@
+{
+  "appetite": [
+    {
+      "distance": 1000.0,
+      "reach": 150.0,
+      "value": 0.35
+    },
+    {
+      "distance": 75.0,
+      "reach": 150.0,
+      "value": 0.5125
+    },
+    {
+      "distance": 0.0,
+      "reach": 150.0,
+      "value": 1.0
+    },
+    {
+      "distance": 10.0,
+      "reach": 0.0,
+      "value": 0.35
+    }
+  ],
+  "approach": [
+    {
+      "base": 0.0025,
+      "dt": 0.03333333333333333,
+      "next": 0.18103627252208465,
+      "target": 1.0,
+      "value": 0.0
+    },
+    {
+      "base": 0.0008,
+      "dt": 0.05,
+      "next": -0.3897906824918999,
+      "target": -2.0,
+      "value": 0.3
+    },
+    {
+      "base": 0.0025,
+      "dt": -1.0,
+      "next": 1.0,
+      "target": 0.0,
+      "value": 1.0
+    }
+  ],
+  "blink": [
+    {
+      "delay": 2.2,
+      "draw": 0.0,
+      "isDouble": true
+    },
+    {
+      "delay": 2.5200000000000005,
+      "draw": 0.1,
+      "isDouble": true
+    },
+    {
+      "delay": 2.9040000000000004,
+      "draw": 0.22,
+      "isDouble": false
+    },
+    {
+      "delay": 3.8000000000000003,
+      "draw": 0.5,
+      "isDouble": false
+    },
+    {
+      "delay": 5.4,
+      "draw": 1.0,
+      "isDouble": false
+    },
+    {
+      "delay": 5.4,
+      "draw": 7.0,
+      "isDouble": false
+    },
+    {
+      "delay": 2.2,
+      "draw": -3.0,
+      "isDouble": true
+    }
+  ],
+  "bob": [
+    {
+      "dy": 1.2583702979709228,
+      "sy": 0.9803379640942044,
+      "tilt": -1.6269465837831514,
+      "time": -0.5
+    },
+    {
+      "dy": 3.1999999776,
+      "sy": 0.95000000035,
+      "tilt": 1.2566370614359173e-8,
+      "time": 0.0
+    },
+    {
+      "dy": 2.8343637054660715,
+      "sy": 0.9557130671020926,
+      "tilt": 0.2177094714877803,
+      "time": 0.01
+    },
+    {
+      "dy": 1.368639895183997,
+      "sy": 0.9786150016377501,
+      "tilt": 1.4880638132123618,
+      "time": 0.07
+    },
+    {
+      "dy": 0.9510558119372199,
+      "sy": 0.9851397529384809,
+      "tilt": 2.072108048241345,
+      "time": 0.1
+    },
+    {
+      "dy": 0.2826584886722232,
+      "sy": 0.9955834611144965,
+      "tilt": 3.5448143227468085,
+      "time": 0.2
+    },
+    {
+      "dy": 0.10707962841187846,
+      "sy": 0.9983268808060644,
+      "tilt": 3.995754628619497,
+      "time": 0.28
+    },
+    {
+      "dy": 0.058376072113347534,
+      "sy": 0.999087873873229,
+      "tilt": 3.8981074883280393,
+      "time": 0.33
+    },
+    {
+      "dy": 0.03182459489189558,
+      "sy": 0.9995027407048142,
+      "tilt": 3.513267799602916,
+      "time": 0.38
+    },
+    {
+      "dy": 0.013611378288128759,
+      "sy": 0.999787322214248,
+      "tilt": 2.5496959493122042,
+      "time": 0.45
+    },
+    {
+      "dy": 2.4185079557287636,
+      "sy": 0.9622108131917381,
+      "tilt": -0.5013329467244987,
+      "time": 0.6
+    },
+    {
+      "dy": 0.06349150273754434,
+      "sy": 0.9990079452697259,
+      "tilt": -3.9291490005600513,
+      "time": 0.9
+    },
+    {
+      "dy": 0.01886998847183037,
+      "sy": 0.9997051564301277,
+      "tilt": -2.9725792935010324,
+      "time": 1.0
+    },
+    {
+      "dy": 1.8278689915211228,
+      "sy": 0.9714395470074825,
+      "tilt": 0.9947595608309949,
+      "time": 1.2
+    },
+    {
+      "dy": 0.6133318121783301,
+      "sy": 0.9904166904347136,
+      "tilt": 2.701331241751958,
+      "time": 1.29
+    },
+    {
+      "dy": 0.5432517000046333,
+      "sy": 0.9915116921874276,
+      "tilt": 2.8578907273234426,
+      "time": 1.3
+    },
+    {
+      "dy": 0.12202664409635794,
+      "sy": 0.9980933336859944,
+      "tilt": -3.9780875827866367,
+      "time": 2.0
+    }
+  ],
+  "boop": [
+    {
+      "elapsed": -0.5,
+      "kick": null
+    },
+    {
+      "elapsed": 0.0,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.01,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0343394002843083,
+        "sy": 0.9570757496446146
+      }
+    },
+    {
+      "elapsed": 0.07,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.1217161238900368,
+        "sy": 0.8478548451374539
+      }
+    },
+    {
+      "elapsed": 0.1,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0831924987729684,
+        "sy": 0.8960093765337894
+      }
+    },
+    {
+      "elapsed": 0.2,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 0.9408639145551864,
+        "sy": 1.0739201068060171
+      }
+    },
+    {
+      "elapsed": 0.28,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.33,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.014299458637258,
+        "sy": 0.9821256767034275
+      }
+    },
+    {
+      "elapsed": 0.38,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0036766237516388,
+        "sy": 0.9954042203104516
+      }
+    },
+    {
+      "elapsed": 0.45,
+      "kick": null
+    },
+    {
+      "elapsed": 0.6,
+      "kick": null
+    },
+    {
+      "elapsed": 0.9,
+      "kick": null
+    },
+    {
+      "elapsed": 1.0,
+      "kick": null
+    },
+    {
+      "elapsed": 1.2,
+      "kick": null
+    },
+    {
+      "elapsed": 1.29,
+      "kick": null
+    },
+    {
+      "elapsed": 1.3,
+      "kick": null
+    },
+    {
+      "elapsed": 2.0,
+      "kick": null
+    }
+  ],
+  "breath": [
+    {
+      "sx": 1.0093999229155297,
+      "sy": 0.9827668079881954,
+      "time": -0.5
+    },
+    {
+      "sx": 1.0,
+      "sy": 1.0,
+      "time": 0.0
+    },
+    {
+      "sx": 0.999784011663811,
+      "sy": 1.0003959786163463,
+      "time": 0.01
+    },
+    {
+      "sx": 0.9984919975774033,
+      "sy": 1.002764671108094,
+      "time": 0.07
+    },
+    {
+      "sx": 0.9978516451188901,
+      "sy": 1.003938650615368,
+      "time": 0.1
+    },
+    {
+      "sx": 0.9957727092006989,
+      "sy": 1.007750033132052,
+      "time": 0.2
+    },
+    {
+      "sx": 0.9942048157108997,
+      "sy": 1.0106245045300173,
+      "time": 0.28
+    },
+    {
+      "sx": 0.9932838360893971,
+      "sy": 1.0123129671694386,
+      "time": 0.33
+    },
+    {
+      "sx": 0.9924172206848574,
+      "sy": 1.0139017620777615,
+      "time": 0.38
+    },
+    {
+      "sx": 0.9913085539075583,
+      "sy": 1.015934317836143,
+      "time": 0.45
+    },
+    {
+      "sx": 0.9894165063173807,
+      "sy": 1.0194030717514688,
+      "time": 0.6
+    },
+    {
+      "sx": 0.9880145230783537,
+      "sy": 1.0219733743563515,
+      "time": 0.9
+    },
+    {
+      "sx": 0.9883138284294617,
+      "sy": 1.0214246478793203,
+      "time": 1.0
+    },
+    {
+      "sx": 0.9900233984706558,
+      "sy": 1.018290436137131,
+      "time": 1.2
+    },
+    {
+      "sx": 0.9912295855754211,
+      "sy": 1.016079093111728,
+      "time": 1.29
+    },
+    {
+      "sx": 0.9913784224831705,
+      "sy": 1.0158062254475209,
+      "time": 1.3
+    },
+    {
+      "sx": 1.0053102453195382,
+      "sy": 0.9902645502475133,
+      "time": 2.0
+    }
+  ],
+  "faces": {
+    "copied": {
+      "badge": "clipboard",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.15,
+        "yaw": -0.2
+      },
+      "mouth": "small",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "curious": {
+      "badge": "none",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.12,
+        "yaw": 0.12
+      },
+      "mouth": "small",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "dropReady": {
+      "badge": "file",
+      "blush": false,
+      "brows": "none",
+      "eyes": "wide",
+      "headphones": false,
+      "look": {
+        "pitch": 0.14,
+        "yaw": -0.08
+      },
+      "mouth": "open",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "failed": {
+      "badge": "cross",
+      "blush": false,
+      "brows": "puzzled",
+      "eyes": "uneven",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "wobble",
+      "reaction": "none",
+      "tilt": -4.0
+    },
+    "focused": {
+      "badge": "none",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "line",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "hello": {
+      "badge": "sparkle",
+      "blush": false,
+      "brows": "none",
+      "eyes": "happy",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "grin",
+      "reaction": "hop",
+      "tilt": 0.0
+    },
+    "inserted": {
+      "badge": "check",
+      "blush": false,
+      "brows": "none",
+      "eyes": "happy",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "grin",
+      "reaction": "nod",
+      "tilt": 0.0
+    },
+    "listening": {
+      "badge": "none",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.15,
+        "yaw": -0.2
+      },
+      "mouth": "small",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "music": {
+      "badge": "note",
+      "blush": false,
+      "brows": "none",
+      "eyes": "happy",
+      "headphones": true,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "grin",
+      "reaction": "nod",
+      "tilt": 0.0
+    },
+    "paused": {
+      "badge": "none",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": true,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "line",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "puzzled": {
+      "badge": "unplugged",
+      "blush": false,
+      "brows": "puzzled",
+      "eyes": "uneven",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "wobble",
+      "reaction": "none",
+      "tilt": -4.0
+    },
+    "quiet": {
+      "badge": "pause",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "line",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "received": {
+      "badge": "check",
+      "blush": true,
+      "brows": "none",
+      "eyes": "happy",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "small",
+      "reaction": "gulp",
+      "tilt": 0.0
+    },
+    "rest": {
+      "badge": "none",
+      "blush": false,
+      "brows": "none",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "smile",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "stale": {
+      "badge": "dashedClock",
+      "blush": false,
+      "brows": "none",
+      "eyes": "lidded",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "line",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "thinking": {
+      "badge": "none",
+      "blush": false,
+      "brows": "none",
+      "eyes": "narrowed",
+      "headphones": false,
+      "look": {
+        "pitch": 0.15,
+        "yaw": -0.2
+      },
+      "mouth": "line",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "waiting": {
+      "badge": "clock",
+      "blush": false,
+      "brows": "none",
+      "eyes": "closed",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "line",
+      "reaction": "none",
+      "tilt": 0.0
+    },
+    "worried": {
+      "badge": "alert",
+      "blush": false,
+      "brows": "worried",
+      "eyes": "open",
+      "headphones": false,
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "mouth": "worried",
+      "reaction": "none",
+      "tilt": 0.0
+    }
+  },
+  "features": [
+    {
+      "features": {
+        "dx": 0.0,
+        "dy": -0.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      }
+    },
+    {
+      "features": {
+        "dx": -6.357418585441959,
+        "dy": -2.689886384524786
+      },
+      "look": {
+        "pitch": 0.15,
+        "yaw": -0.2
+      }
+    },
+    {
+      "features": {
+        "dx": 12.461386953876818,
+        "dy": -0.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.4
+      }
+    },
+    {
+      "features": {
+        "dx": -12.461386953876818,
+        "dy": -3.5760479543111017
+      },
+      "look": {
+        "pitch": 0.2,
+        "yaw": -0.4
+      }
+    },
+    {
+      "features": {
+        "dx": 31.919839571329746,
+        "dy": -0.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 1.5
+      }
+    },
+    {
+      "features": {
+        "dx": 0.0,
+        "dy": -3.5760479543111017
+      },
+      "look": {
+        "pitch": 0.2,
+        "yaw": 0.0
+      }
+    },
+    {
+      "features": {
+        "dx": 15.341617235334496,
+        "dy": -7.009530161555709
+      },
+      "look": {
+        "pitch": 0.4,
+        "yaw": 0.5
+      }
+    }
+  ],
+  "focus": [
+    {
+      "focus": {
+        "expression": "worried",
+        "provider": "claudeCode"
+      },
+      "views": [
+        {
+          "capturedAt": 1000000,
+          "guidance": null,
+          "headline": "w0",
+          "monthUsedUp": null,
+          "name": "Codex",
+          "needsAPersonFirst": false,
+          "provider": "codex",
+          "reasonRepeatsTheChip": false,
+          "state": "fresh",
+          "switchedOff": false,
+          "windows": [
+            {
+              "durationMinutes": null,
+              "id": "w0",
+              "label": "w0",
+              "pace": "sustainable",
+              "remainingFraction": 0.8,
+              "remainingPercentage": 80.0,
+              "resetIn": "1h",
+              "resetKind": "at",
+              "resetsAt": 1003600,
+              "usedPercentage": 20
+            }
+          ]
+        },
+        {
+          "capturedAt": 1000000,
+          "guidance": null,
+          "headline": "w0",
+          "monthUsedUp": null,
+          "name": "Claude Code",
+          "needsAPersonFirst": false,
+          "provider": "claudeCode",
+          "reasonRepeatsTheChip": false,
+          "state": "fresh",
+          "switchedOff": false,
+          "windows": [
+            {
+              "durationMinutes": null,
+              "id": "w0",
+              "label": "w0",
+              "pace": "unsustainable",
+              "remainingFraction": 0.030000000000000027,
+              "remainingPercentage": 3.0,
+              "resetIn": "1h",
+              "resetKind": "at",
+              "resetsAt": 1003600,
+              "usedPercentage": 97
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "focus": {
+        "expression": "rest",
+        "provider": "codex"
+      },
+      "views": [
+        {
+          "capturedAt": 1000000,
+          "guidance": null,
+          "headline": "w0",
+          "monthUsedUp": null,
+          "name": "Codex",
+          "needsAPersonFirst": false,
+          "provider": "codex",
+          "reasonRepeatsTheChip": false,
+          "state": "fresh",
+          "switchedOff": false,
+          "windows": [
+            {
+              "durationMinutes": null,
+              "id": "w0",
+              "label": "w0",
+              "pace": "sustainable",
+              "remainingFraction": 0.8,
+              "remainingPercentage": 80.0,
+              "resetIn": "1h",
+              "resetKind": "at",
+              "resetsAt": 1003600,
+              "usedPercentage": 20
+            }
+          ]
+        },
+        {
+          "capturedAt": 1000000,
+          "guidance": null,
+          "headline": "w0",
+          "monthUsedUp": null,
+          "name": "Claude Code",
+          "needsAPersonFirst": false,
+          "provider": "claudeCode",
+          "reasonRepeatsTheChip": false,
+          "state": "fresh",
+          "switchedOff": false,
+          "windows": [
+            {
+              "durationMinutes": null,
+              "id": "w0",
+              "label": "w0",
+              "pace": "sustainable",
+              "remainingFraction": 0.9,
+              "remainingPercentage": 90.0,
+              "resetIn": "1h",
+              "resetKind": "at",
+              "resetsAt": 1003600,
+              "usedPercentage": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "focus": {
+        "expression": "waiting",
+        "provider": "claudeCode"
+      },
+      "views": [
+        {
+          "capturedAt": 1000000,
+          "guidance": "Turn on Codex in Settings to read its Capacity.",
+          "headline": null,
+          "monthUsedUp": null,
+          "name": "Codex",
+          "needsAPersonFirst": false,
+          "provider": "codex",
+          "reasonRepeatsTheChip": false,
+          "state": "disconnected",
+          "switchedOff": true,
+          "windows": []
+        },
+        {
+          "capturedAt": 1000000,
+          "guidance": null,
+          "headline": "w0",
+          "monthUsedUp": null,
+          "name": "Claude Code",
+          "needsAPersonFirst": false,
+          "provider": "claudeCode",
+          "reasonRepeatsTheChip": false,
+          "state": "fresh",
+          "switchedOff": false,
+          "windows": [
+            {
+              "durationMinutes": null,
+              "id": "w0",
+              "label": "w0",
+              "pace": "unsustainable",
+              "remainingFraction": 0.0,
+              "remainingPercentage": 0.0,
+              "resetIn": "1h",
+              "resetKind": "at",
+              "resetsAt": 1003600,
+              "usedPercentage": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "focus": null,
+      "views": []
+    }
+  ],
+  "gaze": [
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 40.94577405743545,
+        "y": 60.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 63.05422594256455,
+        "y": 60.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.0
+      },
+      "side": 1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 0.922938352378858,
+        "scaleY": 0.9887710779360422,
+        "x": 33.73624427325724,
+        "y": 55.51685602579202
+      },
+      "look": {
+        "pitch": 0.15,
+        "yaw": -0.2
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0371948033036253,
+        "scaleY": 0.9887710779360422,
+        "x": 55.160693523953114,
+        "y": 55.51685602579202
+      },
+      "look": {
+        "pitch": 0.15,
+        "yaw": -0.2
+      },
+      "side": 1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0330399228570075,
+        "scaleY": 1.0,
+        "x": 56.788488291556774,
+        "y": 60.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.4
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 0.8090820651487628,
+        "scaleY": 1.0,
+        "x": 77.15172096073874,
+        "y": 60.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 0.4
+      },
+      "side": 1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 0.8090820651487628,
+        "scaleY": 0.9800665778412416,
+        "x": 27.34963891119095,
+        "y": 54.039920076148164
+      },
+      "look": {
+        "pitch": 0.2,
+        "yaw": -0.4
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0330399228570075,
+        "scaleY": 0.9800665778412416,
+        "x": 47.3069626670611,
+        "y": 54.039920076148164
+      },
+      "look": {
+        "pitch": 0.2,
+        "yaw": -0.4
+      },
+      "side": 1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 0.35757119997163406,
+        "scaleY": 1.0,
+        "x": 89.5639742527627,
+        "y": 60.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 1.5
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": true,
+        "scaleX": 0.18729408608975004,
+        "scaleY": 1.0,
+        "x": 91.12786427232179,
+        "y": 60.0
+      },
+      "look": {
+        "pitch": 0.0,
+        "yaw": 1.5
+      },
+      "side": 1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0,
+        "scaleY": 0.9800665778412416,
+        "x": 41.16612260978688,
+        "y": 54.039920076148164
+      },
+      "look": {
+        "pitch": 0.2,
+        "yaw": 0.0
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0,
+        "scaleY": 0.9800665778412416,
+        "x": 62.83387739021312,
+        "y": 54.039920076148164
+      },
+      "look": {
+        "pitch": 0.2,
+        "yaw": 0.0
+      },
+      "side": 1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 1.0154434493871884,
+        "scaleY": 0.9210609940028851,
+        "x": 60.04011174222962,
+        "y": 48.317449730740485
+      },
+      "look": {
+        "pitch": 0.4,
+        "yaw": 0.5
+      },
+      "side": -1.0
+    },
+    {
+      "eye": {
+        "isHidden": false,
+        "scaleX": 0.7397216743935571,
+        "scaleY": 0.9210609940028851,
+        "x": 77.91052963642007,
+        "y": 48.317449730740485
+      },
+      "look": {
+        "pitch": 0.4,
+        "yaw": 0.5
+      },
+      "side": 1.0
+    }
+  ],
+  "gulp": [
+    {
+      "elapsed": -0.5,
+      "gulp": null
+    },
+    {
+      "elapsed": 0.0,
+      "gulp": {
+        "file": 0.0,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0
+        },
+        "mouth": 0.6,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.01,
+      "gulp": {
+        "file": 0.0000455539358600583,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0014285714285713
+        },
+        "mouth": 0.6413447521865888,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.07,
+      "gulp": {
+        "file": 0.015625,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.01
+        },
+        "mouth": 0.83125,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.1,
+      "gulp": {
+        "file": 0.04555393586005831,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0142857142857142
+        },
+        "mouth": 0.893731778425656,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.2,
+      "gulp": {
+        "file": 0.3644314868804665,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0285714285714285
+        },
+        "mouth": 0.99067055393586,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.28,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0
+        },
+        "mouth": 1.0,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.33,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.05,
+          "sy": 0.9400000000000001
+        },
+        "mouth": 0.8750000000000001,
+        "pleased": false
+      }
+    },
+    {
+      "elapsed": 0.38,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0
+        },
+        "mouth": 0.0,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 0.45,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0437173308072292,
+          "sy": 0.9387957368698793
+        },
+        "mouth": 0.21858665403614552,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 0.6,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.010064926004433,
+          "sy": 0.9859091035937938
+        },
+        "mouth": 0.05032463002216498,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 0.9,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0499358253585527,
+          "sy": 0.9300898444980263
+        },
+        "mouth": 0.24967912679276322,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 1.0,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0
+        },
+        "mouth": 0.0,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 1.2,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.025980762113533
+        },
+        "mouth": 0.0,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 1.29,
+      "gulp": {
+        "file": null,
+        "kick": {
+          "dx": 0.0,
+          "dy": 0.0,
+          "sx": 1.0,
+          "sy": 1.0031358538980295
+        },
+        "mouth": 0.0,
+        "pleased": true
+      }
+    },
+    {
+      "elapsed": 1.3,
+      "gulp": null
+    },
+    {
+      "elapsed": 2.0,
+      "gulp": null
+    }
+  ],
+  "kicks": [
+    {
+      "elapsed": -0.5,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.0,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.01,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.13445896335515026,
+        "sx": 1.0,
+        "sy": 0.9937252483767597
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.07,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.8816778784387098,
+        "sx": 1.0,
+        "sy": 0.9588550323395268
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.1,
+      "kick": {
+        "dx": 0.0,
+        "dy": 1.1727472237020446,
+        "sx": 1.0,
+        "sy": 0.9452717962272379
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.2,
+      "kick": {
+        "dx": 0.0,
+        "dy": 1.4623918682727355,
+        "sx": 1.0,
+        "sy": 0.9317550461472723
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.28,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.8816778784387092,
+        "sx": 1.0,
+        "sy": 0.9588550323395268
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.33,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.26783534219795446,
+        "sx": 1.0,
+        "sy": 0.9875010173640955
+      },
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.38,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.45,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.6,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 0.9,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 1.0,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 1.2,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 1.29,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 1.3,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": 2.0,
+      "kick": null,
+      "reaction": "nod"
+    },
+    {
+      "elapsed": -0.5,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.0,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.01,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0098261255114414,
+        "sy": 0.9877173431106981
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.07,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0530113111029742,
+        "sy": 0.9337358611212822
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.1,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.06086761704289,
+        "sy": 0.9239154786963877
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.2,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0282136921100387,
+        "sy": 0.9647328848624516
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.28,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 0.9870420157454993,
+        "sy": 1.0161974803181257
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.33,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 0.9770342804263452,
+        "sy": 1.0287071494670685
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.38,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 0.9808378868141772,
+        "sy": 1.0239526414822786
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.45,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 0.9952977179816602,
+        "sy": 1.0058778525229248
+      },
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.6,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 0.9,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 1.0,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 1.2,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 1.29,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 1.3,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": 2.0,
+      "kick": null,
+      "reaction": "gulp"
+    },
+    {
+      "elapsed": -0.5,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.0,
+      "kick": {
+        "dx": 0.0,
+        "dy": -0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.01,
+      "kick": {
+        "dx": 0.0,
+        "dy": -0.6278082636971277,
+        "sx": 1.0,
+        "sy": 1.002790258949765
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.07,
+      "kick": {
+        "dx": 0.0,
+        "dy": -4.225244065073017,
+        "sx": 1.0,
+        "sy": 1.0187788625114356
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.1,
+      "kick": {
+        "dx": 0.0,
+        "dy": -5.785088487178855,
+        "sx": 1.0,
+        "sy": 1.0257115043874616
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.2,
+      "kick": {
+        "dx": 0.0,
+        "dy": -8.863269777109874,
+        "sx": 1.0,
+        "sy": 1.0393923101204883
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.28,
+      "kick": {
+        "dx": 0.0,
+        "dy": -8.344654691101088,
+        "sx": 1.0,
+        "sy": 1.0370873541826715
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.33,
+      "kick": {
+        "dx": 0.0,
+        "dy": -6.688303429296548,
+        "sx": 1.0,
+        "sy": 1.0297257930190957
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.38,
+      "kick": {
+        "dx": 0.0,
+        "dy": -4.225244065073016,
+        "sx": 1.0556310312740071,
+        "sy": 0.9446041541460926
+      },
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.45,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.6,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 0.9,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 1.0,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 1.2,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 1.29,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 1.3,
+      "kick": null,
+      "reaction": "hop"
+    },
+    {
+      "elapsed": 2.0,
+      "kick": null,
+      "reaction": "hop"
+    }
+  ],
+  "lid": [
+    {
+      "elapsed": -0.5,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.0,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.01,
+      "value": 0.9973177842565598
+    },
+    {
+      "elapsed": 0.07,
+      "value": 0.08
+    },
+    {
+      "elapsed": 0.1,
+      "value": 0.5812471552116522
+    },
+    {
+      "elapsed": 0.2,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.28,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.33,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.38,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.45,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.6,
+      "value": 1.0
+    },
+    {
+      "elapsed": 0.9,
+      "value": 1.0
+    },
+    {
+      "elapsed": 1.0,
+      "value": 1.0
+    },
+    {
+      "elapsed": 1.2,
+      "value": 1.0
+    },
+    {
+      "elapsed": 1.29,
+      "value": 1.0
+    },
+    {
+      "elapsed": 1.3,
+      "value": 1.0
+    },
+    {
+      "elapsed": 2.0,
+      "value": 1.0
+    }
+  ],
+  "moods": [
+    {
+      "expression": "rest",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": "w1",
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "fresh",
+        "switchedOff": false,
+        "windows": [
+          {
+            "durationMinutes": null,
+            "id": "w0",
+            "label": "w0",
+            "pace": "sustainable",
+            "remainingFraction": 0.76,
+            "remainingPercentage": 76.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 24
+          },
+          {
+            "durationMinutes": null,
+            "id": "w1",
+            "label": "w1",
+            "pace": "sustainable",
+            "remainingFraction": 0.69,
+            "remainingPercentage": 69.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 31
+          }
+        ]
+      }
+    },
+    {
+      "expression": "focused",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": "w1",
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "fresh",
+        "switchedOff": false,
+        "windows": [
+          {
+            "durationMinutes": null,
+            "id": "w0",
+            "label": "w0",
+            "pace": "sustainable",
+            "remainingFraction": 0.76,
+            "remainingPercentage": 76.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 24
+          },
+          {
+            "durationMinutes": null,
+            "id": "w1",
+            "label": "w1",
+            "pace": "tightening",
+            "remainingFraction": 0.5,
+            "remainingPercentage": 50.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 50
+          }
+        ]
+      }
+    },
+    {
+      "expression": "worried",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": "w0",
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "fresh",
+        "switchedOff": false,
+        "windows": [
+          {
+            "durationMinutes": null,
+            "id": "w0",
+            "label": "w0",
+            "pace": "unsustainable",
+            "remainingFraction": 0.040000000000000036,
+            "remainingPercentage": 4.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 96
+          },
+          {
+            "durationMinutes": null,
+            "id": "w1",
+            "label": "w1",
+            "pace": "sustainable",
+            "remainingFraction": 0.69,
+            "remainingPercentage": 69.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 31
+          }
+        ]
+      }
+    },
+    {
+      "expression": "waiting",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": "w0",
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "fresh",
+        "switchedOff": false,
+        "windows": [
+          {
+            "durationMinutes": null,
+            "id": "w0",
+            "label": "w0",
+            "pace": "unsustainable",
+            "remainingFraction": 0.0,
+            "remainingPercentage": 0.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 100
+          },
+          {
+            "durationMinutes": null,
+            "id": "w1",
+            "label": "w1",
+            "pace": "sustainable",
+            "remainingFraction": 0.6,
+            "remainingPercentage": 60.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 40
+          }
+        ]
+      }
+    },
+    {
+      "expression": "focused",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": "w0",
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "fresh",
+        "switchedOff": false,
+        "windows": [
+          {
+            "durationMinutes": null,
+            "id": "w0",
+            "label": "w0",
+            "pace": "tightening",
+            "remainingFraction": 0.09999999999999998,
+            "remainingPercentage": 10.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 90
+          }
+        ]
+      }
+    },
+    {
+      "expression": "rest",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": null,
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "fresh",
+        "switchedOff": false,
+        "windows": []
+      }
+    },
+    {
+      "expression": "stale",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": "w0",
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "stale",
+        "switchedOff": false,
+        "windows": [
+          {
+            "durationMinutes": null,
+            "id": "w0",
+            "label": "w0",
+            "pace": "unsustainable",
+            "remainingFraction": 0.040000000000000036,
+            "remainingPercentage": 4.0,
+            "resetIn": "1h",
+            "resetKind": "at",
+            "resetsAt": 1003600,
+            "usedPercentage": 96
+          }
+        ]
+      }
+    },
+    {
+      "expression": "stale",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": null,
+        "headline": null,
+        "monthUsedUp": null,
+        "name": "Codex",
+        "needsAPersonFirst": false,
+        "provider": "codex",
+        "reasonRepeatsTheChip": false,
+        "state": "connecting",
+        "switchedOff": false,
+        "windows": []
+      }
+    },
+    {
+      "expression": "puzzled",
+      "view": {
+        "capturedAt": 1000000,
+        "guidance": "Install Claude Code, then try again.",
+        "headline": null,
+        "monthUsedUp": null,
+        "name": "Claude Code",
+        "needsAPersonFirst": true,
+        "provider": "claudeCode",
+        "reasonRepeatsTheChip": false,
+        "state": "disconnected",
+        "switchedOff": false,
+        "windows": []
+      }
+    }
+  ],
+  "shake": [
+    {
+      "elapsed": -0.5,
+      "kick": null
+    },
+    {
+      "elapsed": 0.0,
+      "kick": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.01,
+      "kick": {
+        "dx": 0.8085362437298642,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.07,
+      "kick": {
+        "dx": 2.348865764902528,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.1,
+      "kick": {
+        "dx": 0.7980470010932266,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.2,
+      "kick": {
+        "dx": -1.0713126828108983,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.28,
+      "kick": {
+        "dx": 1.1326429372883084,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.33,
+      "kick": {
+        "dx": 0.16632935265420726,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.38,
+      "kick": {
+        "dx": -0.4326857987978342,
+        "dy": 0.0,
+        "sx": 1.0,
+        "sy": 1.0
+      }
+    },
+    {
+      "elapsed": 0.45,
+      "kick": null
+    },
+    {
+      "elapsed": 0.6,
+      "kick": null
+    },
+    {
+      "elapsed": 0.9,
+      "kick": null
+    },
+    {
+      "elapsed": 1.0,
+      "kick": null
+    },
+    {
+      "elapsed": 1.2,
+      "kick": null
+    },
+    {
+      "elapsed": 1.29,
+      "kick": null
+    },
+    {
+      "elapsed": 1.3,
+      "kick": null
+    },
+    {
+      "elapsed": 2.0,
+      "kick": null
+    }
+  ],
+  "spring": [
+    {
+      "dt": 0.016666666666666666,
+      "next": {
+        "value": 0.17545963379714413,
+        "velocity": 10.527578027828648
+      },
+      "target": 1.0,
+      "value": 0.0,
+      "velocity": 0.0
+    },
+    {
+      "dt": 0.016,
+      "next": {
+        "value": 0.6056894649373372,
+        "velocity": 6.6055915585835745
+      },
+      "target": 1.0,
+      "value": 0.5,
+      "velocity": 3.0
+    },
+    {
+      "dt": 10.0,
+      "next": {
+        "value": -0.09042911714870444,
+        "velocity": -5.808582342974089
+      },
+      "target": 0.0,
+      "value": 0.2,
+      "velocity": -1.0
+    },
+    {
+      "dt": 0.05,
+      "next": {
+        "value": 0.5526978464610041,
+        "velocity": 11.053956929220082
+      },
+      "target": 0.35,
+      "value": 0.0,
+      "velocity": 0.0
+    }
+  ]
+}

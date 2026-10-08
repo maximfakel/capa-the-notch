@@ -1,0 +1,12 @@
+[package]
+name = "capa-claude-bridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "capa-claude-bridge"
+path = "src/main.rs"
+
+[dependencies]
+capa-core = { path = "../crates/core" }
