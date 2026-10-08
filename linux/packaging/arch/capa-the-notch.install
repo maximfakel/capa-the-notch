@@ -1,0 +1,11 @@
+post_install() {
+    echo '==> Log out and in once so GNOME Shell finds the extension, then:'
+    echo '      gnome-extensions enable capa-the-notch@capathenotch.tech'
+    echo '==> To add files to the Shelf from Nautilus (per user):'
+    echo '      mkdir -p ~/.local/share/nautilus/scripts'
+    echo "      ln -s '/usr/share/capa-the-notch/nautilus/Add to the CapaTheNotch Shelf' ~/.local/share/nautilus/scripts/"
+}
+
+post_upgrade() {
+    echo '==> Restart capa-daemon (pkill -x capa-daemon) so the new one is started on demand.'
+}

@@ -1,0 +1,69 @@
+# Maintainer: gangstand
+# Builds CapaTheNotch for GNOME Shell from this checkout:
+#   cd linux/packaging/arch && makepkg -si
+pkgname=capa-the-notch
+pkgver=0.3.1
+pkgrel=1
+pkgdesc='Codex, Claude Code and OpenCode limits, music, teleprompter, shelf and dictation in a surface at the top of the screen (GNOME Shell)'
+arch=(x86_64)
+url='https://capathenotch.tech'
+license=(MIT OFL-1.1)
+# python and busctl (systemd): capa-shelf-add; glib2's gdbus: the CapaTheNotch entry.
+depends=(gnome-shell gjs glib2 libadwaita webkitgtk-6.0 alsa-lib bzip2 libgcc glibc python systemd)
+makedepends=(cargo)
+# Release builds carry no debug info, so a -debug package would hold nothing useful.
+options=(!lto !debug)
+install=capa-the-notch.install
+
+_root="$startdir/../../.."
+_uuid='capa-the-notch@capathenotch.tech'
+_ext="/usr/share/gnome-shell/extensions/$_uuid"
+# Built beside the package, not in the checkout's target/ (CARGO_TARGET_DIR overrides).
+_target="${CARGO_TARGET_DIR:-$srcdir/target}"
+
+build() {
+    cd "$_root"
+    export CARGO_TARGET_DIR="$_target"
+    if [[ -f linux/Cargo.lock ]]; then
+        cargo build --release --locked --manifest-path linux/Cargo.toml -p capa-daemon -p capa-claude-bridge
+    else
+        cargo build --release --manifest-path linux/Cargo.toml -p capa-daemon -p capa-claude-bridge
+    fi
+}
+
+package() {
+    cd "$_root"
+    install -Dm755 "$_target/release/capa-daemon" "$pkgdir/usr/bin/capa-daemon"
+    # Claude Code's status-line bridge: "statusLine": {"type": "command", "command": "capa-claude-bridge"}.
+    install -Dm755 "$_target/release/capa-claude-bridge" "$pkgdir/usr/bin/capa-claude-bridge"
+    install -Dm755 linux/scripts/linux/capa-shelf-add "$pkgdir/usr/bin/capa-shelf-add"
+    # Nautilus reads scripts only from ~/.local/share/nautilus/scripts; the .install says how to link this one there.
+    install -Dm755 linux/scripts/linux/capa-shelf-add "$pkgdir/usr/share/$pkgname/nautilus/Add to the CapaTheNotch Shelf"
+
+    printf '[D-BUS Service]\nName=tech.capathenotch.Daemon\nExec=/usr/bin/capa-daemon\n' |
+        install -Dm644 /dev/stdin "$pkgdir/usr/share/dbus-1/services/tech.capathenotch.Daemon.service"
+
+    # The extension; the shared modules are symlinks in the tree, so they are copied in.
+    install -d "$pkgdir$_ext"
+    cp -rL "linux/gnome-extension/$_uuid/." "$pkgdir$_ext/"
+    rm -f "$pkgdir$_ext/schemas/gschemas.compiled"
+    glib-compile-schemas "$pkgdir$_ext/schemas"
+    install -Dm644 "linux/gnome-extension/$_uuid/fonts/Geist.ttf" "$pkgdir/usr/share/fonts/capa-the-notch/Geist.ttf"
+
+    # Settings: the entry, and the icon its window is tied to.
+    sed -e "s#@SETTINGS_APP@#$_ext/settings-app.js#" -e 's#@ICON@#tech.capathenotch.CapaTheNotch#' \
+        linux/packaging/tech.capathenotch.Settings.desktop.in |
+        install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/tech.capathenotch.Settings.desktop"
+    # CapaTheNotch itself: launching it shows the extension again after a Quit.
+    sed -e 's#@ICON@#tech.capathenotch.CapaTheNotch#' linux/packaging/tech.capathenotch.CapaTheNotch.desktop.in |
+        install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/tech.capathenotch.CapaTheNotch.desktop"
+    sed -e "s#@CATCHER_APP@#$_ext/drop-catcher.js#" -e 's#@ICON@#tech.capathenotch.CapaTheNotch#' \
+        linux/packaging/tech.capathenotch.DropCatcher.desktop.in |
+        install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/tech.capathenotch.DropCatcher.desktop"
+    install -d "$pkgdir/usr/share/icons"
+    cp -r linux/packaging/icons/hicolor "$pkgdir/usr/share/icons/"
+
+    install -Dm644 THIRD_PARTY_NOTICES.md "$pkgdir/usr/share/licenses/$pkgname/THIRD_PARTY_NOTICES.md"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 "linux/gnome-extension/$_uuid/fonts/Geist-OFL.txt" "$pkgdir/usr/share/licenses/$pkgname/Geist-OFL.txt"
+}
