@@ -1,0 +1,329 @@
+/* Settings and onboarding, drawn as the Swift views are: the palette is
+   `SettingsPalette`, the sizes are `SettingsView`'s. Light and dark. */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('Geist.ttf') format('truetype');
+  font-weight: 100 900;
+}
+
+:root {
+  --window: #FAFAFA;
+  --sidebar: #F4F4F5;
+  --card: #FFFFFF;
+  --control: #FFFFFF;
+  --selection: #E5E5E5;
+  --hover: #F4F4F5;
+  --text: #171717;
+  --muted: #737373;
+  --icon: #525252;
+  --switch-off: #E5E5E5;
+  --keycap: rgba(0, 0, 0, 0.039);
+  --ring: rgba(0, 0, 0, 0.059);
+  --accent: #6B97FF;
+  --positive: #21834A;
+  --destructive: #C5332A;
+  --green: #30D158;
+  --yellow: #FFD60A;
+  --red: #FF453A;
+  --orange: #FF9F0A;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --window: #171717;
+  --sidebar: #1E1E1E;
+  --card: #252525;
+  --control: #333333;
+  --selection: #2C2C2C;
+  --hover: #2C2C2C;
+  --text: #F5F5F5;
+  --muted: #A3A3A3;
+  --icon: #A3A3A3;
+  --switch-off: #404040;
+  --keycap: rgba(255, 255, 255, 0.059);
+  --ring: rgba(255, 255, 255, 0.059);
+  --positive: #56DF9A;
+  --destructive: #FF625D;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--window);
+  color: var(--text);
+  font-family: 'Geist', 'Segoe UI Variable', 'Segoe UI', 'Cantarell', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+input, textarea { user-select: text; -webkit-user-select: text; }
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:disabled { cursor: default; }
+
+/* The page drawn anew starts no transition of its own (`.still`), and what was under the pointer
+   is lit as it was (`.hovered`) until the pointer moves; the motions are the page's (`motion.js`). */
+.still, .still * { transition: none !important; }
+
+.app { display: flex; width: 100%; height: 100%; position: relative; }
+
+/* The window's top edge: dragged by, and closed from. Over the content only while nothing has
+   scrolled under it, so a control scrolled up there still takes its click. */
+.drag { position: absolute; top: 0; height: 52px; z-index: 5; -webkit-app-region: drag; }
+.drag.side { left: 0; width: 200px; }
+.drag.top { left: 200px; right: 0; }
+.app.scrolled .drag.top { pointer-events: none; -webkit-app-region: no-drag; }
+.close {
+  position: absolute; right: 12px; top: 12px; width: 28px; height: 28px; border-radius: 8px; z-index: 6;
+  display: grid; place-items: center; color: var(--muted); -webkit-app-region: no-drag;
+}
+.close:is(:hover, .hovered) { background: var(--hover); color: var(--text); }
+.close svg { width: 12px; height: 12px; }
+body.native-controls .close { display: none; }
+
+/* MARK: Sidebar */
+.sidebar {
+  width: 200px; flex: none; height: 100%;
+  padding: 52px 8px 8px; background: var(--sidebar);
+  border-right: 1px solid var(--ring);
+  display: flex; flex-direction: column; gap: 2px; position: relative; outline: none;
+}
+/* The one highlight, slid from item to item (`matchedGeometryEffect`); placed by the page. */
+.sidebar > .highlight {
+  position: absolute; top: 0; left: 8px; right: 8px; height: 32px; border-radius: 8px;
+  background: var(--selection); pointer-events: none;
+}
+.sidebar .grow { flex: 1; }
+.sidebar .note { font-size: 12px; color: var(--muted); padding: 0 8px 8px; }
+.side-item {
+  height: 32px; padding: 0 8px; border-radius: 8px;
+  display: flex; align-items: center; gap: 8px; text-align: left; position: relative;
+  transition: background-color 0.12s ease-out;
+}
+/* `.easeOut(duration: 0.12)` on hovering. */
+.side-item:not(.selected):is(:hover, .hovered) { background: var(--hover); }
+.side-item.selected { font-weight: 500; }
+.side-item .icon { color: var(--icon); }
+.side-item.selected .icon { color: var(--text); }
+.side-item .title { flex: 1; }
+.side-item:disabled { opacity: 0.45; }
+.side-item:disabled:is(:hover, .hovered) { background: transparent; }
+
+.keycaps { display: flex; gap: 2px; }
+.keycap {
+  min-width: 20px; height: 20px; padding: 0 4px; border-radius: 5px; background: var(--keycap);
+  font: 11px system-ui, 'Segoe UI', 'Cantarell', sans-serif; color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+}
+.keycap.wide { min-width: 48px; }
+.keycap.positive { color: var(--positive); }
+
+/* MARK: Content */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--window); position: relative; overflow: hidden; }
+/* The section or step left behind, fading where it stood in the scroll view while the new one arrives. */
+.leaving { position: absolute; left: 0; right: 0; top: 0; overflow: hidden; pointer-events: none; }
+/* What a Module card held, fading where it stood as the card closes. */
+.folded { position: absolute; display: flex; flex-direction: column; pointer-events: none; }
+.scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.page {
+  padding: 52px 40px 32px; display: flex; flex-direction: column; gap: 24px; position: relative;
+}
+.page.compact-top { padding-top: 28px; }
+.page.onboarding { padding-bottom: 24px; }
+
+.heading { display: flex; flex-direction: column; gap: 4px; }
+.heading h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.22px; height: 28px; line-height: 28px; }
+.heading p { color: var(--muted); line-height: 19px; min-height: 18px; }
+/* The Modules' heading and Dictation's pages: the title font alone, no tracking, no fixed line. */
+.heading.plain h1, .breadcrumb .heading h1 { letter-spacing: 0; }
+
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.footnote { font-size: 12px; color: var(--muted); padding: 0 14px; }
+.caption { font-size: 12px; color: var(--muted); }
+
+.card {
+  background: var(--card); border-radius: 10px; padding: 4px;
+  border: 1px solid var(--ring); box-shadow: 0 1px 0.5px var(--ring);
+  display: flex; flex-direction: column; position: relative;
+}
+
+.row {
+  min-height: 40px; padding: 0 10px; display: flex; align-items: center; gap: 8px;
+  border-radius: 7px; transition: background-color 0.12s ease-out;
+}
+.row.hovers:is(:hover, .hovered) { background: var(--hover); }
+.row .grow { flex: 1; }
+.row.disabled > *:not(.keep) { opacity: 0.5; }
+.row .label { flex: 1; }
+.row .stack2 { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; flex: 1; min-width: 0; }
+.divider { height: 1px; background: var(--ring); margin: 0 10px; }
+
+.note-line { font-size: 12px; color: var(--muted); padding: 0 10px 10px 54px; }
+.note-line.destructive { color: var(--destructive); }
+/* A Module card's warning in onboarding is the surface's red (`ModuleCard`). */
+.note-line.warning { color: var(--red); }
+
+/* MARK: Controls */
+/* The thumb and the colour move on `SettingsMotion.spring`, played by the page (`toggleSwitch`). */
+.switch {
+  width: 34px; height: 20px; border-radius: 10px; background: var(--switch-off); position: relative; flex: none;
+  cursor: pointer; outline: none;
+}
+.switch.on { background: var(--accent); }
+.switch > .knob {
+  position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+.switch.on > .knob { transform: translateX(14px); }
+.switch:focus-visible { box-shadow: 0 0 0 1px var(--window), 0 0 0 3px var(--accent); }
+.switch.off-limits { opacity: 0.5; cursor: default; }
+/* The row already fades what it holds; the switch is not faded twice. */
+.row.disabled .switch.off-limits { opacity: 1; }
+.toggle-row { cursor: pointer; }
+.toggle-row.disabled { cursor: default; }
+
+.btn {
+  position: relative; height: 24px; padding: 0 10px; border-radius: 6px; background: var(--control);
+  border: 1px solid var(--ring); box-shadow: 0 1px 1px var(--ring); white-space: nowrap; flex: none;
+}
+.btn:active:not(:disabled) { background: var(--hover); }
+.btn:disabled { opacity: 0.5; color: var(--muted); }
+/* Continue's title as it becomes Finish, fading over the new one. */
+.btn > .label-gone { position: absolute; inset: 0; display: grid; place-items: center; white-space: nowrap; }
+.btn.prominent { background: var(--text); color: var(--window); }
+.btn.prominent:active:not(:disabled) { opacity: 0.8; background: var(--text); }
+.btn.prominent:disabled { color: var(--window); opacity: 0.5; }
+.link { font-size: 12px; color: var(--icon); text-align: left; }
+.link.destructive { color: var(--destructive); }
+.link:disabled { opacity: 0.5; }
+.link.plain { color: var(--text); }
+
+.picker {
+  height: 24px; padding: 0 6px 0 10px; border-radius: 6px; background: var(--control);
+  border: 1px solid var(--ring); display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap;
+}
+.picker .icon { color: var(--muted); }
+
+.menu {
+  position: fixed; z-index: 50; min-width: 120px; padding: 4px; border-radius: 10px; background: var(--card);
+  border: 1px solid var(--ring); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 0 0.5px var(--ring);
+}
+.menu button {
+  display: flex; width: 100%; height: 28px; align-items: center; padding: 0 10px;
+  border-radius: 6px; text-align: left; white-space: nowrap; outline: none;
+}
+.menu button:hover, .menu button:focus-visible { background: var(--hover); }
+
+.icon-btn { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; color: var(--icon); flex: none; }
+.icon-btn:is(:hover, .hovered):not(:disabled) { background: var(--hover); }
+.icon-btn:disabled { opacity: 0.4; }
+.icon-btn.bordered { background: var(--control); border: 1px solid var(--ring); box-shadow: 0 1px 1px var(--ring); color: var(--text); }
+/* A symbol as a plain button: the excluded application's minus.circle, a replacement's minus. */
+.plain-glyph { width: 24px; height: 24px; display: grid; place-items: center; flex: none; color: var(--text); }
+.row .plain-glyph { width: auto; height: auto; color: var(--muted); }
+
+/* MARK: Provider and Module cards */
+.provider { min-height: 52px; gap: 10px; }
+.provider .who { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.provider .name { font-weight: 500; }
+.provider .status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.green { background: var(--green); } .dot.yellow { background: var(--yellow); }
+.dot.red { background: var(--red); } .dot.muted { background: var(--muted); }
+.provider-note { font-size: 12px; color: var(--muted); padding: 0 10px 10px 38px; }
+
+.module-head { height: 56px; padding: 0 10px; display: flex; align-items: center; gap: 12px; border-radius: 7px; transition: background-color 0.12s ease-out; }
+.module-head.hovers:is(:hover, .hovered) { background: var(--hover); }
+.module-head .open { flex: 1; display: flex; align-items: center; gap: 12px; text-align: left; height: 100%; min-width: 0; }
+.tile { width: 32px; height: 32px; border-radius: 8px; background: var(--text); display: grid; place-items: center; color: var(--window); flex: none; }
+.module-head .name { font-weight: 500; }
+.module-head .summary { font-size: 12px; color: var(--muted); }
+.module-head .text { display: flex; flex-direction: column; gap: 2px; }
+.indent44 { padding-left: 54px; }
+
+/* The Teleprompter's Script */
+.script-wrap { position: relative; }
+.script {
+  width: 100%; height: 76px; resize: none; border-radius: 6px; background: var(--control); color: var(--text);
+  border: 1px solid var(--ring); padding: 6px 5px; font: 12px/1.35 'Geist', system-ui, sans-serif; outline: none;
+}
+.script-count { position: absolute; right: 8px; bottom: 8px; background: var(--control); padding: 0 6px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.actions { display: flex; gap: 8px; align-items: center; }
+.block { padding: 4px 10px 12px 54px; display: flex; flex-direction: column; gap: 8px; }
+.shortcut-row { display: flex; align-items: center; gap: 12px; }
+.shortcut-row .who { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.shortcut-row .error { font-size: 12px; color: var(--red); }
+/* 16 by 24, its ring drawn inside, so the two 16-by-12 buttons fill it. */
+.stepper {
+  width: 16px; height: 24px; border-radius: 6px; background: var(--control); box-shadow: inset 0 0 0 1px var(--ring);
+  display: flex; flex-direction: column; flex: none;
+}
+.stepper button { height: 12px; width: 16px; color: var(--muted); display: grid; place-items: center; }
+.shortcut-editor { display: inline-flex; align-items: center; gap: 12px; flex: none; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* The permission rows, setup steps, history, replacements */
+.access { min-height: 56px; gap: 12px; }
+.access .icon { color: var(--icon); margin: 0 4px; }
+.positive { color: var(--positive); font-size: 12px; }
+.destructive { color: var(--destructive); font-size: 12px; }
+.panel { background: var(--card); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+.step { display: flex; align-items: center; gap: 12px; }
+.step .badge { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--text); color: var(--window); flex: none; }
+.step .badge.done { background: var(--positive); color: #fff; }
+.step .what { font-size: 14px; font-weight: 600; flex: 1; }
+.progress { height: 4px; border-radius: 2px; background: var(--selection); overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+.report {
+  font: 11px ui-monospace, 'Cascadia Mono', 'DejaVu Sans Mono', monospace; user-select: text; -webkit-user-select: text;
+  height: 140px; overflow: auto; margin: 10px; white-space: pre-wrap;
+}
+.entry { background: var(--card); border: 1px solid var(--ring); border-radius: 10px; padding: 8px 14px; display: flex; flex-direction: column; gap: 4px; }
+.entry .when { display: flex; align-items: center; gap: 6px; }
+.entry .when span { flex: 1; font-size: 12px; color: var(--muted); }
+/* `lineSpacing(4)` under Geist's own line. */
+.entry p { line-height: 20.9px; user-select: text; -webkit-user-select: text; }
+/* The setup's description: `lineSpacing(3)`. */
+.setup-text { line-height: 19.9px; white-space: pre-line; }
+.table { background: var(--card); border-radius: 10px; overflow: hidden; }
+.table .head { display: flex; gap: 12px; padding: 12px 16px; background: var(--hover); font-size: 12px; color: var(--icon); }
+.table .head span { flex: 1; } .table .head i { width: 24px; }
+.table .line { display: flex; gap: 12px; padding: 8px 16px; align-items: center; border-top: 1px solid var(--ring); }
+.table .line input[type=checkbox] { width: 24px; accent-color: var(--accent); }
+.table .line input[type=text] {
+  flex: 1; height: 28px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--ring); background: transparent;
+  color: var(--text); font: 12px 'Geist', system-ui, sans-serif; outline: none; min-width: 0;
+}
+.back { font-size: 12px; color: var(--icon); text-align: left; }
+.breadcrumb { display: flex; flex-direction: column; gap: 6px; }
+
+/* Onboarding */
+.footer { height: 56px; padding: 0 40px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--ring); flex: none; position: relative; }
+.footer .grow { flex: 1; }
+.feature { min-height: 52px; gap: 12px; }
+.feature .icon { color: var(--icon); margin: 0 4px; }
+.feature .stack2 { padding: 0; }
+.feature .name { font-weight: 500; }
+
+/* The consent dialog */
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: grid; place-items: center; z-index: 100; }
+.dialog {
+  width: 380px; background: var(--card); border-radius: 12px; border: 1px solid var(--ring); padding: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; gap: 10px;
+}
+.dialog h2 { font-size: 15px; font-weight: 600; }
+.dialog p { color: var(--muted); line-height: 1.45; }
+.dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+.hubless { padding: 120px 40px; color: var(--muted); font-size: 15px; text-align: center; width: 100%; }
