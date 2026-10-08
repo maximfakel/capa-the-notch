@@ -1,0 +1,942 @@
+{
+  "busy": {
+    "alertsEnabled": true,
+    "alertsFor": {
+      "claudeCode": true,
+      "codex": true,
+      "openCode": true
+    },
+    "appearance": "system",
+    "backgroundRefreshSeconds": 300.0,
+    "choices": {
+      "appearance": [
+        {
+          "id": "system",
+          "title": "System"
+        },
+        {
+          "id": "light",
+          "title": "Light"
+        },
+        {
+          "id": "dark",
+          "title": "Dark"
+        }
+      ],
+      "clippingLimit": [
+        20,
+        50,
+        100
+      ],
+      "compactWindow": [
+        {
+          "id": "fiveHour",
+          "title": "Five-hour"
+        },
+        {
+          "id": "weekly",
+          "title": "Weekly"
+        },
+        {
+          "id": "leastLeft",
+          "title": "Least left"
+        }
+      ],
+      "language": [
+        {
+          "id": "system",
+          "title": "System"
+        },
+        {
+          "id": "english",
+          "title": "English"
+        },
+        {
+          "id": "russian",
+          "title": "Русский"
+        }
+      ],
+      "refresh": [
+        60.0,
+        300.0,
+        900.0
+      ],
+      "teleprompterActions": [
+        {
+          "id": "startOrPause",
+          "title": "Start or pause"
+        },
+        {
+          "id": "stop",
+          "title": "Stop"
+        },
+        {
+          "id": "faster",
+          "title": "Faster"
+        },
+        {
+          "id": "slower",
+          "title": "Slower"
+        }
+      ],
+      "textSize": [
+        {
+          "id": "small",
+          "title": "Small"
+        },
+        {
+          "id": "medium",
+          "title": "Medium"
+        },
+        {
+          "id": "large",
+          "title": "Large"
+        }
+      ]
+    },
+    "compactWindow": "fiveHour",
+    "consent": {
+      "claudeCode": true,
+      "openCode": true
+    },
+    "dictation": {
+      "enabled": true,
+      "history": [],
+      "keepsHistory": true,
+      "replacements": [
+        {
+          "enabled": true,
+          "heard": "пул реквест",
+          "id": 1,
+          "replacement": "pull request"
+        },
+        {
+          "enabled": true,
+          "heard": "коммит",
+          "id": 2,
+          "replacement": "commit"
+        },
+        {
+          "enabled": true,
+          "heard": "диплой",
+          "id": 3,
+          "replacement": "deploy"
+        },
+        {
+          "enabled": true,
+          "heard": "гитхаб",
+          "id": 4,
+          "replacement": "GitHub"
+        },
+        {
+          "enabled": true,
+          "heard": "тайпскрипт",
+          "id": 5,
+          "replacement": "TypeScript"
+        },
+        {
+          "enabled": true,
+          "heard": "докер",
+          "id": 6,
+          "replacement": "Docker"
+        },
+        {
+          "enabled": true,
+          "heard": "кубернетес",
+          "id": 7,
+          "replacement": "Kubernetes"
+        },
+        {
+          "enabled": true,
+          "heard": "фронтенд",
+          "id": 8,
+          "replacement": "frontend"
+        },
+        {
+          "enabled": true,
+          "heard": "бэкенд",
+          "id": 9,
+          "replacement": "backend"
+        },
+        {
+          "enabled": false,
+          "heard": "джейсон",
+          "id": 10,
+          "replacement": "JSON"
+        },
+        {
+          "enabled": false,
+          "heard": "реакт",
+          "id": 11,
+          "replacement": "React"
+        }
+      ],
+      "shortcut": {
+        "caps": [
+          "Ctrl",
+          "Alt",
+          "D"
+        ],
+        "display": "Ctrl+Alt+D"
+      }
+    },
+    "displayId": 0,
+    "keepsDiagnosticLog": false,
+    "language": "system",
+    "launchAtLogin": false,
+    "logPath": "/tmp/capa-settings-1038519.log",
+    "music": {
+      "enabled": true
+    },
+    "onboarding": {
+      "finished": false,
+      "needed": true
+    },
+    "platform": "linux",
+    "playsSounds": true,
+    "providers": [
+      {
+        "canConnect": true,
+        "name": "Codex",
+        "needsConsent": false,
+        "on": true,
+        "provider": "codex"
+      },
+      {
+        "canConnect": true,
+        "name": "Claude Code",
+        "needsConsent": false,
+        "on": false,
+        "provider": "claudeCode"
+      },
+      {
+        "canConnect": true,
+        "name": "OpenCode",
+        "needsConsent": false,
+        "on": false,
+        "provider": "openCode"
+      }
+    ],
+    "screenSharingAllowed": false,
+    "shelf": {
+      "clippingLimit": 20,
+      "clippingsExpire": true,
+      "enabled": true,
+      "excludedApplications": [
+        "org.keepassxc.KeePassXC"
+      ],
+      "keepsText": true,
+      "takesClipboardImages": true
+    },
+    "showsKapa": true,
+    "teleprompter": {
+      "enabled": true,
+      "hasPreviousScript": true,
+      "minutes": 1,
+      "multiplier": 1.0,
+      "script": "Good evening. This is the new Script.",
+      "shortcuts": {
+        "faster": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "↑"
+          ],
+          "display": "Ctrl+Alt+↑"
+        },
+        "slower": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "↓"
+          ],
+          "display": "Ctrl+Alt+↓"
+        },
+        "startOrPause": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "Space"
+          ],
+          "display": "Ctrl+Alt+Space"
+        },
+        "stop": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "Esc"
+          ],
+          "display": "Ctrl+Alt+Esc"
+        }
+      },
+      "textSize": "medium",
+      "wordCount": 7
+    },
+    "version": "0.3.1"
+  },
+  "commands": [
+    "set",
+    "setShortcut",
+    "setProvider",
+    "giveConsent",
+    "faster",
+    "slower",
+    "replaceScript",
+    "restorePreviousScript",
+    "deleteHistoryEntry",
+    "clearHistory",
+    "finishOnboarding",
+    "restartOnboarding",
+    "checkForUpdates",
+    "diagnosticsInfo"
+  ],
+  "dictionaryRu": {
+    "%.2f times": "%.2f×",
+    "%@ is running out": "У %@ заканчиваются лимиты",
+    "%@ of %@": "%@ из %@",
+    "%@ settings": "Настройки: %@",
+    "%@ shortcut": "Сочетание: %@",
+    "%@ window": "окно %@",
+    "%@, moved": "%@, перемещён",
+    "%@, resets in %@": "%@, сброс через %@",
+    "%@: %d%% left": "%@: осталось %d%%",
+    "%d active rules": "Активных правил: %d",
+    "%d percent": "%d%%",
+    "%d percent left": "осталось %d%%",
+    "%d percent used": "использовано %d%%",
+    "%d results": "Результатов: %d",
+    "%d saved results": "Сохранённых результатов: %d",
+    "%d words · %d min": "Слов: %d · %d мин",
+    "%d%% used": "Исп %d%%",
+    "%dd": "%d д",
+    "%dd %dh": "%d д %d ч",
+    "%dh": "%d ч",
+    "%dh %dm": "%d ч %d мин",
+    "%dm": "%d мин",
+    "+ Add replacement": "+ Добавить замену",
+    "A Capacity Alert when a window is about to run out.": "Оповещение, когда лимит вот-вот закончится.",
+    "A notification when a window is about to run out.": "Уведомление, когда лимит вот-вот закончится.",
+    "Accessibility": "Универсальный доступ",
+    "Add Application…": "Добавить приложение…",
+    "Alerts": "Оповещения",
+    "Allow": "Разрешить",
+    "Allow All": "Разрешить всё",
+    "Allow microphone access": "Разрешить доступ к микрофону",
+    "Allowed": "Разрешена",
+    "Another app already uses this shortcut.": "Это сочетание уже занято другим приложением.",
+    "Appear in screen sharing and recordings": "Показывать при демонстрации и записи экрана",
+    "Appearance": "Оформление",
+    "Audio is never saved. Esc cancels without changing your clipboard.": "Аудиозаписи не сохраняются. Esc отменяет запись, не трогая буфер обмена.",
+    "Automatic insertion": "Автоматическая вставка",
+    "Back": "Назад",
+    "Built-in display": "Встроенный дисплей",
+    "Built-in features. Each one is off until you turn it on.": "Встроенные функции. Каждая выключена, пока вы её не включите.",
+    "Cancel": "Отменить",
+    "CapaTheNotch Settings": "Настройки CapaTheNotch",
+    "CapaTheNotch reads nothing until a Provider is on.": "Пока провайдер выключен, CapaTheNotch ничего не читает.",
+    "CapaTheNotch reads your OpenCode Go key from OpenCode's own file and asks opencode.ai only for your plan's percentages and reset times — every five minutes, and when you refresh. The key is kept nowhere and sent nowhere else.": "CapaTheNotch читает ключ OpenCode Go из файла самого OpenCode и спрашивает у opencode.ai только проценты и время сброса вашего плана — раз в пять минут и когда вы обновляете. Ключ нигде не хранится и больше никуда не отправляется.",
+    "Capacity": "Лимиты",
+    "Capacity Notch is now CapaTheNotch.app. If ~/.claude/settings.json runs the status-line bridge from CapacityNotch.app, Claude Code's status line stops once that app is gone — yours too, if it runs through the bridge. CapaTheNotch can point that one path at this copy. It opens Claude Code's settings only for this, keeps nothing it reads and changes nothing else.": "Capacity Notch теперь называется CapaTheNotch.app. Если в ~/.claude/settings.json мост строки состояния запускается из CapacityNotch.app, строка состояния Claude Code пропадёт, когда этого приложения не станет, — и ваша тоже, если она идёт через мост. CapaTheNotch может указать этот путь на эту копию. Настройки Claude Code открываются только для этого: прочитанное не сохраняется, больше ничего не меняется.",
+    "Changed: %@. CapacityNotch.app can go to the Trash.": "Изменено: %@. CapacityNotch.app можно перенести в Корзину.",
+    "Check for Updates…": "Проверить обновления…",
+    "Checking the model…": "Проверяем модель…",
+    "Choose how recognised words are written.": "Выберите, как записывать распознанные слова.",
+    "Claude Code and OpenCode are experimental. CapaTheNotch says what it reads before reading anything.": "Claude Code и OpenCode — экспериментальные. Прежде чем что-то читать, CapaTheNotch скажет, что именно.",
+    "Claude Code did not answer. Check that it is signed in, then refresh.": "Claude Code не ответил. Проверьте, что вход выполнен, и обновите.",
+    "Claude Code has not published Capacity yet. Configure the CapaTheNotch status-line bridge, then run Claude Code in a terminal.": "Claude Code ещё не публиковал лимиты. Настройте мост строки состояния CapaTheNotch и запустите Claude Code в терминале.",
+    "Claude Code's settings were not changed": "Настройки Claude Code не изменены",
+    "Claude Code's status line now runs the bridge from this copy.": "Строка состояния Claude Code теперь запускает мост из этой копии.",
+    "Claude Code's usage report has changed and CapaTheNotch cannot read it. Update CapaTheNotch.": "Отчёт Claude Code об использовании изменился, и CapaTheNotch не может его прочитать. Обновите CapaTheNotch.",
+    "Clear": "Очистить",
+    "Clear %@": "Очистить: %@",
+    "Clear History": "Очистить историю",
+    "Clipboard": "Буфер",
+    "Codex answered in a form CapaTheNotch cannot read. Update CapaTheNotch.": "Codex ответил в формате, который CapaTheNotch не понимает. Обновите CapaTheNotch.",
+    "Codex could not read its Capacity — %@ Retrying.": "Codex не смог прочитать свои лимиты — %@ Пробуем снова.",
+    "Codex is not answering — %@": "Codex не отвечает — %@",
+    "Collapsed": "Свёрнуто",
+    "Connect": "Подключить",
+    "Connect a Provider": "Подключите провайдера",
+    "Connect this Provider": "Подключить провайдера",
+    "Connect up to two in Settings": "Подключите до двух — в настройках",
+    "Connecting": "Подключение",
+    "Continue": "Продолжить",
+    "Control what's playing without leaving what you're doing.": "Управляйте музыкой, не отрываясь от работы.",
+    "Copied": "Скопировано",
+    "Copied text carries versions, the states of Providers and Dictation, and timings. It carries no credential, address, identifier, Provider message or dictated text — those cannot reach it.": "В скопированном тексте — версии, состояние провайдеров и диктовки, время. Учётных данных, адресов, идентификаторов, сообщений провайдеров и надиктованного текста в нём нет.",
+    "Copy": "Скопировать",
+    "Copy Diagnostics": "Копировать отчёт",
+    "Dark": "Тёмное",
+    "Delete": "Удалить",
+    "Delete %@ replacement": "Удалить замену «%@»",
+    "Delete replacement": "Удалить замену",
+    "Diagnostics": "Диагностика",
+    "Dictation": "Диктовка",
+    "Dictation error. Show details.": "Ошибка диктовки. Показать подробности.",
+    "Dictation hears you only while you hold its shortcut.": "Диктовка слышит вас, пока вы держите сочетание.",
+    "Dictation history": "История диктовки",
+    "Dictation stopped": "Диктовка остановлена",
+    "Dictation types its text where the cursor is.": "Диктовка вставляет текст туда, где стоит курсор.",
+    "Dictation's fallback for pasting its text.": "Запасной способ вставки текста для диктовки.",
+    "Disconnected": "Данных нет",
+    "Dismiss": "Закрыть",
+    "Done": "Готово",
+    "Download again": "Загрузить заново",
+    "Download failed. Check your connection and free disk space, then try again.": "Загрузка не удалась. Проверьте подключение и свободное место на диске и попробуйте снова.",
+    "Download the speech model": "Загрузить языковую модель",
+    "Download the speech model in Dictation settings before recording.": "Перед записью загрузите языковую модель в настройках диктовки.",
+    "Download • 170 MB": "Загрузить • 170 МБ",
+    "Downloaded": "Загружена",
+    "Downloading · %d%%": "Загрузка · %d%%",
+    "Drag files here to keep them at hand": "Перетащите сюда файлы, чтобы держать их под рукой",
+    "Edit": "Изменить",
+    "Edit Script": "Изменить текст",
+    "Empty": "Пусто",
+    "Enable": "Включить",
+    "Enable %@": "Включить «%@»",
+    "Enable automatic insertion": "Включить автоматическую вставку",
+    "Every %d minutes": "Каждые %d мин",
+    "Every hour": "Каждый час",
+    "Everything chosen here can be changed later in Settings.": "Всё, что вы выберете здесь, можно поменять потом в настройках.",
+    "Everything macOS will ask about, at once, so nothing interrupts you later.": "Всё, о чём спросит macOS, — сразу, чтобы потом ничего не отвлекало.",
+    "Expanded": "Развёрнуто",
+    "Faster": "Быстрее",
+    "File\nmoved": "Файл\nперемещён",
+    "File copied": "Файл скопирован",
+    "Files": "Файлы",
+    "Files at hand, dropped on the notch.": "Файлы под рукой — просто бросьте их на шторку.",
+    "Files dropped on the notch stay at hand until you drag them away or CapaTheNotch quits. Only a reference is kept; nothing is copied.": "Брошенные на шторку файлы остаются под рукой, пока вы их не утащите или не выйдете из CapaTheNotch. Хранится только ссылка — сами файлы никуда не копируются.",
+    "Finish": "Готово",
+    "Five-hour": "5-ти часовые",
+    "Forget each after 24 hours": "Забывать каждый через 24 часа",
+    "Fresh": "Свежие",
+    "Fresh Capacity": "свежие лимиты",
+    "Fresh · read %@": "Свежие · обновлено %@",
+    "General": "Основные",
+    "Granted": "Разрешено",
+    "Hold a shortcut to turn speech into text, entirely on this Mac.": "Удерживайте сочетание, чтобы превращать речь в текст — целиком на этом Mac.",
+    "Hold to dictate": "Удерживать для диктовки",
+    "How much of Codex, Claude Code and OpenCode is left, right under the notch — and a few tools beside it.": "Сколько осталось лимитов Codex, Claude Code и OpenCode — прямо под вырезом экрана. И ещё несколько инструментов рядом.",
+    "Image %@": "Изображение %@",
+    "Images and files from the clipboard": "Картинки и файлы из буфера обмена",
+    "Insertion was unavailable.": "Вставка недоступна.",
+    "Install Claude Code, then try again.": "Установите Claude Code и попробуйте снова.",
+    "Install the Codex CLI, then try again.": "Установите Codex CLI и попробуйте снова.",
+    "Keep": "Хранить",
+    "Keep a log for bug reports": "Вести журнал для отчётов об ошибках",
+    "Keep history": "Хранить историю",
+    "Language": "Язык",
+    "Large": "Крупный",
+    "Last seen before CapaTheNotch restarted. Refreshing.": "Получено до перезапуска CapaTheNotch. Обновляем.",
+    "Launch at login": "Открывать при входе",
+    "Least left": "Меньший остаток",
+    "Leave It": "Оставить",
+    "Light": "Светлое",
+    "Manage speech model": "Управление языковой моделью",
+    "Matches whole words and phrases, ignoring letter case.\nChanges apply to your next dictation.": "Распознаются целые слова и фразы, без учёта регистра.\nИзменения применятся к следующей диктовке.",
+    "Medium": "Средний",
+    "Microphone": "Микрофон",
+    "Microphone access is needed only while recording.": "Микрофон нужен только во время записи.",
+    "Microphone access is required. Allow CapaTheNotch in System Settings → Privacy & Security → Microphone.": "Нужен доступ к микрофону. Разрешите CapaTheNotch в Системных настройках → Конфиденциальность и безопасность → Микрофон.",
+    "Mock": "Демо",
+    "Model ready": "Модель готова",
+    "Modules": "Модули",
+    "Month used up": "Месяц исчерпан",
+    "Monthly limit reached": "Месячный лимит исчерпан",
+    "Monthly limit reached · until %@": "Месячный лимит исчерпан · до %@",
+    "Move Claude Code's status line to CapaTheNotch?": "Перенести строку состояния Claude Code на CapaTheNotch?",
+    "Music": "Музыка",
+    "Mute": "Выключить звук",
+    "Never from these applications": "Никогда из этих приложений",
+    "Next page": "Следующая страница",
+    "Next track": "Следующий трек",
+    "No data": "Данных нет",
+    "No external application was captured when recording began.": "Когда началась запись, не было приложения, куда вставить текст.",
+    "No microphone is available. Connect one and try again.": "Микрофон не найден. Подключите его и попробуйте снова.",
+    "No path to CapacityNotch.app was found in Claude Code's settings.": "В настройках Claude Code нет пути к CapacityNotch.app.",
+    "No saved results": "Нет сохранённых результатов",
+    "No saved results. Turn on Keep history to save future dictations.": "Нет сохранённых результатов. Включите «Хранить историю», чтобы сохранять следующие диктовки.",
+    "No speech was recognised. Check your microphone and try again.": "Речь не распознана. Проверьте микрофон и попробуйте снова.",
+    "No speech was recorded. Hold the shortcut while speaking.": "Речь не записана. Удерживайте сочетание, пока говорите.",
+    "None": "Нет",
+    "Nothing playing": "Ничего не играет",
+    "Nothing to change": "Менять нечего",
+    "Notifications": "Уведомления",
+    "Now playing": "Сейчас играет",
+    "Off": "Выключено",
+    "On": "Включено",
+    "Onboarding steps": "Шаги онбординга",
+    "One download, then recognition works offline.\nGigaAM v3 · 170 MB download · 232 MB on disk": "Распознавание будет работать локально и без сети.\nGigaAM v3 · загрузка 170 МБ · 232 МБ на диске",
+    "One warning per window, when it first drops below a tenth left, and nothing more until it recovers or resets.": "Одно предупреждение на лимит — когда в нём впервые остаётся меньше 10%. Следующее — только после того, как лимит восстановится или сбросится.",
+    "Open Dictation Settings": "Открыть настройки диктовки",
+    "Open Provider Settings": "Открыть настройки провайдеров",
+    "Open Settings": "Открыть настройки",
+    "Open, the surface has a page for it. It is read through a part of macOS that Apple does not publish, which a macOS update could close.": "В раскрытом состоянии у неё своя страница.",
+    "OpenCode refused its key. Sign in again with `opencode auth login`.": "OpenCode не принял ключ. Войдите заново командой `opencode auth login`.",
+    "OpenCode's answer was not understood. Update CapaTheNotch.": "Ответ OpenCode не распознан. Обновите CapaTheNotch.",
+    "Opens the latest release on GitHub. CapaTheNotch does not check on its own.": "Открывает последний выпуск на GitHub. Сама CapaTheNotch обновления не проверяет.",
+    "Optional. You can always paste from the clipboard.": "Необязательно. Всегда можно вставить из буфера обмена.",
+    "Passwords and Keychain Access are always left alone.": "Пароли и Связка ключей не трогаются никогда.",
+    "Paste": "Вставить",
+    "Paste a Script, or write one in Settings.": "Вставьте текст или напишите его в настройках.",
+    "Paste from Clipboard": "Вставить из буфера",
+    "Paste it where you want it.": "Вставьте его, куда нужно.",
+    "Pause": "Пауза",
+    "Paused": "На паузе",
+    "Permissions": "Разрешения",
+    "Play": "Воспроизвести",
+    "Play a track in any player and it shows up here": "Включите трек в любом плеере — он появится здесь",
+    "Play sounds": "Воспроизводить звуки",
+    "Played at %@": "Играло в %@",
+    "Played in %@ · %@": "Играло: %@ · %@",
+    "Position": "Позиция",
+    "Press keys…": "Нажмите клавиши…",
+    "Previous page": "Предыдущая страница",
+    "Previous track": "Предыдущий трек",
+    "Progress through the Script": "Прогресс текста",
+    "Providers": "Провайдеры",
+    "Puts it on the clipboard": "Кладёт в буфер обмена",
+    "Quit CapaTheNotch": "Завершить CapaTheNotch",
+    "Read your Script beside the camera, without looking away.": "Читайте текст рядом с камерой, не отводя взгляд.",
+    "Recognised": "Распознано",
+    "Recognised phrase": "Распознанная фраза",
+    "Recognising speech. Escape cancels.": "Распознаём речь. Esc отменяет.",
+    "Recognition could not start. Try again.": "Распознавание не запустилось. Попробуйте снова.",
+    "Recognition failed. Try again.": "Распознавание не удалось. Попробуйте снова.",
+    "Recording. Release the shortcut to recognise. Escape cancels.": "Запись. Отпустите сочетание, чтобы распознать. Esc отменяет.",
+    "Refresh %@": "Обновить %@",
+    "Refresh %@ Capacity": "Обновить лимиты %@",
+    "Refresh Now": "Обновить сейчас",
+    "Remove %@": "Убрать %@",
+    "Remove %@ from the Shelf": "Убрать %@ с полки",
+    "Remove from the Shelf": "Убрать с полки",
+    "Replace with": "Заменить на",
+    "Replacement": "Замена",
+    "Requested after the model is ready.": "Запросим, когда модель будет готова.",
+    "Restore Previous Script": "Восстановить прошлый",
+    "Reveal Log": "Показать журнал",
+    "Run Claude Code in a terminal to update its last published Capacity.": "Запустите Claude Code в терминале, чтобы обновить последние опубликованные лимиты.",
+    "Run Onboarding Again": "Онбординг",
+    "Screenshots": "Скрины",
+    "Screenshots and images you copy wait here": "Здесь ждут скопированные скриншоты и картинки",
+    "Script": "Сценарий",
+    "Set up": "Настроить",
+    "Set up Dictation": "Настройка диктовки",
+    "Settings and the notch speak it; you can change it at any time.": "На нём говорят настройки и шторка. Поменять можно в любой момент.",
+    "Settings sections": "Разделы настроек",
+    "Settings…": "Настройки…",
+    "Shelf": "Полка",
+    "Shortcuts": "Сочетания клавиш",
+    "Show Kapa": "Показывать Капу",
+    "Show in Finder": "Показать в Finder",
+    "Show on": "Показывать на",
+    "Show or hide Capacity details": "Показать или скрыть лимиты",
+    "Shown in the closed strip": "Лимиты в компактной шторке",
+    "Sign in to OpenCode with `opencode auth login`, then try again.": "Войдите в OpenCode командой `opencode auth login` и попробуйте снова.",
+    "Sign in with `codex login`, then try again.": "Войдите командой `codex login` и попробуйте снова.",
+    "Skip": "Пропустить",
+    "Skipped": "Пропущено",
+    "Slower": "Медленнее",
+    "Small": "Мелкий",
+    "Source & licences ↗": "Источник и лицензии ↗",
+    "Speak in Russian, with the IT terms you use every day.": "Говорите по-русски, с IT-терминами, которыми пользуетесь каждый день.",
+    "Speak, then keep typing.": "Голосовая клавиатура на русском.",
+    "Speech becomes text on this Mac. The speech model is downloaded once.": "Речь превращается в текст прямо на этом Mac. Языковая модель загружается один раз.",
+    "Speech model": "Языковая модель",
+    "Speed": "Скорость",
+    "Stale": "Устарели",
+    "Stale Capacity": "устаревшие лимиты",
+    "Stale · last read at %@": "Устарели · обновлено в %@",
+    "Start": "Старт",
+    "Start or pause": "Старт или пауза",
+    "Step %d": "Шаг %d",
+    "Stop": "Стоп",
+    "System": "Как в системе",
+    "System Events": "System Events",
+    "Teleprompter": "Телесуфлёр",
+    "Teleprompter, finished": "Телесуфлёр, закончен",
+    "Teleprompter, paused": "Телесуфлёр, на паузе",
+    "Teleprompter, running": "Телесуфлёр, идёт",
+    "Teleprompter, stopped": "Телесуфлёр, остановлен",
+    "Text copied to clipboard. Tap for insertion details.": "Текст скопирован в буфер. Нажмите, чтобы узнать подробности.",
+    "Text copied, not inserted": "Текст скопирован, но не вставлен",
+    "Text from the clipboard": "Текст из буфера обмена",
+    "Text inserted and copied": "Текст вставлен и скопирован",
+    "Text size": "Размер текста",
+    "Text you copy can wait here": "Здесь может ждать скопированный текст",
+    "Text you copy is kept under Clipboard, newest first, to put on the clipboard again. Passwords and anything marked secret are left alone.": "Скопированный текст хранится во вкладке «Буфер», новые сверху, — чтобы снова положить его в буфер. Пароли и всё, помеченное как секретное, не трогаются.",
+    "The captured field lost focus before insertion.": "Поле потеряло фокус до вставки.",
+    "The download could not be unpacked. Check free disk space and try again.": "Загрузку не удалось распаковать. Проверьте свободное место и попробуйте снова.",
+    "The field changed during Accessibility insertion; paste was skipped to avoid duplicating text.": "Поле изменилось во время вставки; вставка пропущена, чтобы не задвоить текст.",
+    "The microphone changed. Select your input device and try again.": "Микрофон сменился. Выберите устройство ввода и попробуйте снова.",
+    "The microphone could not start. Check microphone access and your input device in System Settings.": "Микрофон не запустился. Проверьте доступ к микрофону и устройство ввода в Системных настройках.",
+    "The speech model could not load. Download it again in Dictation settings.": "Языковая модель не загрузилась. Загрузите её заново в настройках диктовки.",
+    "The speech model is missing or damaged. Download it again in Dictation settings.": "Языковая модель отсутствует или повреждена. Загрузите её заново в настройках диктовки.",
+    "The target application or text field changed before insertion.": "Приложение или поле изменилось до вставки.",
+    "The target application stopped being active before insertion.": "Приложение перестало быть активным до вставки.",
+    "The text could not be pasted. It is still in the clipboard.": "Не удалось вставить текст. Он остался в буфере обмена.",
+    "This shortcut is in use. Choose another.": "Это сочетание занято. Выберите другое.",
+    "Try again.": "Попробуйте снова.",
+    "Turn On": "Включить",
+    "Turn on Claude Code in Settings to read its Capacity.": "Включите Claude Code в настройках, чтобы читать его лимиты.",
+    "Turn on Codex in Settings to read its Capacity.": "Включите Codex в настройках, чтобы читать его лимиты.",
+    "Turn on Dictation": "Включить диктовку",
+    "Turn on OpenCode in Settings to read its Capacity.": "Включите OpenCode в настройках, чтобы читать его лимиты.",
+    "Turn on OpenCode?": "Включить OpenCode?",
+    "Turn on text from the clipboard in Settings → Modules → Shelf.": "Включите текст из буфера в Настройках → Модули → Полка.",
+    "Turn on “Images and files from the clipboard” in Settings → Modules → Shelf.": "Включите «Картинки и файлы из буфера обмена» в Настройках → Модули → Полка.",
+    "Turn one off to turn this on.": "Отключите одного, чтобы включить этот.",
+    "Turning this off keeps your saved results.": "При отключении сохранённые результаты останутся.",
+    "Type a shortcut": "Нажмите сочетание",
+    "Unavailable": "Недоступно",
+    "Unmute": "Включить звук",
+    "Up to %d. All go when CapaTheNotch quits.": "До %d. Все уходят при выходе из CapaTheNotch.",
+    "Up to %d. Each goes after 24 hours, and all when CapaTheNotch quits.": "До %d. Каждый уходит через 24 часа, все — при выходе из CapaTheNotch.",
+    "Up to 20 files. The Shelf empties when CapaTheNotch quits.": "До 20 файлов. Полка очищается при выходе из CapaTheNotch.",
+    "Up to 20. The Shelf empties when CapaTheNotch quits.": "До 20. Полка очищается при выходе из CapaTheNotch.",
+    "Update Path": "Обновить путь",
+    "Update the Codex CLI — %@": "Обновите Codex CLI — %@",
+    "Version %@": "Версия %@",
+    "View history": "Открыть историю",
+    "Volume": "Громкость",
+    "Warn me when a window is about to run out": "Предупреждать, когда лимит вот-вот закончится",
+    "Weekly": "Недельные",
+    "Welcome": "Приветствие",
+    "Welcome to CapaTheNotch": "Добро пожаловать в CapaTheNotch",
+    "What is left of each window, and whether it will last.": "Сколько осталось в каждом лимите и хватит ли его.",
+    "What the notch shows besides Capacity. Each one is off until you turn it on.": "Что ещё показывает шторка, кроме лимитов.",
+    "What to send when something is wrong.": "Что отправить, если что-то пошло не так.",
+    "What you copy lands on the Shelf: a screenshot, a picture from a page, media or a document from a messenger. Copying in Finder, text and passwords are left alone. New screenshots saved to a folder land under Screenshots too.": "Скопированное само ложится на полку: скриншот, картинка со страницы, медиа или документ из мессенджера. Копирование в Finder, текст и пароли не трогаются. Новые скриншоты, сохранённые в папку, тоже попадают во «Скрины».",
+    "What's playing, with its controls, under Capacity.": "Что сейчас играет и управление — под лимитами.",
+    "Where CapaTheNotch appears, and how it starts and updates.": "Где появляется CapaTheNotch, как запускается и обновляется.",
+    "Where Capacity comes from, and whether it is being read.": "Откуда берутся лимиты и читаются ли они сейчас.",
+    "While the surface is closed": "Обновлять данные",
+    "Word replacements": "Замены слов",
+    "Write or paste the Script in Settings, under Modules. The shortcuts can be changed there too.": "Текст можно написать или вставить в настройках, в разделе «Модули». Там же меняются сочетания клавиш.",
+    "Your Script, scrolling beside the camera.": "Ваш текст бежит под камерой.",
+    "Your audio stays on this Mac and is never saved.\nText history is off unless you choose to enable it.": "Аудиозаписи не сохраняются. Историю расшифровок можно включить в настройках.",
+    "Your last 50 results, kept only on this Mac.": "Последние 50 результатов хранятся локально.",
+    "Your next dictation will appear here.": "Здесь появится ваша следующая диктовка.",
+    "connecting": "подключение",
+    "disconnected": "нет данных",
+    "just now": "только что",
+    "macOS asks about each one in turn. Accessibility is switched on in System Settings; its state here follows when you come back.": "macOS спросит о каждом по очереди. Универсальный доступ включается в Системных настройках — когда вернётесь, здесь это отразится.",
+    "macOS does not let CapaTheNotch read the clipboard. Allow it in System Settings → Privacy & Security.": "macOS не даёт CapaTheNotch читать буфер обмена. Разрешите это в Системных настройках → Конфиденциальность и безопасность.",
+    "macOS does not let CapaTheNotch read the folder screenshots are saved to. Allow it in System Settings → Privacy & Security → Files & Folders. Screenshots you copy still arrive.": "macOS не даёт CapaTheNotch читать папку, куда сохраняются скриншоты. Разрешите это в Системных настройках → Конфиденциальность и безопасность → Файлы и папки. Скопированные скриншоты по-прежнему приходят.",
+    "macOS keeps CapaTheNotch out of the capture it controls. It cannot promise anything about a camera pointed at the screen.": "macOS убирает CapaTheNotch из записи экрана, которой управляет сама. За камеру, направленную на экран, она ручаться не может.",
+    "macOS no longer lets CapaTheNotch read what's playing.": "macOS больше не даёт CapaTheNotch узнать, что играет.",
+    "mock Capacity": "демо-лимиты",
+    "moments": "мгновение",
+    "no Capacity read": "лимиты не прочитаны",
+    "on pace": "в норме",
+    "opencode.ai is not answering. Retrying.": "opencode.ai не отвечает. Пробуем снова.",
+    "reset time not reported": "время сброса неизвестно",
+    "resets in %@": "сброс через %@",
+    "resets in %@, at %@": "сброс через %@, в %@",
+    "running out": "заканчиваются",
+    "tightening": "сокращаются",
+    "under a minute": "меньше минуты",
+    "‹ Modules / Dictation": "‹ Модули / Диктовка"
+  },
+  "keys": [
+    "language",
+    "appearance",
+    "launchAtLogin",
+    "displayId",
+    "screenSharingAllowed",
+    "showsKapa",
+    "playsSounds",
+    "compactWindow",
+    "backgroundRefreshSeconds",
+    "alertsEnabled",
+    "alertsFor.",
+    "keepsDiagnosticLog",
+    "musicEnabled",
+    "teleprompterEnabled",
+    "script",
+    "teleprompterMultiplier",
+    "teleprompterTextSize",
+    "shelfEnabled",
+    "shelfTakesClipboardImages",
+    "shelfKeepsText",
+    "clippingLimit",
+    "clippingsExpire",
+    "clipboardExcludedApplications",
+    "dictationEnabled",
+    "dictationKeepsHistory",
+    "dictationReplacements"
+  ],
+  "quiet": {
+    "alertsEnabled": false,
+    "alertsFor": {
+      "claudeCode": false,
+      "codex": false,
+      "openCode": false
+    },
+    "appearance": "system",
+    "backgroundRefreshSeconds": 300.0,
+    "choices": {
+      "appearance": [
+        {
+          "id": "system",
+          "title": "System"
+        },
+        {
+          "id": "light",
+          "title": "Light"
+        },
+        {
+          "id": "dark",
+          "title": "Dark"
+        }
+      ],
+      "clippingLimit": [
+        20,
+        50,
+        100
+      ],
+      "compactWindow": [
+        {
+          "id": "fiveHour",
+          "title": "Five-hour"
+        },
+        {
+          "id": "weekly",
+          "title": "Weekly"
+        },
+        {
+          "id": "leastLeft",
+          "title": "Least left"
+        }
+      ],
+      "language": [
+        {
+          "id": "system",
+          "title": "System"
+        },
+        {
+          "id": "english",
+          "title": "English"
+        },
+        {
+          "id": "russian",
+          "title": "Русский"
+        }
+      ],
+      "refresh": [
+        60.0,
+        300.0,
+        900.0
+      ],
+      "teleprompterActions": [
+        {
+          "id": "startOrPause",
+          "title": "Start or pause"
+        },
+        {
+          "id": "stop",
+          "title": "Stop"
+        },
+        {
+          "id": "faster",
+          "title": "Faster"
+        },
+        {
+          "id": "slower",
+          "title": "Slower"
+        }
+      ],
+      "textSize": [
+        {
+          "id": "small",
+          "title": "Small"
+        },
+        {
+          "id": "medium",
+          "title": "Medium"
+        },
+        {
+          "id": "large",
+          "title": "Large"
+        }
+      ]
+    },
+    "compactWindow": "fiveHour",
+    "consent": {
+      "claudeCode": false,
+      "openCode": false
+    },
+    "dictation": {
+      "enabled": false,
+      "history": [],
+      "keepsHistory": false,
+      "replacements": [
+        {
+          "enabled": true,
+          "heard": "пул реквест",
+          "id": 1,
+          "replacement": "pull request"
+        },
+        {
+          "enabled": true,
+          "heard": "коммит",
+          "id": 2,
+          "replacement": "commit"
+        },
+        {
+          "enabled": true,
+          "heard": "диплой",
+          "id": 3,
+          "replacement": "deploy"
+        },
+        {
+          "enabled": true,
+          "heard": "гитхаб",
+          "id": 4,
+          "replacement": "GitHub"
+        },
+        {
+          "enabled": true,
+          "heard": "тайпскрипт",
+          "id": 5,
+          "replacement": "TypeScript"
+        },
+        {
+          "enabled": true,
+          "heard": "докер",
+          "id": 6,
+          "replacement": "Docker"
+        },
+        {
+          "enabled": true,
+          "heard": "кубернетес",
+          "id": 7,
+          "replacement": "Kubernetes"
+        },
+        {
+          "enabled": true,
+          "heard": "фронтенд",
+          "id": 8,
+          "replacement": "frontend"
+        },
+        {
+          "enabled": true,
+          "heard": "бэкенд",
+          "id": 9,
+          "replacement": "backend"
+        },
+        {
+          "enabled": false,
+          "heard": "джейсон",
+          "id": 10,
+          "replacement": "JSON"
+        },
+        {
+          "enabled": false,
+          "heard": "реакт",
+          "id": 11,
+          "replacement": "React"
+        }
+      ],
+      "shortcut": {
+        "caps": [
+          "Ctrl",
+          "Alt",
+          "D"
+        ],
+        "display": "Ctrl+Alt+D"
+      }
+    },
+    "displayId": 0,
+    "keepsDiagnosticLog": false,
+    "language": "system",
+    "launchAtLogin": false,
+    "logPath": "/tmp/capa-settings-1038519.log",
+    "music": {
+      "enabled": false
+    },
+    "onboarding": {
+      "finished": false,
+      "needed": true
+    },
+    "platform": "linux",
+    "playsSounds": true,
+    "providers": [
+      {
+        "canConnect": true,
+        "name": "Codex",
+        "needsConsent": false,
+        "on": true,
+        "provider": "codex"
+      },
+      {
+        "canConnect": true,
+        "name": "Claude Code",
+        "needsConsent": true,
+        "on": false,
+        "provider": "claudeCode"
+      },
+      {
+        "canConnect": true,
+        "name": "OpenCode",
+        "needsConsent": true,
+        "on": false,
+        "provider": "openCode"
+      }
+    ],
+    "screenSharingAllowed": false,
+    "shelf": {
+      "clippingLimit": 20,
+      "clippingsExpire": true,
+      "enabled": false,
+      "excludedApplications": [],
+      "keepsText": false,
+      "takesClipboardImages": false
+    },
+    "showsKapa": true,
+    "teleprompter": {
+      "enabled": false,
+      "hasPreviousScript": false,
+      "minutes": 0,
+      "multiplier": 1.0,
+      "script": "",
+      "shortcuts": {
+        "faster": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "↑"
+          ],
+          "display": "Ctrl+Alt+↑"
+        },
+        "slower": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "↓"
+          ],
+          "display": "Ctrl+Alt+↓"
+        },
+        "startOrPause": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "Space"
+          ],
+          "display": "Ctrl+Alt+Space"
+        },
+        "stop": {
+          "caps": [
+            "Ctrl",
+            "Alt",
+            "Esc"
+          ],
+          "display": "Ctrl+Alt+Esc"
+        }
+      },
+      "textSize": "medium",
+      "wordCount": 0
+    },
+    "version": "0.3.1"
+  }
+}
