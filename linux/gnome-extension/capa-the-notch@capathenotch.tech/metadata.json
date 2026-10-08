@@ -1,0 +1,12 @@
+{
+  "uuid": "capa-the-notch@capathenotch.tech",
+  "name": "CapaTheNotch",
+  "description": "Codex, Claude Code and OpenCode limits in a surface at the top of the screen. Needs the capa-daemon service.",
+  "shell-version": [
+    "50",
+    "51"
+  ],
+  "url": "https://github.com/maximfakel/capa-the-notch",
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.capa-the-notch"
+}
