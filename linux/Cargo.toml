@@ -6,6 +6,7 @@ members = [
     "crates/services",
     "crates/platform",
     "claude-bridge",
+    "crates/music",
 ]
 
 [workspace.package]
