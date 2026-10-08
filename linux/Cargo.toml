@@ -8,6 +8,7 @@ members = [
     "claude-bridge",
     "crates/music",
     "crates/shelf",
+    "crates/teleprompter",
 ]
 
 [workspace.package]
