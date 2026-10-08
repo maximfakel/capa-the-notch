@@ -134,6 +134,32 @@ swift run CapacityNotchTests      # проверки
 байты. Состояние во view объявлено через `State(initialValue:)`, а не `@State`:
 плагин этого макроса есть только в Xcode.
 
+## Linux (GNOME)
+
+В папке [`linux/`](linux/) — версия для GNOME. Ею занимается сообщество, ведёт
+её [@gangstand](https://github.com/gangstand): вопросы и ошибки Linux-версии
+адресуйте туда.
+
+Поддерживается GNOME Shell 50–51 на x86_64. Шторка — в центре верхней
+панели, на месте часов; работают лимиты, музыка (MPRIS), Полка, диктовка,
+телесуфлёр и Капа.
+
+Нужны `gnome-shell`, `gjs`, `libadwaita`, `webkitgtk-6.0`, `alsa-lib` и Rust
+(`cargo`). Установка для текущего пользователя:
+
+```sh
+linux/scripts/install-linux.sh
+```
+
+Затем выйдите из системы и войдите снова и включите расширение:
+`gnome-extensions enable capa-the-notch@capathenotch.tech`. Для Arch есть
+пакет: `cd linux/packaging/arch && makepkg -si`.
+
+Удаление: `linux/scripts/install-linux.sh --uninstall` (настройки в
+`~/.config/capa-the-notch` остаются).
+
+Мост строки состояния Claude Code ставится в `~/.local/bin/capa-claude-bridge`.
+
 ## Лицензия
 
 MIT. Сторонние компоненты — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, шрифт

@@ -1,0 +1,52 @@
+# The Linux version (linux/): built, tested and linted on every change to it.
+name: Linux
+
+on:
+  push:
+    paths:
+      - 'linux/**'
+      - '.github/workflows/linux.yml'
+  pull_request:
+    paths:
+      - 'linux/**'
+      - '.github/workflows/linux.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v5
+
+      # ALSA for the microphone (cpal); dbus-daemon for the MPRIS test's private bus;
+      # gdk-pixbuf's SVG loader for the players' icons.
+      - name: System packages
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libasound2-dev pkg-config dbus librsvg2-common
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: linux
+
+      - name: cargo build
+        run: cargo build --manifest-path linux/Cargo.toml --workspace --locked
+
+      - name: cargo test
+        run: cargo test --manifest-path linux/Cargo.toml --workspace --locked
+
+      - name: cargo clippy
+        run: cargo clippy --manifest-path linux/Cargo.toml --workspace --all-targets --locked -- -D warnings
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: JavaScript tests
+        run: node --test linux/js/test/*.test.js
