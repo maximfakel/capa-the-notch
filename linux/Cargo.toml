@@ -9,6 +9,7 @@ members = [
     "crates/music",
     "crates/shelf",
     "crates/teleprompter",
+    "crates/dictation",
 ]
 
 [workspace.package]
