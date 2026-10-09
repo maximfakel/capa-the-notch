@@ -1,0 +1,17 @@
+#!/bin/sh
+# Adds files to the CapaTheNotch Shelf: `capa-shelf-add FILE...`, or, as a
+# Nautilus script, the files selected. GNOME's Shell is never told what a
+# Wayland drag carries, so files cannot be dropped on the surface from a file
+# manager; this is the way in (and the Shelf's Files tab shows them at once).
+exec python3 - "$@" <<'PY'
+import json, os, subprocess, sys
+
+selected = os.environ.get("NAUTILUS_SCRIPT_SELECTED_FILE_PATHS", "")
+paths = [p for p in selected.split("\n") if p] or [os.path.abspath(p) for p in sys.argv[1:]]
+if not paths:
+    sys.exit("usage: capa-shelf-add FILE...")
+subprocess.run([
+    "busctl", "--user", "call", "tech.capathenotch.Daemon", "/tech/capathenotch/Daemon",
+    "tech.capathenotch.Daemon1", "Call", "sss", "shelf", "add", json.dumps({"paths": paths}),
+], check=False, stdout=subprocess.DEVNULL)
+PY

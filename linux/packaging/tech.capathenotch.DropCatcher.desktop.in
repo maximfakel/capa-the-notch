@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=CapaTheNotch Drop Window
+Exec=env GSK_RENDERER=cairo gjs -m @CATCHER_APP@
+Icon=@ICON@
+Terminal=false
+NoDisplay=true
+StartupNotify=false

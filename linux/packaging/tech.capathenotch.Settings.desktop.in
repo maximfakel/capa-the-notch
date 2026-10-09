@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+Name[ru]=Настройки
+Exec=gjs -m @SETTINGS_APP@ -- %U
+Icon=@ICON@
+Terminal=false
+StartupNotify=false
+StartupWMClass=tech.capathenotch.Settings
+# One application in the list, as on the Mac: this window belongs to CapaTheNotch,
+# so the entry only names and draws it in the dock.
+NoDisplay=true

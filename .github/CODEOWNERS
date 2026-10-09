@@ -1,0 +1,3 @@
+# The Linux version is looked after by its maintainer.
+/linux/ @gangstand
+/.github/workflows/linux.yml @gangstand

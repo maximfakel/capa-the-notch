@@ -1,0 +1,92 @@
+/* The drawing's own colours are spelled out in surface.js; what the theme
+   cannot be trusted with — sizes, weights, the font — is spelled out here.
+   The surface is black whatever the shell's theme is. */
+
+#capa-the-notch {
+    font-family: 'Geist', 'Cantarell', sans-serif;
+    color: white;
+}
+
+.capa-card {
+    background-color: rgba(255, 255, 255, 0.078);
+    border-radius: 20px;
+    padding: 14px;
+}
+
+.capa-card-header { spacing: 6px; }
+
+.capa-card-body { padding-top: 10px; }
+
+.capa-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: white;
+}
+
+.capa-chip {
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+}
+
+.capa-refresh {
+    width: 14px;
+    height: 22px;
+    padding: 0;
+    color: white;
+}
+
+.capa-refresh:hover { color: rgba(255, 255, 255, 0.7); }
+
+.capa-gauge-number {
+    font-size: 22px;
+    font-weight: 600;
+    color: white;
+}
+
+.capa-gauge-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.capa-caption {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.549);
+}
+
+.capa-detail-name {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.capa-guidance {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.549);
+}
+
+.capa-wide-pair { spacing: 14px; margin-right: 8px; }
+
+.capa-figure { spacing: 5px; }
+
+.capa-strip-figure {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.capa-empty-row { spacing: 14px; }
+
+.capa-connect {
+    background-color: rgba(255, 255, 255, 0.078);
+    border-radius: 20px;
+    padding: 14px 22px;
+}
+
+.capa-connect:hover { background-color: rgba(255, 255, 255, 0.2); }
+
+.capa-connect-body { spacing: 4px; }
+
+.capa-connect-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+}

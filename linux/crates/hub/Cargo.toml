@@ -1,0 +1,19 @@
+[package]
+name = "capa-hub"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+capa-core = { path = "../core" }
+capa-services = { path = "../services" }
+capa-platform = { path = "../platform" }
+capa-music = { path = "../music" }
+capa-teleprompter = { path = "../teleprompter" }
+capa-shelf = { path = "../shelf" }
+capa-dictation = { path = "../dictation" }
+capa-settings = { path = "../settings" }
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true

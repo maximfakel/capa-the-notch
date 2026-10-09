@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The keys GNOME Shell binds for the Teleprompter Module. The accelerators are
+     written here at run time from what the hub asks for (they follow Settings),
+     so the defaults are empty: nothing is bound while the Module is off. -->
+<schemalist>
+  <schema id="org.gnome.shell.extensions.capa-the-notch" path="/org/gnome/shell/extensions/capa-the-notch/">
+    <key name="teleprompter-start-or-pause" type="as"><default>[]</default><summary>Teleprompter: start or pause</summary></key>
+    <key name="teleprompter-stop" type="as"><default>[]</default><summary>Teleprompter: stop</summary></key>
+    <key name="teleprompter-faster" type="as"><default>[]</default><summary>Teleprompter: faster</summary></key>
+    <key name="teleprompter-slower" type="as"><default>[]</default><summary>Teleprompter: slower</summary></key>
+  </schema>
+</schemalist>

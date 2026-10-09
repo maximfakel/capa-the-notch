@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=CapaTheNotch
+Exec=gdbus call --session --dest tech.capathenotch.Shell --object-path /tech/capathenotch/Shell --method tech.capathenotch.Shell.Open
+Icon=@ICON@
+Terminal=false
+Categories=Utility;
+StartupNotify=false

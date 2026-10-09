@@ -133,6 +133,32 @@ The release archive is reproducible: the same commit and Swift toolchain give
 the same bytes. Views declare their state with `State(initialValue:)` rather
 than `@State`, whose macro plugin ships inside Xcode.
 
+## Linux (GNOME)
+
+[`linux/`](linux/) holds a version for GNOME. It is maintained by the community,
+led by [@gangstand](https://github.com/gangstand), where questions and bugs
+about the Linux version go.
+
+Supported: GNOME Shell 50–51 on x86_64. The surface sits in the middle of the top
+bar, in place of the clock; limits, music (MPRIS), the Shelf, dictation, the teleprompter and
+Kapa all work.
+
+It needs `gnome-shell`, `gjs`, `libadwaita`, `webkitgtk-6.0`, `alsa-lib` and
+Rust (`cargo`). To install for the current user:
+
+```sh
+linux/scripts/install-linux.sh
+```
+
+Then log out and back in, and turn the extension on:
+`gnome-extensions enable capa-the-notch@capathenotch.tech`. On Arch there is a
+package: `cd linux/packaging/arch && makepkg -si`.
+
+To remove it: `linux/scripts/install-linux.sh --uninstall` (the settings in
+`~/.config/capa-the-notch` are kept).
+
+Claude Code's status-line bridge is installed as `~/.local/bin/capa-claude-bridge`.
+
 ## License
 
 MIT. Third-party parts — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, the Geist

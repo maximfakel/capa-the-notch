@@ -1,0 +1,95 @@
+// The Providers' marks, drawn with Cairo so they take whatever colour they
+// are given: white on the surface.
+
+// OpenAI's blossom, from the SVG the app ships (viewBox 17 × 17); its paths
+// use the commands M C L H V Z only.
+const BLOSSOM = 'M15.7305 6.55842C16.1153 5.11634 15.7421 3.51392 14.6108 2.38259C13.4795 1.25133 11.8772 0.878112 10.435 1.26291C9.37849 0.20863 7.80431 -0.269365 6.25885 0.144785C4.71337 0.558815 3.58904 1.75995 3.20127 3.20125C1.75995 3.58904 0.558839 4.71351 0.144785 6.25883C-0.26927 7.80431 0.20863 9.37847 1.26303 10.435C0.87823 11.8771 1.25147 13.4795 2.38275 14.6108C3.51404 15.7421 5.11636 16.1154 6.55856 15.7305C7.61507 16.7848 9.1894 17.2628 10.7347 16.8488C12.2802 16.4347 13.4045 15.2336 13.7923 13.7923C15.2337 13.4045 16.4347 12.2801 16.8488 10.7347C17.2628 9.18928 16.785 7.61505 15.7305 6.55856V6.55842ZM13.9163 3.07736C14.6828 3.84399 14.999 4.89042 14.8648 5.88796L11.2645 3.80928C11.1127 3.72167 10.9257 3.72167 10.774 3.80928L6.55856 6.24306V4.64717C6.55856 4.53525 6.61853 4.43045 6.71555 4.37446L9.92555 2.52122C11.1974 1.81081 12.8352 1.99631 13.9164 3.07736H13.9163ZM8.49679 6.25859L10.4351 7.37769V9.6159L8.49679 10.735L6.55841 9.6159V7.37769L8.49679 6.25859ZM4.03608 4.2717C4.05673 2.81509 5.03634 1.48945 6.51314 1.09372C7.56032 0.813151 8.6247 1.06262 9.42144 1.67754L5.82103 3.75612C5.66926 3.84371 5.57579 4.00571 5.57579 4.18086V9.04842L4.19373 8.25046C4.09681 8.19448 4.03608 8.09008 4.03608 7.97811V4.27161V4.2717ZM1.09367 6.51311C1.37422 5.46595 2.12248 4.66883 3.05345 4.28637V8.44368C3.05345 8.61883 3.1469 8.78081 3.29866 8.86842L7.51417 11.3022L6.13206 12.1002C6.03514 12.1562 5.91434 12.1565 5.81742 12.1005L2.60741 10.2473C1.3562 9.50105 0.698092 7.98981 1.09367 6.51311ZM3.07736 13.9162C2.31072 13.1496 1.99458 12.1032 2.1288 11.1056L5.72907 13.1843C5.88088 13.2719 6.06788 13.2719 6.21953 13.1843L10.435 10.7505V12.3464C10.435 12.4583 10.3751 12.5631 10.278 12.6191L7.06801 14.4724C5.79614 15.1827 4.15835 14.9972 3.07721 13.9162H3.07736ZM12.9575 12.7218C12.9368 14.1785 11.9572 15.5041 10.4804 15.8999C9.43322 16.1804 8.36887 15.931 7.57217 15.316L11.1725 13.2374C11.3244 13.1498 11.4178 12.9879 11.4178 12.8127V7.94513L12.7999 8.74313C12.8968 8.79911 12.9575 8.90351 12.9575 9.01549V12.722V12.7218ZM15.8999 10.4804C15.6193 11.5276 14.8711 12.3247 13.9401 12.7072V8.54991C13.9401 8.37476 13.8467 8.21273 13.6949 8.12517L9.4794 5.69139L10.8615 4.89339C10.9584 4.8374 11.0792 4.83702 11.1761 4.89301L14.3861 6.74627C15.6373 7.49254 16.2955 9.00378 15.8999 10.4804Z';
+
+function runCommands(cr, d, scale, ox, oy) {
+    const tokens = d.match(/[MCLHVZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) ?? [];
+    let i = 0, x = 0, y = 0;
+    const num = () => parseFloat(tokens[i++]);
+    const px = v => ox + v * scale;
+    const py = v => oy + v * scale;
+    let command = '';
+    while (i < tokens.length) {
+        if (/[A-Za-z]/.test(tokens[i]))
+            command = tokens[i++];
+        switch (command.toUpperCase()) {
+        case 'M': x = num(); y = num(); cr.moveTo(px(x), py(y)); command = 'L'; break;
+        case 'L': x = num(); y = num(); cr.lineTo(px(x), py(y)); break;
+        case 'H': x = num(); cr.lineTo(px(x), py(y)); break;
+        case 'V': y = num(); cr.lineTo(px(x), py(y)); break;
+        case 'C': {
+            const [x1, y1, x2, y2] = [num(), num(), num(), num()];
+            x = num(); y = num();
+            cr.curveTo(px(x1), py(y1), px(x2), py(y2), px(x), py(y));
+            break;
+        }
+        case 'Z': cr.closePath(); break;
+        default: return;
+        }
+    }
+}
+
+function drawBlossom(cr, size) {
+    // The SVG names no fill rule, so it is the default: non-zero.
+    runCommands(cr, BLOSSOM, size / 17, 0, 0);
+    cr.fill();
+}
+
+/** Claude's burst: rays around a centre, each thinner at its tip. */
+function drawClaude(cr, size) {
+    const cx = size / 2, cy = size / 2;
+    const outer = size / 2;
+    const inner = outer * 0.12;
+    const rays = 11;
+    const baseHalf = outer * 0.115;
+    const tipHalf = baseHalf * 0.34;
+    for (let n = 0; n < rays; n++) {
+        const angle = (n / rays) * 2 * Math.PI;
+        const ax = Math.cos(angle), ay = Math.sin(angle);
+        const bx = -ay, by = ax;
+        const at = (d, o) => [cx + ax * d + bx * o, cy + ay * d + by * o];
+        cr.moveTo(...at(inner, -baseHalf));
+        cr.lineTo(...at(outer, -tipHalf));
+        cr.lineTo(...at(outer, tipHalf));
+        cr.lineTo(...at(inner, baseHalf));
+        cr.closePath();
+    }
+    cr.fill();
+}
+
+/**
+ * OpenCode's mark: the frame and the block in its lower half, in its
+ * 240 × 300 box, the block a shade of the frame.
+ */
+function drawOpenCode(cr, size, [r, g, b], alpha) {
+    const scale = size / 300;
+    const ox = size / 2 - 120 * scale, oy = size / 2 - 150 * scale;
+    cr.setSourceRGBA(r, g, b, 0.3 * alpha);
+    cr.rectangle(ox + 60 * scale, oy + 120 * scale, 120 * scale, 120 * scale);
+    cr.fill();
+    cr.setSourceRGBA(r, g, b, alpha);
+    cr.setFillRule(1);
+    cr.rectangle(ox, oy, 240 * scale, 300 * scale);
+    cr.rectangle(ox + 60 * scale, oy + 60 * scale, 120 * scale, 180 * scale);
+    cr.fill();
+}
+
+export const TINT = {
+    codex: [1, 1, 1],
+    claudeCode: [0xFF / 255, 0x9F / 255, 0x0A / 255],
+    openCode: [1, 1, 1],
+};
+
+/** Draws a Provider's mark in a `size` × `size` box. */
+export function drawMark(cr, provider, size, alpha = 1) {
+    const tint = TINT[provider] ?? [1, 1, 1];
+    cr.setSourceRGBA(...tint, alpha);
+    switch (provider) {
+    case 'codex': drawBlossom(cr, size); break;
+    case 'claudeCode': drawClaude(cr, size); break;
+    case 'openCode': drawOpenCode(cr, size, tint, alpha); break;
+    }
+}
