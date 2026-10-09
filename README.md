@@ -1,134 +1,134 @@
 # CapaTheNotch
 
-**English** · [Русский](README.ru.md)
+**Русский** · [English](README.en.md)
 
-Codex, Claude Code and OpenCode limits in the MacBook notch — beside the camera, at a
-glance. Music, a teleprompter, dictation, a shelf for files, a calendar and a
-translator live there too.
+Лимиты Codex, Claude Code и OpenCode в шторке MacBook — рядом с камерой, одним
+взглядом. Там же музыка, телесуфлёр, диктовка, полка для файлов, календарь и
+переводчик.
 
-**Website:** https://capathenotch.tech/ ·
-**Download:** [latest release](https://github.com/maximfakel/capa-the-notch/releases/latest)
+**Сайт:** https://capathenotch.tech/ ·
+**Скачать:** [последний выпуск](https://github.com/maximfakel/capa-the-notch/releases/latest)
 
-A free beta for Apple Silicon Macs running macOS 14 or later.
+Бесплатная бета для Mac на Apple Silicon с macOS 14 или новее.
 
-## What it does
+## Что умеет
 
-- **Limits.** What is left in the five-hour and weekly windows of Codex,
-  Claude Code and OpenCode (its Go plan) — any two at once — when they reset, and whether it will last until then. An alert
-  when a window drops below 10%.
-- **Music.** What is playing, the artwork, seeking, the controls and the Mac's
-  volume — for any player that shows its track in Control Center.
-- **Teleprompter.** A Script scrolls right under the camera, so you can read
-  and look into the lens — at a set speed, or following your voice as you
-  read it aloud. While it runs, the surface is kept out of screen recording
-  and sharing.
-- **Dictation.** Hold ⌃⌥D (or a shortcut of your own), speak, let go — the text appears at the cursor.
-  Recognised entirely on this Mac, with GigaAM.
-- **Shelf.** Files dropped on the notch stay at hand until you drag them out;
-  new screenshots land there too, and copied text if you turn that on. Kept
-  in memory only, and empty after you quit.
-- **Calendar.** What is next, ten minutes before it starts — with Join for a
-  call link — and the day, week and month when the notch is open.
-- **Translator.** Russian ↔ English on this Mac (macOS 26 or later): select
-  text anywhere, press ⌃⌥T, then copy the translation or put it in place of
-  the selection.
-- **Two taps on the trackpad** open the notch from anywhere, if you turn that
-  on.
+- **Лимиты.** Сколько осталось в пятичасовом и недельном окне Codex,
+  Claude Code и OpenCode (план Go) — любых двух сразу, — когда они сбросятся и хватит ли до сброса. Уведомляет, когда
+  в окне остаётся меньше 10%.
+- **Музыка.** Что играет, обложка, перемотка, кнопки и системная громкость —
+  для любого плеера, который показывает трек в Пункте управления.
+- **Телесуфлёр.** Текст прокручивается прямо под камерой, так что можно читать
+  и смотреть в объектив, — с заданной скоростью или следуя за голосом, пока
+  вы читаете вслух. Пока текст идёт, шторку не видно в записи и демонстрации
+  экрана.
+- **Диктовка.** Удерживайте ⌃⌥D (сочетание можно сменить), говорите, отпустите — текст появится там,
+  где курсор. Распознавание целиком на этом Mac, моделью GigaAM.
+- **Полка.** Файлы, брошенные на шторку, лежат под рукой, пока вы их не
+  вытащите; туда же попадают новые снимки экрана и, если включить,
+  скопированный текст. Хранится только в памяти и пустеет после выхода.
+- **Календарь.** Что дальше — за десять минут до начала, с кнопкой «Войти»
+  для ссылки на звонок, — а в открытой шторке день, неделя и месяц.
+- **Переводчик.** Русский ↔ английский на этом Mac (macOS 26 или новее):
+  выделите текст где угодно, нажмите ⌃⌥T и скопируйте перевод или вставьте
+  его вместо выделенного.
+- **Два касания трекпада** открывают шторку откуда угодно, если это включить.
 
-Each module is turned on on its own in Settings. The interface speaks English
-and Russian.
+Каждый модуль включается отдельно в Настройках. Интерфейс на русском и
+английском.
 
-## Privacy
+## Приватность
 
-- CapaTheNotch asks Codex and Claude Code **without their credentials**:
-  Codex through Codex's own App Server, Claude Code through its own status
-  line.
-- **OpenCode is the one exception.** OpenCode has no way of its own to report
-  its limits, so with your consent CapaTheNotch reads your OpenCode Go key
-  from OpenCode's own file and asks opencode.ai only for the plan's usage. The
-  key is kept nowhere and sent nowhere else.
-- **Dictation stays on the Mac.** Audio is never saved. A history of
-  recognised text is off unless you turn it on.
-- **So does the Translator,** with macOS's own on-device translation; nothing
-  translated is kept. Calendar event titles never reach the log or the
-  diagnostics.
-- Copied diagnostics carry versions, states and timings — no addresses,
-  identifiers or dictated text.
+- Codex и Claude Code CapaTheNotch спрашивает **без их учётных данных**:
+  Codex — через его собственный App Server, Claude Code — через его строку
+  состояния.
+- **OpenCode — единственное исключение.** Своего способа отдать лимиты у
+  OpenCode нет, поэтому CapaTheNotch с вашего согласия читает ключ OpenCode
+  Go из файла самого OpenCode и спрашивает у opencode.ai только расход плана.
+  Ключ нигде не хранится и больше никуда не отправляется.
+- **Диктовка не уходит с Mac.** Аудио не сохраняется. История распознанного
+  текста выключена, пока вы её не включите.
+- **Переводчик тоже,** через собственный перевод macOS на устройстве;
+  переведённое нигде не хранится. Названия событий календаря не попадают ни в
+  журнал, ни в диагностику.
+- Скопированная диагностика содержит версии, состояния и время — без адресов,
+  идентификаторов и надиктованного текста.
 
-## Install
+## Установка
 
-**It is signed with the author's own certificate, not Apple's.** It is not
-signed with an Apple Developer ID and not notarized by Apple — that is a paid
-membership this project does not have. So:
+**Приложение подписано собственным сертификатом автора, а не Apple.** Оно
+не подписано Apple Developer ID и не нотаризовано Apple — это платное
+членство, которого у проекта нет. Поэтому:
 
-- **macOS warns you the first time you open it**, because Apple has not
-  checked it: macOS does not know the author's certificate. The steps below
-  approve this one application; nothing asks you to turn Gatekeeper off, and
-  you should not;
-- **what you allow is kept across updates — and only for builds the author
-  signed.** macOS ties the microphone, Accessibility, System Events and
-  Calendars to that certificate, so a copy of CapaTheNotch signed by anyone
-  else is another application to it and gets none of them without asking.
+- **при первом открытии macOS предупредит**, что не может проверить
+  приложение: сертификат автора ей незнаком. Шаги ниже разрешают только это
+  приложение; отключать Gatekeeper не нужно и не стоит;
+- **разрешения сохраняются между обновлениями — и только для сборок,
+  подписанных автором.** Микрофон, Универсальный доступ, System Events и
+  Календари macOS привязывает к этому сертификату, так что копия CapaTheNotch,
+  подписанная кем-то другим, для неё другое приложение и без вопроса ничего
+  не получит.
 
-**Checking the signature.** In Terminal:
+**Как проверить подпись.** В Терминале:
 
 ```sh
 codesign -dvv /Applications/CapaTheNotch.app 2>&1 | grep Authority
 codesign -d -r- /Applications/CapaTheNotch.app
 ```
 
-The first prints `Authority=CapaTheNotch`; the second ends with
-`certificate leaf = H"96f745c0374edf111dd823b633b23c9477efbba5"`, the SHA-1 of the
-author's certificate. A different one, or none, was not signed by the author.
+Первая команда выводит `Authority=CapaTheNotch`, вторая заканчивается на
+`certificate leaf = H"96f745c0374edf111dd823b633b23c9477efbba5"` — это SHA-1
+сертификата автора. Если там другое или ничего — сборку подписал не автор.
 
-1. Download `CapaTheNotch-<version>.zip` from the
-   [latest release](https://github.com/maximfakel/capa-the-notch/releases/latest).
-2. Open the zip and move `CapaTheNotch.app` to Applications.
-3. Open it. macOS says it could not verify the application; close that
-   message.
-4. Open **System Settings → Privacy & Security**, scroll down, and click
-   **Open Anyway** beside CapaTheNotch. When the warning comes back, click
-   **Open**.
+1. Скачайте `CapaTheNotch-<версия>.zip` из
+   [последнего выпуска](https://github.com/maximfakel/capa-the-notch/releases/latest).
+2. Откройте архив и перенесите `CapaTheNotch.app` в «Программы».
+3. Откройте его. macOS скажет, что не может проверить приложение, — закройте
+   это сообщение.
+4. Откройте **Системные настройки → Конфиденциальность и безопасность**,
+   прокрутите вниз и нажмите **Всё равно открыть** рядом с CapaTheNotch.
+   Когда предупреждение появится снова, нажмите **Открыть**.
 
-**Updating.** Choose **Check for Updates…** in Settings → General; it opens
-the latest release on GitHub. CapaTheNotch never checks on its own. Quit the
-running copy and repeat the steps above with the new zip — step 4 likely
-again.
+**Обновление.** В Настройках → Основные нажмите **Проверить обновления…** —
+откроется последний выпуск на GitHub. Сам CapaTheNotch ничего не проверяет.
+Закройте запущенную копию и повторите шаги выше с новым архивом; шаг 4,
+скорее всего, понадобится снова.
 
-**Coming from Capacity Notch 0.3.0 or earlier.** The application is now
-`CapaTheNotch.app`; delete `CapacityNotch.app` from Applications. What you
-allowed is kept. If Claude Code's status line runs the bridge from
-`CapacityNotch.app`, CapaTheNotch offers on its first launch to point that
-path at itself — and opens `~/.claude/settings.json` only after you say yes.
+**Если у вас Capacity Notch 0.3.0 или старше.** Приложение теперь называется
+`CapaTheNotch.app`; `CapacityNotch.app` из «Программ» удалите. Разрешения
+сохранятся. Если строка состояния Claude Code запускает мост из
+`CapacityNotch.app`, при первом запуске CapaTheNotch предложит перенести этот
+путь на себя — и только после вашего «да» откроет `~/.claude/settings.json`.
 
-**Coming from 0.3.1 or earlier.** The first launch of 0.4.0 clears, once, the
-permissions macOS kept under the old ad-hoc signature and opens onboarding at
-Permissions to ask for them again. After that, updates keep them.
+**Если у вас 0.3.1 или старше.** При первом запуске 0.4.0 CapaTheNotch один
+раз сбросит разрешения, которые macOS хранила для прежней подписи ad-hoc, и
+откроет онбординг на шаге «Разрешения», чтобы спросить их снова. Дальше
+обновления их сохраняют.
 
-## Connecting
+## Подключение
 
-**Codex.** Sign in with `codex login` and turn on Codex in Settings →
-Providers. CapaTheNotch starts its own `codex app-server` and reads the
-limits from it.
+**Codex.** Войдите через `codex login` и включите Codex в Настройках →
+Провайдеры. CapaTheNotch запустит свой `codex app-server` и будет читать
+лимиты из него.
 
-**Claude Code.** Turn on Claude Code in Settings → Providers. Claude Code
-hands its limits to its status-line command after each answer, so
-CapaTheNotch asks once and then sets its bridge as that command in
-`~/.claude/settings.json`. A status line you already have keeps running after
-the bridge; turning Claude Code off puts back what was there. The limits
-appear after your next message in Claude Code in a terminal — the desktop app
-and editor extensions run no status line.
+**Claude Code.** Включите Claude Code в Настройках → Провайдеры. После
+каждого ответа Claude Code передаёт лимиты команде строки состояния, поэтому
+CapaTheNotch один раз спрашивает разрешения и ставит свой мост этой командой в
+`~/.claude/settings.json`. Ваша строка состояния, если она есть, продолжит
+работать после моста; если выключить Claude Code, всё вернётся как было.
+Лимиты появятся после следующего сообщения в Claude Code в терминале — у
+приложения и расширений для редакторов строки состояния нет.
 
-With Claude Code 2.1.287 or later (2.1.286 in the Claude desktop app), the same
-question also adds a small Claude Code mod in `~/.claude/skills/capathenotch`.
-After each reply — in the desktop app's Code tab, VS Code or a terminal — it
-hands the bridge the two windows and nothing else, so the limits stay fresh
-outside a terminal too. The bridge runs with an empty environment, none of
-Claude Code's sign-in in it. Nothing in `settings.json` changes; turning
-Claude Code off removes the folder.
+С Claude Code 2.1.287 и новее (2.1.286 в приложении Claude) тот же вопрос
+добавляет и небольшой мод Claude Code в `~/.claude/skills/capathenotch`.
+После каждого ответа — во вкладке Code приложения Claude, в VS Code или в
+терминале — он передаёт мосту два окна лимитов и больше ничего, так что
+лимиты не отстают и вне терминала. Мост запускается с пустым окружением, без
+данных входа Claude Code. В `settings.json` ничего не меняется; если
+выключить Claude Code, папка удаляется.
 
-The bridge keeps only the time, the percentages and the reset times, and
-discards everything else. To set it up by hand instead, the line is:
+Мост сохраняет только время, проценты и время сброса и отбрасывает всё
+остальное. Чтобы настроить его вручную, нужна такая строка:
 
 ```json
 {
@@ -139,53 +139,55 @@ discards everything else. To set it up by hand instead, the line is:
 }
 ```
 
-— without `--` and what follows if you have no status line of your own. See
-[Anthropic's status-line documentation](https://code.claude.com/docs/en/statusline).
+— без `--` и того, что после него, если своей строки состояния нет. Подробнее —
+в [документации Anthropic о строке состояния](https://code.claude.com/docs/en/statusline).
 
-**OpenCode.** You need an OpenCode Go or Go Plus subscription. Sign in with
-`opencode auth login` and turn on OpenCode in Settings → Providers. Every five
-minutes, and when you refresh, CapaTheNotch takes the key from
-`~/.local/share/opencode/auth.json` and asks `opencode.ai` for the five-hour
-and weekly windows. The monthly window is not drawn, but when it is used up
-the card says so in red.
+**OpenCode.** Нужна подписка OpenCode Go или Go Plus. Войдите через
+`opencode auth login` и включите OpenCode в Настройках → Провайдеры. Capacity
+Notch раз в пять минут и при обновлении берёт ключ из
+`~/.local/share/opencode/auth.json` и спрашивает у `opencode.ai` пятичасовое и
+недельное окно. Месячное окно на шторке не рисуется, но если оно исчерпано,
+карточка скажет об этом красным.
 
-Any two of the three Providers can be on at once.
+Включить можно любых двух провайдеров из трёх.
 
-## Guides
+## Гайды
 
-- [Claude Code, Codex and OpenCode Go usage limits by plan](https://capathenotch.tech/en/limits/)
-- [Claude Code limits](https://capathenotch.tech/en/limits/claude-code/) · [Codex limits](https://capathenotch.tech/en/limits/codex/) · [OpenCode Go limits](https://capathenotch.tech/en/limits/opencode-go/)
-- [Hit your Claude Code limit? What to do next](https://capathenotch.tech/en/limits/claude-code-limit-reached/)
-- [Claude Code and Codex usage trackers for Mac, compared](https://capathenotch.tech/en/limits/usage-trackers/)
-- [MacBook notch apps compared](https://capathenotch.tech/en/compare/notch-apps/) · [Notch teleprompters compared](https://capathenotch.tech/en/compare/notch-teleprompter/)
+- [Лимиты Claude Code, Codex и OpenCode Go по тарифам](https://capathenotch.tech/limits/)
+- [Лимиты Claude Code](https://capathenotch.tech/limits/claude-code/) · [Лимиты Codex](https://capathenotch.tech/limits/codex/) · [Лимиты OpenCode Go](https://capathenotch.tech/limits/opencode-go/)
+- [Закончился лимит Claude Code: что делать](https://capathenotch.tech/limits/claude-code-limit-reached/)
+- [Трекеры лимитов для Mac: сравнение](https://capathenotch.tech/limits/usage-trackers/)
+- [Приложения для шторки MacBook: сравнение](https://capathenotch.tech/compare/notch-apps/) · [Суфлёры в шторке](https://capathenotch.tech/compare/notch-teleprompter/)
+- [Диктовка на русском на Mac без интернета](https://capathenotch.tech/dictation/)
 
-## Building from source
+## Сборка из исходников
 
-Apple Silicon, macOS 14+, Xcode with the Metal Toolchain, and Swift 6.
+Нужны Apple Silicon, macOS 14+, Xcode с Metal Toolchain и Swift 6.
 
 ```sh
-swift run CapacityNotchTests      # checks
-./Scripts/test-signing.sh         # checks the signature, with a throwaway certificate
-./Scripts/build-app.sh            # .build/CapaTheNotch.app, signed with your certificate
-./Scripts/build-release.sh        # dist/CapaTheNotch-<version>.zip
+swift run CapacityNotchTests      # проверки
+./Scripts/test-signing.sh         # проверка подписи, на одноразовом сертификате
+./Scripts/build-app.sh            # .build/CapaTheNotch.app с вашей подписью
+./Scripts/build-release.sh        # dist/CapaTheNotch-<версия>.zip
 ```
 
-Both build scripts sign with a code-signing certificate and refuse to build
-without one. `./Scripts/create-signing-certificate.sh` walks you through
-making your own in Keychain Access, once; or name one you have in
-`CAPACITY_NOTCH_SIGNING_IDENTITY`. A build you sign is your application to
-macOS, not the author's, and asks for its own permissions.
+Оба скрипта сборки подписывают сертификатом для подписи кода и без него не
+собирают. `./Scripts/create-signing-certificate.sh` один раз проведёт через
+создание своего сертификата в «Связке ключей»; или укажите имеющийся в
+`CAPACITY_NOTCH_SIGNING_IDENTITY`. Сборка с вашей подписью для macOS — ваше
+приложение, не авторское, и разрешения она попросит свои.
 
-The release archive is reproducible: the same commit, Swift toolchain and
-certificate give the same bytes — the signature carries no signing time. So
-only the author can rebuild the published archive byte for byte; with your
-own certificate, everything but the signature is the same. Views declare their state with `State(initialValue:)` rather
-than `@State`, whose macro plugin ships inside Xcode.
+Архив выпуска воспроизводим: из того же коммита тем же Swift и тем же
+сертификатом получаются те же байты — времени подписи в подписи нет. Поэтому
+побайтно повторить опубликованный архив может только автор; с вашим
+сертификатом совпадёт всё, кроме подписи. Состояние во view объявлено через
+`State(initialValue:)`, а не `@State`: плагин этого макроса есть только в
+Xcode.
 
-## License
+## Лицензия
 
-MIT. Third-party parts — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, the Geist
-font, the OpenCode logo — are credited in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+MIT. Сторонние компоненты — sherpa-onnx, ONNX Runtime, Murmur, GigaAM, шрифт
+Geist, логотип OpenCode — перечислены в [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-CapaTheNotch is not affiliated with, or made by, OpenAI, Anthropic or the
-OpenCode team.
+CapaTheNotch не связан с OpenAI, Anthropic и командой OpenCode и не
+создан ими.
