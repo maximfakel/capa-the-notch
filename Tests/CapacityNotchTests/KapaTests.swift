@@ -26,7 +26,7 @@ func kapaReadsCapacityOffTheWindowWithTheLeastLeft() throws {
 func kapaJudgesNoOldNumbers() throws {
     try expect(KapaMood.capacity(snapshot(used: [0.96], state: .stale)) == .stale, "stale four percent is stale, not worried")
     try expect(KapaMood.capacity(snapshot(used: [], state: .connecting)) == .stale, "connecting looks like stale")
-    let gone = CapacitySnapshot.disconnected(provider: .claudeCode, capturedAt: now, reason: .claudeCodeNotInstalled)
+    let gone = CapacitySnapshot.disconnected(provider: .claudeCode, capturedAt: now, reason: .claudeStatusLineUnavailable)
     try expect(KapaMood.capacity(gone) == .puzzled, "a disconnected Provider puzzles")
 }
 

@@ -1,0 +1,8 @@
+{
+  "name": "capathenotch",
+  "version": "0.1.0",
+  "description": "Hands Claude's plan limits, and nothing else, to CapaTheNotch's bridge after each reply.",
+  "author": { "name": "CapaTheNotch", "url": "https://capathenotch.tech" },
+  "homepage": "https://capathenotch.tech",
+  "defaultEnabled": true
+}

@@ -96,6 +96,8 @@ struct NotchRootView: View {
     @ObservedObject private var pages: SurfacePages
     @ObservedObject private var shape: SurfaceShape
     @ObservedObject private var shelf: ShelfController
+    @ObservedObject private var calendar: CalendarReader
+    private let translator: TranslatorController?
     private let pointer: SurfacePointer
     private let connect: (Provider) -> Void
     private let refresh: (Provider) -> Void
@@ -107,6 +109,8 @@ struct NotchRootView: View {
         music: MusicReader,
         teleprompter: TeleprompterController,
         shelf: ShelfController,
+        calendar: CalendarReader,
+        translator: TranslatorController? = nil,
         pages: SurfacePages,
         shape: SurfaceShape,
         pointer: SurfacePointer,
@@ -119,6 +123,8 @@ struct NotchRootView: View {
         self.music = music
         self.teleprompter = teleprompter
         self.shelf = shelf
+        self.calendar = calendar
+        self.translator = translator
         self.pointer = pointer
         self.pages = pages
         self.shape = shape
@@ -163,6 +169,14 @@ struct NotchRootView: View {
                     remembered: music.remembered,
                     teleprompter: teleprompter,
                     shelf: shelf,
+                    upcoming: calendar.rowEvent,
+                    calendarEvents: calendar.showsPage ? calendar.events : nil,
+                    calendarTab: calendar.tab,
+                    calendarSelectedDay: calendar.selectedDay,
+                    selectCalendarTab: { [calendar] in calendar.select($0) },
+                    selectCalendarDay: { [calendar] in calendar.selectDay($0) },
+                    hideEvent: { [calendar] in calendar.hideFromRow($0) },
+                    translator: translator,
                     pointer: pointer,
                     page: pages.selected,
                     travel: pages.travel,
@@ -249,6 +263,23 @@ struct SurfaceColumn: View {
     var teleprompter: TeleprompterController? = nil
     /// The Shelf Module, for its page; nil or off, none.
     var shelf: ShelfController? = nil
+    /// The Calendar Module's event about to start, for the row beneath the
+    /// strip; already left out over a fullscreen application.
+    var upcoming: CalendarEvent? = nil
+    /// Its events, for the day page; nil while off or not allowed, no page.
+    var calendarEvents: [CalendarEvent]? = nil
+    /// The Calendar page's view, and the Month's day clicked (nil: today).
+    var calendarTab: CalendarTab = .standard
+    var calendarSelectedDay: Date? = nil
+    var selectCalendarTab: (CalendarTab) -> Void = { _ in }
+    var selectCalendarDay: (Date) -> Void = { _ in }
+    /// The pictures draw the page at a moment of their own, not the clock's.
+    var calendarLiveClock = true
+    var join: (URL) -> Void = { NSWorkspace.shared.open($0) }
+    /// The row's ✕: that occurrence leaves the row until it is over.
+    var hideEvent: (CalendarEvent) -> Void = { _ in }
+    /// The Translator Module, for its page; nil or off, none.
+    var translator: TranslatorController? = nil
     /// Where the pointer is, for what lights under it; none while measuring.
     var pointer = SurfacePointer()
     var page: SurfacePage = .capacity
@@ -294,6 +325,8 @@ struct SurfaceColumn: View {
                         if let teleprompter { TeleprompterRow(teleprompter: teleprompter) }
                     case .music:
                         if let playing { CompactMusicRow(track: playing, width: geometry.compactWidth(), send: send) }
+                    case .calendar:
+                        if let upcoming { CompactCalendarRow(event: upcoming, now: now, width: geometry.compactWidth(), join: join, hide: { hideEvent(upcoming) }) }
                     case .none:
                         EmptyView()
                     }
@@ -319,7 +352,8 @@ struct SurfaceColumn: View {
         TeleprompterSurface.compactRow(
             teleprompterShowing: teleprompter?.isShowingRow == true,
             musicShown: playing != nil,
-            fullscreen: false
+            fullscreen: false,
+            calendarShown: upcoming != nil
         )
     }
 
@@ -327,7 +361,9 @@ struct SurfaceColumn: View {
         SurfacePageOrder.pages(
             music: musicOn || loaded != nil,
             teleprompter: teleprompter?.isEnabled == true,
-            shelf: shelf?.isEnabled == true
+            shelf: shelf?.isEnabled == true,
+            calendar: calendarEvents != nil,
+            translator: translator?.isEnabled == true
         )
     }
 
@@ -412,6 +448,18 @@ struct SurfaceColumn: View {
         case .shelf:
             if let shelf {
                 ShelfPage(shelf: shelf, pointer: pointer, isVisible: visible)
+            }
+        case .calendar:
+            if let calendarEvents {
+                CalendarPage(
+                    events: calendarEvents, now: now, liveClock: calendarLiveClock,
+                    tab: calendarTab, selectedDay: calendarSelectedDay,
+                    selectTab: selectCalendarTab, selectDay: selectCalendarDay, join: join
+                )
+            }
+        case .translator:
+            if let translator {
+                TranslatorPage(translator: translator)
             }
         }
     }
@@ -532,7 +580,7 @@ private struct CompactSideView: View {
     private var provider: Provider {
         switch side {
         case let .provider(snapshot): snapshot.provider
-        case let .window(provider, _): provider
+        case let .window(provider, _), let .missing(provider): provider
         }
     }
 
@@ -540,6 +588,7 @@ private struct CompactSideView: View {
         switch side {
         case let .provider(snapshot): snapshot.compactCapacityText(at: now)
         case let .window(_, window): "\(Int(window.remainingPercentage))%"
+        case .missing: "—"
         }
     }
 
@@ -547,6 +596,7 @@ private struct CompactSideView: View {
         switch side {
         case let .provider(snapshot): snapshot.headlineWindow?.pace
         case let .window(_, window): window.pace
+        case .missing: nil
         }
     }
 
@@ -554,6 +604,7 @@ private struct CompactSideView: View {
         switch side {
         case let .provider(snapshot): CapacitySpeech.compact(snapshot, at: now)
         case let .window(provider, window): CapacitySpeech.compact(provider, window)
+        case let .missing(provider): "\(provider.presentation.displayName): \(L("No data"))"
         }
     }
 }
@@ -787,8 +838,17 @@ struct ProviderCard: View {
                 } else {
                     gauges(of: [nil, nil])
                 }
+            } else if case .claudeNextReply? = snapshot.statusReason, let reason = snapshot.statusReason {
+                // Refresh found nothing newer, and Claude Code cannot be
+                // asked: where the next reading comes from, and how old
+                // this one is, for a few seconds in the gauges' place.
+                Text(reason.localizedGuidance(at: now))
+                    .font(SurfaceType.guidance)
+                    .foregroundStyle(SurfaceType.captionColour)
+                    .lineLimit(2)
+                    .padding(.top, 10)
             } else {
-                gauges(of: snapshot.windows.map { Optional($0) })
+                gauges(of: GaugeSlot.slots(for: snapshot).map { Optional($0) })
                     // Old numbers are shown, but not as if they were new.
                     .opacity(snapshot.connectionState == .stale ? 0.5 : 1)
             }
@@ -829,16 +889,19 @@ struct ProviderCard: View {
     }
 
     /// The windows as gauges, side by side; an empty place for a window not
-    /// read yet.
+    /// read yet, and one saying there is no data for a window not sent.
     @ViewBuilder
-    private func gauges(of windows: [QuotaWindow?]) -> some View {
+    private func gauges(of slots: [GaugeSlot?]) -> some View {
         HStack(spacing: isWide ? 8 : 0) {
-            ForEach(Array(windows.enumerated()), id: \.offset) { _, window in
+            ForEach(Array(slots.enumerated()), id: \.offset) { _, slot in
+                let window: QuotaWindow? = if case let .read(window)? = slot { window } else { nil }
+                let missing: String? = if case let .missing(label)? = slot { label } else { nil }
                 let gauge = CapacityGauge(
                     window: window,
                     now: now,
                     placeholder: chip.label,
-                    showsLabel: !isWide,
+                    missingLabel: missing,
+                    showsLabel: !isWide || missing != nil,
                     isHighlighted: window.map { $0.id == highlighted } ?? false
                 )
                 if isWide {
@@ -867,6 +930,9 @@ struct CapacityGauge: View {
     let now: Date
     /// What VoiceOver says for a window not read yet: the card's own chip.
     let placeholder: String
+    /// A window the Provider keeps but did not send: its name, under a dash,
+    /// on an empty track.
+    var missingLabel: String?
     var showsLabel = true
     var isHighlighted = false
 
@@ -902,6 +968,23 @@ struct CapacityGauge: View {
                         .foregroundStyle(window.isUsedUp ? SurfaceType.red : SurfaceType.captionColour)
                         .lineLimit(1)
                 }
+            } else if let missingLabel {
+                VStack(spacing: 0) {
+                    Text("—")
+                        .font(SurfaceType.geist(22, .semibold))
+                        .foregroundStyle(SurfaceType.captionColour)
+                    Text(Localization.windowLabel(missingLabel))
+                        .font(SurfaceType.caption)
+                        .foregroundStyle(Color.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+                VStack {
+                    Spacer()
+                    Text(L("No data"))
+                        .font(SurfaceType.caption)
+                        .foregroundStyle(SurfaceType.captionColour)
+                        .lineLimit(1)
+                }
             } else {
                 VStack(spacing: 6) {
                     Capsule().fill(Color.white.opacity(0.1)).frame(width: 36, height: 12)
@@ -916,7 +999,11 @@ struct CapacityGauge: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(window.map { CapacitySpeech.window($0, at: now) } ?? placeholder)
+        .accessibilityLabel(
+            window.map { CapacitySpeech.window($0, at: now) }
+                ?? missingLabel.map { "\(Localization.windowLabel($0)): \(L("No data"))" }
+                ?? placeholder
+        )
     }
 
     private var trackColour: Color {
@@ -934,7 +1021,12 @@ struct CapacityGauge: View {
     }
 
     private func resetText(_ window: QuotaWindow) -> String {
-        switch GaugeReset(resetsAt: window.resetsAt, at: now) {
+        // Reset and not used since, as far as the Provider has said: when,
+        // as a time alone like every other gap; the wide card says more.
+        if let back = window.cameBackAt {
+            return back.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))
+        }
+        return switch GaugeReset(resetsAt: window.resetsAt, at: now) {
         case let .at(date):
             date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))
         case let .in(countdown):
@@ -963,7 +1055,9 @@ private struct WideGaugeDetail: View {
                 .font(SurfaceType.geist(13))
                 .foregroundStyle(Color.white.opacity(0.75))
             Text(L("%d%% used", Int((window.usedFraction * 100).rounded())))
-            if let resetsAt = window.resetsAt {
+            if let back = window.cameBackAt {
+                Text(L("reset %@", back.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.current.locale))))
+            } else if let resetsAt = window.resetsAt {
                 Text(L("resets in %@", ResetCountdown.text(until: resetsAt, at: now)))
             }
         }

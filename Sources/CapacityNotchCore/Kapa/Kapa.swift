@@ -43,6 +43,10 @@ public enum KapaExpression: String, CaseIterable, Equatable, Sendable {
     /// Beside the Teleprompter's controls: still, whatever the Script does —
     /// nothing moves near a person reading.
     case quiet
+    /// Free time on the calendar — a day with nothing left, a week with
+    /// nothing in it: sunglasses ("Kapa — 03 Free time", pose A, chosen by
+    /// the author on 2026-10-08).
+    case free
 }
 
 // MARK: - The face each pose draws
@@ -79,6 +83,8 @@ public struct KapaFace: Equatable, Sendable {
         case worried
         /// A wavy line: not sure.
         case wobble
+        /// A wider, easy smile, under sunglasses.
+        case wide
     }
 
     public enum Brows: Equatable, Sendable {
@@ -122,6 +128,9 @@ public struct KapaFace: Equatable, Sendable {
     public var brows: Brows = .none
     public var badge: Badge = .none
     public var headphones = false
+    /// Dark lenses over the eyes, as headphones are over the ears: the eyes
+    /// are not drawn behind them, and do not blink.
+    public var sunglasses = false
     public var blush = false
     /// Where Kapa looks, as turns of the head (see `KapaGaze`).
     public var look = KapaLook.ahead
@@ -167,6 +176,10 @@ public struct KapaFace: Equatable, Sendable {
             KapaFace(eyes: .happy, mouth: .grin, badge: .sparkle, reaction: .hop)
         case .quiet:
             KapaFace(eyes: .open, mouth: .line, badge: .pause)
+        case .free:
+            // No sign: the sunglasses say it. The eyes behind them are shut,
+            // so nothing blinks.
+            KapaFace(eyes: .closed, mouth: .wide, sunglasses: true)
         }
     }
 }
@@ -268,6 +281,11 @@ public enum KapaBlink {
         case .open, .wide, .lidded, .narrowed, .uneven: true
         case .happy, .closed: false
         }
+    }
+
+    /// A face blinks when its eyes do and can be seen: not behind sunglasses.
+    public static func blinks(_ face: KapaFace) -> Bool {
+        !face.sunglasses && blinks(face.eyes)
     }
 }
 

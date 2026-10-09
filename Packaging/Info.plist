@@ -17,15 +17,19 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.3.1</string>
+	<string>0.4.0</string>
 	<key>CFBundleVersion</key>
-	<string>19</string>
+	<string>20</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Send the paste shortcut through System Events to insert recognised text into the focused text field.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Show your next event under the notch, ten minutes before it starts, and today's events on its page. Only while the Calendar Module is on; nothing is stored or sent.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Show your next event under the notch, ten minutes before it starts, and today's events on its page. Only while the Calendar Module is on; nothing is stored or sent.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSDesktopFolderUsageDescription</key>
@@ -39,6 +43,6 @@
 	<key>NSNetworkVolumesUsageDescription</key>
 	<string>Put each new screenshot macOS saves here on the Shelf, as a reference to the file. Nothing is copied or changed.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Record your voice while you hold the Dictation shortcut. Speech is recognized on this Mac; audio is never saved.</string>
+	<string>Hear your voice while you hold the Dictation shortcut, or while the Teleprompter follows your reading. Speech is recognized on this Mac; audio is never saved.</string>
 </dict>
 </plist>

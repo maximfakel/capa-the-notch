@@ -32,6 +32,10 @@ public struct TeleprompterPlayback: Equatable, Sendable {
     public private(set) var multiplier: Double
     public private(set) var wordCount: Int
     public private(set) var lineCount: Int
+    /// Ticket 20: the place is the line the voice is reading, set by
+    /// `follow(toLine:)`, and does not move with the clock. Running and
+    /// silent, the Script waits; it never falls back to the set speed.
+    public private(set) var followsVoice = false
 
     /// The place at `anchoredAt`; while running it moves on from there.
     private var anchor: Double = 0
@@ -52,7 +56,7 @@ public struct TeleprompterPlayback: Equatable, Sendable {
 
     /// The place, in lines from the first; the last line is `lineCount - 1`.
     public func position(at now: Date) -> Double {
-        guard state == .running else { return anchor }
+        guard state == .running, !followsVoice else { return anchor }
         return min(anchor + max(now.timeIntervalSince(anchoredAt), 0) * linesPerSecond, lastLine)
     }
 
@@ -76,7 +80,7 @@ public struct TeleprompterPlayback: Equatable, Sendable {
 
     /// When a running Script reaches its last line.
     public var endsAt: Date? {
-        guard state == .running, linesPerSecond > 0 else { return nil }
+        guard state == .running, !followsVoice, linesPerSecond > 0 else { return nil }
         return anchoredAt.addingTimeInterval((lastLine - anchor) / linesPerSecond)
     }
 
@@ -152,6 +156,32 @@ public struct TeleprompterPlayback: Equatable, Sendable {
         } else {
             state = .paused
         }
+    }
+
+    // MARK: - Following the voice
+
+    /// Turns following the voice on or off, keeping the place.
+    public mutating func setFollowsVoice(_ follows: Bool, at now: Date) {
+        guard follows != followsVoice else { return }
+        rebase(at: now)
+        followsVoice = follows
+        if !follows, state == .running { anchoredAt = now }
+    }
+
+    /// The voice is on this line: the Script moves there. Only while running —
+    /// paused, the microphone is off and nothing is heard.
+    public mutating func follow(toLine line: Double, at now: Date) {
+        guard followsVoice, state == .running else { return }
+        anchor = min(max(line, 0), lastLine)
+    }
+
+    /// The voice read the last word: the Script is finished, and its row
+    /// leaves as it does at the end of the set speed.
+    public mutating func finishFollowing(at now: Date) {
+        guard followsVoice, state == .running else { return }
+        anchor = lastLine
+        state = .finished
+        finishedAt = now
     }
 
     /// The Script laid out again — another text size, another Script — keeps

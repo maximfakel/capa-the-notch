@@ -23,8 +23,8 @@ enum ModuleShortcutCapture {
 }
 
 enum BuiltInModule: String, CaseIterable {
-    case music = "Music", teleprompter = "Teleprompter", dictation = "Dictation", shelf = "Shelf"
-    var symbol: String { switch self { case .music: "music.note"; case .teleprompter: "text.alignleft"; case .dictation: "mic"; case .shelf: "tray" } }
+    case music = "Music", teleprompter = "Teleprompter", dictation = "Dictation", shelf = "Shelf", calendar = "Calendar", translator = "Translator"
+    var symbol: String { switch self { case .music: "music.note"; case .teleprompter: "text.alignleft"; case .dictation: "mic"; case .shelf: "tray"; case .calendar: "calendar"; case .translator: "character.bubble" } }
     var name: String { L(rawValue) }
     var summary: String { L(englishSummary) }
     private var englishSummary: String { switch self {
@@ -32,6 +32,8 @@ enum BuiltInModule: String, CaseIterable {
     case .teleprompter: "Your Script, scrolling beside the camera."
     case .dictation: "Speak, then keep typing."
     case .shelf: "Files at hand, dropped on the notch."
+    case .calendar: "What's next in your calendar, under Capacity."
+    case .translator: "Russian and English, translated on this Mac."
     } }
 }
 enum DictationSettingsPage { case overview, setup, replacements, history }
@@ -107,6 +109,8 @@ struct ModulesSection: View {
                 TeleprompterCard(teleprompter: model.teleprompter, expanded: model.expandedModule == .teleprompter, expand: { expand(.teleprompter) })
                 DictationCard(controller: model.dictation, expanded: model.expandedModule == .dictation, expand: { expand(.dictation) }, navigate: { model.dictationPage = $0 })
                 ShelfCard(shelf: model.shelf, expanded: model.expandedModule == .shelf, expand: { expand(.shelf) })
+                CalendarCard(calendar: model.calendar, expanded: model.expandedModule == .calendar, expand: { expand(.calendar) })
+                TranslatorCard(translator: model.translator, expanded: model.expandedModule == .translator, expand: { expand(.translator) })
             }
             .environment(\.moduleHoverBlocked, _keyboardLock.wrappedValue || _editing.wrappedValue)
             .environment(\.moduleEditing, _editing.projectedValue)

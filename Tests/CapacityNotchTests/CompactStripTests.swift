@@ -53,16 +53,28 @@ func theStripShowsTheWindowChosenInSettings() throws {
             return nil
         }
     }
-    try expect(ids(.fiveHour) == ["five", "five"], "Five hours by default")
+    // Weekly has 11% left against five hours' 76%: the choice, not the
+    // Headline Window, decides.
+    try expect(ids(.fiveHour) == ["five", "five"], "Five hours by default, though the week has less left")
     try expect(ids(.weekly) == ["week", "week"], "The week when asked")
-    // Weekly has 11% left against five hours' 76%.
-    try expect(ids(.leastLeft) == ["week", "week"], "The one with least left when asked")
+    try expect(CompactWindowChoice.allCases == [.fiveHour, .weekly], "Two choices, as drawn: 5 часов and Неделя")
+
+    // One Provider on shows both its windows, whatever is chosen.
+    let alone = [UnreadCapacity.snapshot(for: .codex), reading(.claudeCode)]
+    try expect(
+        CompactStrip.sides(alone, showing: .weekly) == CompactStrip.sides(alone, showing: .fiveHour),
+        "Alone, a Provider shows five hours and the week either way"
+    )
+
     let suite = "compact-window-\(UUID())"
     let defaults = UserDefaults(suiteName: suite)!
     defer { defaults.removePersistentDomain(forName: suite) }
     try expect(Preferences(defaults: defaults).compactWindow == .fiveHour, "Five hours until chosen")
     Preferences(defaults: defaults).compactWindow = .weekly
     try expect(Preferences(defaults: defaults).compactWindow == .weekly, "The choice is kept")
+    // "Least left" was a third choice until 2026-10-08.
+    defaults.set("leastLeft", forKey: "compactWindow")
+    try expect(Preferences(defaults: defaults).compactWindow == .fiveHour, "A choice no longer offered reads as five hours")
 }
 
 func theChosenWindowIsTheOneOfThatLengthNotTheShortestOrLongest() throws {
@@ -135,4 +147,23 @@ func theOnlyProviderNotReadYetHasItsDashOnTheLeft() throws {
     let sides = CompactStrip.sides([UnreadCapacity.snapshot(for: .codex), unread])
     guard case let .provider(left)? = sides.left else { throw TestFailure(description: "A dash on the left, got \(sides)") }
     try expect(left.provider == .claudeCode && sides.right == nil, "Claude Code's dash, and nothing on the right")
+}
+
+func claudeCodesFiveHoursNotSentShowAsADashInTheStrip() throws {
+    let weekOnly = CapacitySnapshot(
+        provider: .claudeCode,
+        capturedAt: readAt,
+        windows: [QuotaWindow(id: "claude-seven-day", label: "Weekly", durationMinutes: 10_080, usedFraction: 0.16, resetsAt: readAt)],
+        connectionState: .fresh
+    )
+    let both = CompactStrip.sides([reading(.codex), weekOnly])
+    try expect(both.right == .missing(.claudeCode), "Its five hours are not stood in for by its week, got \(String(describing: both.right))")
+    guard case let .window(_, week)? = CompactStrip.sides([reading(.codex), weekOnly], showing: .weekly).right else {
+        throw TestFailure(description: "Asked for the week, it shows the week")
+    }
+    try expect(week.id == "claude-seven-day", "the week it has")
+
+    let alone = CompactStrip.sides([UnreadCapacity.snapshot(for: .codex), weekOnly])
+    guard case .window(_, let right)? = alone.right else { throw TestFailure(description: "Alone, its week stays on the right, got \(alone)") }
+    try expect(alone.left == .missing(.claudeCode) && right.id == "claude-seven-day", "and a dash where its five hours stand, got \(alone)")
 }

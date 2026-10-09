@@ -377,7 +377,7 @@ final class KapaEngine {
         }
         guard now >= nextBlink else { return }
         nextBlink = now + KapaBlink.delay(.random(in: 0 ... 1))
-        guard KapaBlink.blinks(face.eyes), gulpAt == nil else { return }
+        guard KapaBlink.blinks(face), gulpAt == nil else { return }
         blinkAt = now
         if KapaBlink.isDouble(.random(in: 0 ... 1)) { secondBlinkAt = now + KapaBlink.doubleGap }
     }
@@ -636,13 +636,19 @@ final class KapaEngine {
         let look = KapaLook(yaw: yaw, pitch: pitch)
         let lid = KapaMotion.lid(sinceBlink: now - blinkAt)
         let eyes: KapaFace.Eyes = pleased && KapaBlink.blinks(face.eyes) ? .happy : face.eyes
-        for side in [-1.0, 1.0] {
-            KapaPaths.drawEye(eyes, side: side, look: look, lid: lid, boost: boost, in: body)
+        if !face.sunglasses {
+            for side in [-1.0, 1.0] {
+                KapaPaths.drawEye(eyes, side: side, look: look, lid: lid, boost: boost, in: body)
+            }
         }
 
         let shift = KapaGaze.features(look: look)
         var features = body
         features.translateBy(x: shift.dx, y: shift.dy)
+        if face.sunglasses {
+            // In place of the eyes, turning with the face as the mouth does.
+            KapaPaths.drawSunglasses(boost: boost, in: features)
+        }
         if let brows = KapaPaths.brows(face.brows) {
             features.stroke(brows, with: .color(KapaPaths.ink), style: StrokeStyle(lineWidth: 2 * boost, lineCap: .round))
         }
@@ -881,6 +887,28 @@ enum KapaPaths {
                 path.addQuadCurve(to: CGPoint(x: 52, y: 71), control: CGPoint(x: 49.5, y: 69))
                 path.addQuadCurve(to: CGPoint(x: 57, y: 71), control: CGPoint(x: 54.5, y: 73))
             }, false)
+        case .wide: return (curve(CGPoint(x: 45, y: 72), CGPoint(x: 52, y: 78), CGPoint(x: 59, y: 72)), false)
+        }
+    }
+
+    // MARK: Sunglasses
+
+    /// Free time ("Kapa — 03 Free time", pose A): a bar across the face at
+    /// the eyes' height, two dark lenses rounded at the bottom, and a faint
+    /// glint in each.
+    static func drawSunglasses(boost: CGFloat, in context: GraphicsContext) {
+        context.stroke(lines([(31, 55, 73, 55)]), with: .color(ink), style: StrokeStyle(lineWidth: 2.2 * boost, lineCap: .round))
+        for left in [CGFloat(32), 55] {
+            let lens = Path { path in
+                path.move(to: CGPoint(x: left, y: 55))
+                path.addLine(to: CGPoint(x: left + 17, y: 55))
+                path.addQuadCurve(to: CGPoint(x: left + 8.5, y: 66), control: CGPoint(x: left + 17, y: 66))
+                path.addQuadCurve(to: CGPoint(x: left, y: 55), control: CGPoint(x: left, y: 66))
+                path.closeSubpath()
+            }
+            context.fill(lens, with: .color(ink))
+            context.stroke(lines([(left + 3, 57.5, left + 7, 57.5)]), with: .color(.white.opacity(0.55)),
+                           style: StrokeStyle(lineWidth: 1.4 * boost, lineCap: .round))
         }
     }
 

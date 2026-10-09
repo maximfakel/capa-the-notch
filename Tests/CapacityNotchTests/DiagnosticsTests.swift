@@ -85,9 +85,6 @@ func theReportStaysUsefulForEveryFailureWorthReporting() throws {
         (.providerCouldNotRead(detail: "error sending request"), "provider-could-not-read"),
         (.claudeStatusLineStale, "claude-status-line-stale"),
         (.claudeStatusLineUnavailable, "claude-status-line-unavailable"),
-        (.claudeCodeNotInstalled, "claude-code-not-installed"),
-        (.claudeUsageFailed, "claude-usage-failed"),
-        (.claudeUsageNotUnderstood, "claude-usage-not-understood"),
         (.staleFromArchive, "stale-from-archive"),
     ]
 
@@ -126,7 +123,7 @@ func aBugReportCanTellWhyTheBridgeFileCannotBeRead() throws {
         (#"{"schema_version":2,"captured_at":1,"windows":[]}"#, "claude-bridge-schema-unknown", "another schema version"),
         (#"{"schema_version":1,"captured_at":1,"windows":[{"id":"fortnight","used_percentage":5,"resets_at":2}]}"#,
          "claude-bridge-no-windows", "no window this build knows"),
-        (#"{"schema_version":1,"captured_at":1,"windows":[{"id":"five_hour","used_percentage":5,"resets_at":2}]}"#,
+        (#"{"schema_version":1,"captured_at":1,"windows":[{"id":"five_hour","used_percentage":5,"resets_at":4102444800}]}"#,
          nil, "a file that reads"),
     ]
     for (contents, expected, what) in cases {

@@ -31,6 +31,12 @@ fail() { print -u2 "publish-release: $1"; exit 1; }
 
 [[ -z "$(git status --porcelain)" ]] || fail "the working tree has uncommitted changes."
 
+# The snapshot is built in a clone without this checkout's .signing.env, so
+# the certificate is named once here for both builds.
+source "$script_dir/signing.sh"
+identity="$(signing_identity)" || fail "no signing certificate; see Scripts/create-signing-certificate.sh."
+export CAPACITY_NOTCH_SIGNING_IDENTITY="$identity"
+
 # The repository is named once, where the application opens it.
 slug="$(grep -o 'github.com/[^/]*/[^/]*/releases' Sources/CapacityNotchCore/Releases.swift | cut -d/ -f2,3)"
 [[ -n "$slug" ]] || fail "could not read the repository from Releases.swift."

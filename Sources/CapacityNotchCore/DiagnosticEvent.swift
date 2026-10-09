@@ -26,6 +26,7 @@ public enum DiagnosticEvent: Equatable, Sendable {
     case recognitionFinished(samples: Int, empty: Bool)
     case recognitionFailed(DiagnosticError)
     case delivered(inserted: Bool)
+    case translator(TranslatorEvent)
 
     public var line: String {
         switch self {
@@ -49,6 +50,7 @@ public enum DiagnosticEvent: Equatable, Sendable {
         case let .recognitionFinished(samples, empty): "recognition finished samples \(samples)\(empty ? " empty" : "")"
         case let .recognitionFailed(error): "recognition failed \(error.code)"
         case let .delivered(inserted): "delivered \(inserted ? "inserted" : "copied")"
+        case let .translator(event): event.line
         }
     }
 

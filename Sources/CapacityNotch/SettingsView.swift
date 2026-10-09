@@ -169,6 +169,20 @@ private struct GeneralSection: View {
             SettingsToggleRow(L("Play sounds"), isOn: $playsSounds)
         }
 
+        // Ticket 14: off until asked for, its cost said beside it, and a
+        // failure said here rather than two taps quietly doing nothing
+        // (ADR 0004).
+        SettingsGroup(footnote: L(TrackpadTapModule.cost)) {
+            SettingsToggleRow(L("Open with two taps on the trackpad"), isOn: $model.trackpadTapEnabled)
+            if model.trackpadTapEnabled, let guidance = model.trackpadTapStatus.guidance {
+                Text(L(guidance))
+                    .font(SettingsType.caption)
+                    .foregroundStyle(SettingsPalette.destructive)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(10)
+            }
+        }
+
         SettingsGroup(footnote: L("Opens the latest release on GitHub. CapaTheNotch does not check on its own.")) {
             SettingsRow {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -199,19 +213,26 @@ private struct ProvidersSection: View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(model.providers) { choice in
+                    let claude = choice.provider == .claudeCode && model.isOn(.claudeCode)
                     ProviderSettingsCard(
                         choice: choice,
                         snapshot: model.snapshot(for: choice.provider),
                         isOn: model.binding(for: choice.provider),
                         canTurnOn: model.canConnect(choice.provider),
+                        note: claude ? model.claudeCode.reasonText : nil,
                         now: context.date,
-                        refresh: { model.refresh(choice.provider) }
+                        refresh: { model.refresh(choice.provider) },
+                        claudeRows: claude ? ClaudeCodeRows(model: model) : nil
                     )
                 }
             }
         }
+        // The mod may have been added or removed since Settings last looked.
+        .onAppear { model.reloadClaudeCode() }
 
-        SettingsGroup {
+        // Paper "Settings — Providers — …": the strip's window and the pace,
+        // with what the pace does and does not govern beneath.
+        SettingsGroup(footnote: L("Codex is refreshed on this schedule. Claude refreshes itself, after each reply.")) {
             SettingsRow {
                 Text(L("Shown in the closed strip"))
                 Spacer()
@@ -222,18 +243,125 @@ private struct ProvidersSection: View {
                 }
             }
             SettingsRow {
-                Text(L("While the surface is closed"))
+                Text(L("Refresh data"))
                 Spacer()
-                SettingsPicker(
-                    selection: $model.backgroundRefresh,
-                    label: model.refreshLabel(model.backgroundRefresh)
-                ) {
-                    ForEach(Preferences.refreshChoices, id: \.self) { seconds in
-                        Button(model.refreshLabel(seconds)) { model.backgroundRefresh = seconds }
+                SettingsPicker(selection: $model.refreshInterval, label: model.refreshInterval.title) {
+                    ForEach(RefreshInterval.allCases, id: \.self) { interval in
+                        Button(interval.title) { model.refreshInterval = interval }
                     }
                 }
             }
         }
+    }
+}
+
+/// Claude Code's rows under its header (Paper "Settings — Providers — Claude
+/// mod working", "— not added", "— Claude Code too old for the mod"): the
+/// mod, and while it is not working, the terminal. Every button is the
+/// ordinary white one; nothing here is blue.
+struct ClaudeCodeRows: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        let state = model.claudeCode
+        VStack(spacing: 0) {
+            SettingsRow(hovers: false) {
+                HStack(spacing: 8) {
+                    Text(L("Mod in Claude"))
+                    HelpButton(topic: L("Mod in Claude"), note: .mod)
+                }
+                Spacer(minLength: 12)
+                HStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        if state.isWorking {
+                            Circle().fill(SettingsPalette.green).frame(width: 6, height: 6)
+                        }
+                        Text(state.status)
+                            .font(SettingsType.caption)
+                            .foregroundStyle(SettingsPalette.muted)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    .accessibilityElement(children: .combine)
+                    switch state.action {
+                    case .add?:
+                        Button(L("Add")) { model.addClaudeMod() }
+                            .buttonStyle(SettingsButtonStyle())
+                    case .remove?:
+                        Button(L("Remove")) { model.removeClaudeMod() }
+                            .buttonStyle(SettingsButtonStyle())
+                    case nil:
+                        EmptyView()
+                    }
+                }
+            }
+            .overlay(alignment: .top) {
+                Rectangle().fill(SettingsPalette.ring).frame(height: 1)
+            }
+
+            if state.showsTerminal {
+                SettingsRow(hovers: false) {
+                    HStack(spacing: 8) {
+                        Text(L("Refresh from a terminal"))
+                        HelpButton(topic: L("Refresh from a terminal"), note: .terminal)
+                    }
+                    Spacer(minLength: 12)
+                    Button(L("Open Terminal")) { model.openClaudeInTerminal() }
+                        .buttonStyle(SettingsButtonStyle())
+                }
+            }
+        }
+    }
+}
+
+/// The round "?" beside a row's name, and the small note it opens ("Что
+/// такое мод"). VoiceOver hears "About" and the row's name.
+struct HelpButton: View {
+    let topic: String
+    let note: SettingsNote
+    private let _shown = State(initialValue: false)
+    private var shown: Binding<Bool> { _shown.projectedValue }
+
+    var body: some View {
+        Button { shown.wrappedValue.toggle() } label: {
+            Text("?")
+                .font(SettingsType.caption2)
+                .foregroundStyle(SettingsPalette.muted)
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(SettingsPalette.control).shadow(color: SettingsPalette.ring, radius: 1, y: 1))
+                .overlay(Circle().strokeBorder(SettingsPalette.ring, lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L("About %@", topic))
+        .popover(isPresented: shown, arrowEdge: .bottom) {
+            SettingsNoteView(note: note)
+        }
+    }
+}
+
+/// The note's three lines, as drawn: a title, the explanation, and a quieter
+/// last word.
+struct SettingsNoteView: View {
+    let note: SettingsNote
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(note.title)
+                .font(SettingsType.bodyMedium)
+                .foregroundStyle(SettingsPalette.text)
+            Text(note.body)
+                .font(SettingsType.caption)
+                .foregroundStyle(SettingsPalette.icon)
+            if let footer = note.footer {
+                Text(footer)
+                    .font(SettingsType.caption)
+                    .foregroundStyle(SettingsPalette.muted)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(width: 300, alignment: .leading)
     }
 }
 
@@ -246,8 +374,13 @@ struct ProviderSettingsCard: View {
     /// False while two other Providers are on: at most two can be
     /// (`ProviderSelection`), so the switch waits for one of them to go.
     let canTurnOn: Bool
+    /// What the person should know about this Provider beside its state:
+    /// for Claude Code, why its Capacity may lag outside a terminal.
+    var note: String? = nil
     let now: Date
     let refresh: () -> Void
+    /// Claude Code's mod and terminal rows, while it is on.
+    var claudeRows: ClaudeCodeRows? = nil
 
     var body: some View {
         SettingsCard {
@@ -277,7 +410,7 @@ struct ProviderSettingsCard: View {
                     .disabled(!isOn && !canTurnOn)
             }
 
-            if let reason = isOn || canTurnOn ? reason : L("Turn one off to turn this on.") {
+            if let reason = isOn || canTurnOn ? [reason, note].compactMap({ $0 }).joined(separator: "\n\n").nilIfEmpty : L("Turn one off to turn this on.") {
                 Text(reason)
                     .font(SettingsType.caption)
                     .foregroundStyle(SettingsPalette.muted)
@@ -287,6 +420,8 @@ struct ProviderSettingsCard: View {
                     .padding(.trailing, 10)
                     .padding(.bottom, 10)
             }
+
+            if let claudeRows { claudeRows }
         }
     }
 
@@ -310,6 +445,7 @@ struct ProviderSettingsCard: View {
     /// The reason a Provider that is on is not being read, in its own words.
     private var reason: String? {
         guard isOn, let snapshot, let reason = snapshot.statusReason else { return nil }
+        if case .claudeNextReply = reason { return reason.localizedGuidance(at: now) }
         switch snapshot.connectionState {
         case .stale, .disconnected: return reason.localizedGuidance
         default: return nil
@@ -359,6 +495,8 @@ struct TeleprompterCard: View {
                 script
                 SettingsDivider()
                 speed
+                SettingsDivider()
+                TeleprompterVoiceSetting(teleprompter: teleprompter)
                 SettingsDivider()
                 textSize
                 SettingsDivider()
@@ -1145,6 +1283,8 @@ enum SettingsType {
     static let body = geist(13)
     static let bodyMedium = geist(13, .medium)
     static let caption = geist(12)
+    /// The "?" in its round button.
+    static let caption2 = geist(11)
     static let keycap = Font.system(size: 11)
 
     private static func geist(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
@@ -1186,4 +1326,8 @@ private extension NSColor {
             alpha: 1
         )
     }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

@@ -68,6 +68,12 @@ _Avoid_: Section, category, filter
 One copied text the Shelf keeps: what was copied, and when.
 _Avoid_: Snippet (read as something saved on purpose), clip, entry
 
+### The calendar
+
+**Calendar Module**:
+The Module that shows what is next in the person's calendars — every calendar on the Mac, events only, read through EventKit — as a row beneath Capacity from ten minutes before an event starts until five minutes after, with Join when the event carries a call link, and as a page in the expanded surface with three views: the day, the seven days from today, and the month.
+_Avoid_: Agenda, schedule, meetings widget
+
 ### Capacity
 
 **Provider**:
@@ -83,7 +89,7 @@ A Provider-defined period with measured usage and a reset time, such as a short 
 _Avoid_: Limit, billing period
 
 **Headline Window**:
-The Quota Window with the least remaining Capacity, the earlier reset breaking a tie. The compact strip shows it when "Least left" is chosen in Settings; by default the strip shows each Provider's five-hour window instead.
+The Quota Window with the least remaining Capacity, the earlier reset breaking a tie. The compact strip does not choose by it: with two Providers on, it shows each one's five-hour window, or its week when "Неделя" is chosen in Settings ("Least left" was a third choice until 8 October 2026).
 _Avoid_: Primary limit, most urgent window
 
 **Fresh Capacity**:

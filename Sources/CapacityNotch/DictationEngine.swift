@@ -29,9 +29,11 @@ actor DictationEngine {
     }
     func unload() { unloadTask?.cancel(); unloadTask = nil; model = nil }
 
-    private final class Recognizer {
+    /// Also the Teleprompter's, when it follows the voice (ticket 20), with
+    /// fewer threads: it decodes a few seconds five times a second.
+    final class Recognizer {
         let handle: OpaquePointer
-        init(folder: URL) throws {
+        init(folder: URL, threads: Int32 = 4) throws {
             try DictationModelFiles.validate(folder)
             var strings: [UnsafeMutablePointer<CChar>] = []
             func c(_ value: String) -> UnsafePointer<CChar> {
@@ -46,7 +48,7 @@ actor DictationEngine {
             config.model_config.transducer.decoder = c(folder.appendingPathComponent("decoder.onnx").path)
             config.model_config.transducer.joiner = c(folder.appendingPathComponent("joiner.onnx").path)
             config.model_config.tokens = c(folder.appendingPathComponent("tokens.txt").path)
-            config.model_config.num_threads = 4
+            config.model_config.num_threads = threads
             config.model_config.provider = c("cpu")
             config.model_config.model_type = c("nemo_transducer")
             config.model_config.modeling_unit = c("cjkchar")

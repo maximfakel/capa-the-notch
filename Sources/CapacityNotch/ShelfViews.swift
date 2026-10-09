@@ -835,6 +835,8 @@ extension SurfacePage {
         case .music: L("Music")
         case .teleprompter: L("Teleprompter")
         case .shelf: L("Shelf")
+        case .calendar: L("Calendar")
+        case .translator: L("Translator")
         }
     }
 
@@ -844,6 +846,8 @@ extension SurfacePage {
         case .music: .music
         case .teleprompter: .teleprompter
         case .shelf: .shelf
+        case .calendar: .calendar
+        case .translator: .translator
         }
     }
 }

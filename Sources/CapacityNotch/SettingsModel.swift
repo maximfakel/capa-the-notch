@@ -30,7 +30,8 @@ final class SettingsModel: ObservableObject {
         store: CapacityNotchStore? = nil,
         teleprompter: TeleprompterController? = nil,
         dictation: DictationController? = nil,
-        shelf: ShelfController? = nil
+        shelf: ShelfController? = nil,
+        claudeCode: ClaudeCodeSettings? = nil
     ) {
         self.preferences = preferences
         self.application = application
@@ -41,16 +42,23 @@ final class SettingsModel: ObservableObject {
         appearance = preferences.appearance
         displayID = preferences.preferredDisplayID ?? 0
         screenSharingAllowed = preferences.screenSharingAllowed
-        backgroundRefresh = preferences.backgroundRefreshSeconds
+        refreshInterval = preferences.refreshInterval
+        claudeCodeOverride = claudeCode
+        self.claudeCode = claudeCode ?? application.claudeCodeSettings
         launchAtLogin = LaunchAtLogin.isEnabled
         alertsEnabled = preferences.alertsEnabled
         keepsDiagnosticLog = preferences.keepsDiagnosticLog
         language = preferences.language
         compactWindow = preferences.compactWindow
         musicEnabled = preferences.musicEnabled
+        trackpadTapEnabled = preferences.opensOnTrackpadTap
         application.music.$isUnreadable
             .receive(on: DispatchQueue.main)
             .sink { [weak self] unreadable in self?.musicUnreadable = unreadable }
+            .store(in: &watching)
+        application.trackpadTap.$status
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in self?.trackpadTapStatus = status }
             .store(in: &watching)
         // The Providers section shows each Provider's state as the surface
         // knows it, and follows it while Settings is open.
@@ -71,6 +79,42 @@ final class SettingsModel: ObservableObject {
         preferences.connectsAtLaunch(provider)
     }
 
+    /// What Claude Code's card shows under its header: why Capacity may
+    /// lag, the mod's row, and the terminal's while the mod is not working.
+    @Published private(set) var claudeCode: ClaudeCodeSettings
+
+    /// A stand-in state for the pictures Settings renders of itself, so
+    /// each of the mockup's states can be drawn without touching `~/.claude`.
+    private let claudeCodeOverride: ClaudeCodeSettings?
+
+    /// Reads the mod's state from disk again: when the section appears, and
+    /// after every Add, Remove or switch.
+    func reloadClaudeCode() {
+        let now = claudeCodeOverride ?? application.claudeCodeSettings
+        if now != claudeCode { claudeCode = now }
+    }
+
+    /// "Добавить": put in place at once — the button is the person's
+    /// explicit action, so there is no second question.
+    func addClaudeMod() {
+        guard claudeCodeOverride == nil else { return }
+        application.addClaudeMod()
+        reloadClaudeCode()
+    }
+
+    /// "Удалить": only CapaTheNotch's own folder goes.
+    func removeClaudeMod() {
+        guard claudeCodeOverride == nil else { return }
+        application.removeClaudeMod()
+        reloadClaudeCode()
+    }
+
+    /// "Открыть Терминал": `claude` in a new Terminal window.
+    func openClaudeInTerminal() {
+        guard claudeCodeOverride == nil else { return }
+        application.openClaudeInTerminal()
+    }
+
     /// Reads one Provider now, as the surface's own Refresh does.
     func refresh(_ provider: Provider) {
         application.refresh(provider)
@@ -88,10 +132,21 @@ final class SettingsModel: ObservableObject {
     /// macOS stopped telling CapaTheNotch what is playing (ADR 0004).
     @Published private(set) var musicUnreadable = false
 
+    /// Two taps on the trackpad open the surface (ticket 14). Off until
+    /// asked for; off, the trackpad is not read.
+    @Published var trackpadTapEnabled: Bool {
+        didSet { application.setTrackpadTapEnabled(trackpadTapEnabled) }
+    }
+
+    /// Whether the trackpad is being read, or why it cannot be (ADR 0004).
+    @Published private(set) var trackpadTapStatus: TrackpadTapStatus = .off
+
     /// The Teleprompter Module, observed directly: its Script, speed and
     /// shortcuts are the controller's, and the card follows them live.
     var teleprompter: TeleprompterController { teleprompterOverride ?? application.teleprompter }
     var shelf: ShelfController { shelfOverride ?? application.shelf }
+    var calendar: CalendarController { application.calendar }
+    var translator: TranslatorController { application.translator }
     /// A stand-in for the pictures, so drawing the Shelf card never touches
     /// the person's own Shelf or its switches.
     private let shelfOverride: ShelfController?
@@ -124,6 +179,8 @@ final class SettingsModel: ObservableObject {
         } else {
             application.disconnect(provider)
         }
+        // Turn On may have put the mod in place, Turn Off taken it away.
+        if provider == .claudeCode { reloadClaudeCode() }
     }
 
     /// The language Settings speak; changing it redraws them at once.
@@ -156,8 +213,9 @@ final class SettingsModel: ObservableObject {
         didSet { preferences.compactWindow = compactWindow }
     }
 
-    @Published var backgroundRefresh: TimeInterval {
-        didSet { preferences.backgroundRefreshSeconds = backgroundRefresh }
+    /// How often Codex and OpenCode are read while the surface is closed.
+    @Published var refreshInterval: RefreshInterval {
+        didSet { preferences.refreshInterval = refreshInterval }
     }
 
     @Published var launchAtLogin: Bool {
@@ -203,12 +261,6 @@ final class SettingsModel: ObservableObject {
     }
 
     var displays: [DisplayDescriptor] { application.displays }
-
-    func refreshLabel(_ seconds: TimeInterval) -> String {
-        seconds < 3600
-            ? L("Every %d minutes", Int(seconds / 60))
-            : L("Every hour")
-    }
 
     func checkForUpdates() {
         application.checkForUpdates()

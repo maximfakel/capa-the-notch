@@ -122,18 +122,30 @@ public extension SurfaceCards {
     }
 }
 
-/// Which window each Provider shows in the closed strip while both are on.
+/// Which window each Provider shows in the closed strip while two are on:
+/// "Лимиты в компактной шторке" in Settings ▸ Providers, "5 часов" or
+/// "Неделя" (2026-10-08). One Provider on shows both of its windows, so
+/// there is nothing to choose.
+///
+/// "Least left" (the Headline Window) was a third choice until 2026-10-08;
+/// one stored from then reads as the default, five hours.
 public enum CompactWindowChoice: String, CaseIterable, Sendable {
     case fiveHour
     case weekly
-    case leastLeft
+
+    public static let standard = CompactWindowChoice.fiveHour
+
+    /// A stored choice, or the default for none, or for one no longer
+    /// offered.
+    public init(stored: String?) {
+        self = stored.flatMap(CompactWindowChoice.init(rawValue:)) ?? .standard
+    }
 
     /// The words in Settings, as drawn.
     public var title: String {
         switch self {
-        case .fiveHour: Localization.text("Five-hour")
-        case .weekly: Localization.text("Weekly")
-        case .leastLeft: Localization.text("Least left")
+        case .fiveHour: Localization.text("5 hours")
+        case .weekly: Localization.text("Week")
         }
     }
 }
@@ -151,9 +163,12 @@ public enum CompactStrip {
         case provider(CapacitySnapshot)
         /// One window of the only Provider on.
         case window(Provider, QuotaWindow)
+        /// A window the Provider keeps and did not send: a dash, never
+        /// another window in its place (`GaugeSlot`).
+        case missing(Provider)
     }
 
-    public static func sides(_ snapshots: [CapacitySnapshot], showing choice: CompactWindowChoice = .fiveHour) -> (left: Side?, right: Side?) {
+    public static func sides(_ snapshots: [CapacitySnapshot], showing choice: CompactWindowChoice = .standard) -> (left: Side?, right: Side?) {
         let on = ProviderSelection.ordered(snapshots.filter { !$0.isSwitchedOff })
         guard on.count == 1, let only = on.first else {
             guard !on.isEmpty else { return (nil, nil) }
@@ -161,18 +176,23 @@ public enum CompactStrip {
                 guard let snapshot else { return nil }
                 let provider = snapshot.provider
                 let windows = byDuration(snapshot.windows)
+                if choice == .fiveHour, GaugeSlot.slots(for: snapshot).first == .missing(label: "5 hour") {
+                    return .missing(provider)
+                }
                 // The window of that length, and only without one the
                 // nearest end: a Provider's shortest is not always five hours.
                 let window = switch choice {
                 case .fiveHour: windows.first { $0.durationMinutes == 5 * 60 } ?? windows.first
                 case .weekly: windows.first { $0.durationMinutes == 7 * 24 * 60 } ?? windows.last
-                case .leastLeft: snapshot.headlineWindow
                 }
                 return window.map { .window(provider, $0) } ?? .provider(snapshot)
             }
             return (chosen(on.first), chosen(on.dropFirst().first))
         }
         let windows = byDuration(only.windows)
+        if case .missing? = GaugeSlot.slots(for: only).first, let longest = windows.last {
+            return (.missing(only.provider), .window(only.provider, longest))
+        }
         guard let shortest = windows.first else {
             // Nothing read yet: a dash on the left, where its five hours
             // will stand once read.

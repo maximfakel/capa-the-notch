@@ -11,6 +11,22 @@ Spikes/*/.build/
 Spikes/Dictation/Vendor/
 Spikes/Dictation/Models/
 Spikes/Dictation/Recordings/
+# Ticket 20's measurement: synthesised audio and the T-One model stay on this Mac.
+Spikes/TeleprompterVoice/Audio/
+Spikes/TeleprompterVoice/Models/
 
 # /brag launch videos: renders and Hyperframes projects, kept on this Mac.
 brag-output*/
+
+# Ticket 14's spike: its app wrapper and the tables a run writes stay on this Mac.
+Spikes/TrackpadTap/Results/
+
+# Ticket 30: which certificate signs the builds; the key itself never comes here.
+.signing.env
+*.p12
+
+# Local tooling: the preview launcher and agent worktrees stay on this Mac.
+.claude/launch.json
+.claude/worktrees/
+# Kapa's Telegram emoji, built on this Mac; not part of the product.
+Scripts/make-telegram-emoji.py

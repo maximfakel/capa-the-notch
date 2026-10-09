@@ -280,6 +280,8 @@ final class ShelfController: ObservableObject {
         forgetOldClippings()
         guard board.changeCount != clipboardCount else { return }
         clipboardCount = board.changeCount
+        // The translator's own coming and going (ticket 28).
+        guard !OwnClipboard.isLatestChangeBorrowed else { return }
         // Apple's password apps mark nothing; nothing is read while one is in front.
         let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         guard !ClipboardTake.isExcludedApplication(front) else { return }

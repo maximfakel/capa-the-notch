@@ -1,12 +1,17 @@
 import Foundation
 
-/// Reads Claude Capacity through Claude Code itself: its own `/usage`, and the
-/// status-line bridge where one runs. This service has no credential or
-/// network boundary.
+/// Reads Claude Capacity through Claude Code itself: what its status line,
+/// or CapaTheNotch's mod after a reply, hands the bridge (ADR 0001, amended
+/// 2026-10-06 and 2026-10-08). This service has no credential or network
+/// boundary, so it cannot pull a reading: a refresh re-reads the file, and
+/// says where the next reading comes from when there is nothing newer.
 public actor ClaudeCapacityService {
     private let now: @Sendable () -> Date
     private let capacitySource: any ClaudeCapacitySource
     private let staleAfter: TimeInterval
+    /// Whether a reply anywhere brings the next reading (the mod is
+    /// installed), or only one in a terminal (the status line alone).
+    private let nextReadingFromAnyReply: @Sendable () -> Bool
     private var isConnected = false
     private var lastSuccessfulSnapshot: CapacitySnapshot?
 
@@ -16,9 +21,11 @@ public actor ClaudeCapacityService {
     public init(
         now: @escaping @Sendable () -> Date = { Date() },
         capacitySource: any ClaudeCapacitySource,
-        staleAfter: TimeInterval = ClaudeCapacityReading.freshFor
+        staleAfter: TimeInterval = ClaudeCapacityReading.freshFor,
+        nextReadingFromAnyReply: @escaping @Sendable () -> Bool = { false }
     ) {
         self.now = now
+        self.nextReadingFromAnyReply = nextReadingFromAnyReply
         self.capacitySource = capacitySource
         self.staleAfter = staleAfter
 
@@ -33,36 +40,42 @@ public actor ClaudeCapacityService {
         await refresh()
     }
 
-    public func refresh() async {
+    /// Reads the bridge's file again. `asked` when a person pressed Refresh:
+    /// a reading no newer than the one shown then says it waits for Claude's
+    /// next reply, and how old it is.
+    public func refresh(asked: Bool = false) async {
         guard isConnected else { return }
 
         do {
             let reading = try capacitySource.read()
             let isStale = now().timeIntervalSince(reading.capturedAt) > staleAfter
+            let nothingNewer = asked && lastSuccessfulSnapshot.map { reading.capturedAt <= $0.capturedAt } == true
+            let anyReply = nextReadingFromAnyReply()
+            let reason: CapacityStatusReason? = if nothingNewer {
+                .claudeNextReply(lastReadAt: reading.capturedAt, anyReply: anyReply)
+            } else if isStale {
+                anyReply ? .claudeStaleUntilReply : .claudeStatusLineStale
+            } else {
+                nil
+            }
             let snapshot = CapacitySnapshot(
                 provider: .claudeCode,
                 capturedAt: reading.capturedAt,
                 windows: reading.windows,
                 connectionState: isStale ? .stale : .fresh,
-                statusReason: isStale ? .claudeStatusLineStale : nil
+                statusReason: reason
             )
             lastSuccessfulSnapshot = snapshot
             snapshotContinuation.yield(snapshot)
         } catch {
-            holdLastCapacityOrDisconnect(Self.reason(for: error))
+            holdLastCapacityOrDisconnect(reasonForNoReading())
         }
     }
 
-    /// The failure said as the one thing that would fix it. `/usage` fails in
-    /// three different ways and each wants a different hand; anything else
-    /// came from the status-line bridge.
-    private static func reason(for error: Error) -> CapacityStatusReason {
-        switch error as? ClaudeUsageCommandError {
-        case .claudeCodeNotInstalled: .claudeCodeNotInstalled
-        case .commandFailed: .claudeUsageFailed
-        case .outputNotUnderstood: .claudeUsageNotUnderstood
-        case nil: .claudeStatusLineUnavailable
-        }
+    /// The failure said as the one thing that would fix it: the bridge has
+    /// published nothing yet, and a reply will make it.
+    private func reasonForNoReading() -> CapacityStatusReason {
+        nextReadingFromAnyReply() ? .claudeNextReply(lastReadAt: nil, anyReply: true) : .claudeStatusLineUnavailable
     }
 
     public func disconnect() {

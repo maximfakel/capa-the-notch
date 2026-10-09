@@ -18,6 +18,12 @@ final class TeleprompterController: ObservableObject {
     /// Shortcuts macOS would not register, usually because something else
     /// holds them. Settings says so on the card.
     @Published private(set) var unavailableShortcuts: Set<TeleprompterAction> = []
+    /// Ticket 20: the Script follows the voice reading it.
+    @Published private(set) var followsVoice: Bool
+    /// Why following the voice is not working, for Settings to say.
+    @Published private(set) var voiceTrouble: TeleprompterVoice.Trouble?
+    /// The word being said, lit on the row while following the voice.
+    @Published private(set) var litWord: ScriptWord?
 
     /// Edit Script on the page opens Settings at the Modules section.
     var openSettings: () -> Void = {}
@@ -27,6 +33,9 @@ final class TeleprompterController: ObservableObject {
     private let registersShortcuts: Bool
     private let hotKeys = HotKeys()
     private var timer: Timer?
+    private var follower = ScriptFollower(words: [])
+    /// Nil for the stand-in the pictures are drawn with: it never listens.
+    private let voice: TeleprompterVoice?
 
     init(preferences: Preferences, registersShortcuts: Bool = true) {
         self.preferences = preferences
@@ -36,7 +45,12 @@ final class TeleprompterController: ObservableObject {
         hasPreviousScript = preferences.previousScript != nil
         textSize = preferences.teleprompterTextSize
         playback = TeleprompterPlayback(wordCount: 0, lineCount: 0, multiplier: preferences.teleprompterMultiplier)
+        followsVoice = preferences.teleprompterFollowsVoice
+        voice = registersShortcuts ? TeleprompterVoice() : nil
+        playback.setFollowsVoice(followsVoice, at: Date())
         relayout()
+        voice?.heard = { [weak self] text in self?.hear(text) }
+        voice?.trouble = { [weak self] trouble in self?.voiceFailed(trouble) }
         if isEnabled { registerShortcuts() }
     }
 
@@ -67,6 +81,7 @@ final class TeleprompterController: ObservableObject {
             playback.stop()
             schedule()
             isEnabled = false
+            listenWhileRunning()
             hotKeys.unregisterAll()
             unavailableShortcuts = []
         }
@@ -126,6 +141,77 @@ final class TeleprompterController: ObservableObject {
         body(&playback)
         if playback.multiplier != speed { preferences.teleprompterMultiplier = playback.multiplier }
         schedule()
+        listenWhileRunning()
+    }
+
+    // MARK: - Following the voice (ticket 20)
+
+    /// Turned on in Settings: macOS is asked for the microphone now, and only
+    /// now (ADR 0003). Refused, or without Dictation's model, it stays off and
+    /// Settings says what to do.
+    func setFollowsVoice(_ follows: Bool) {
+        guard follows != followsVoice else { return }
+        guard follows else { applyFollowsVoice(false); voiceTrouble = nil; return }
+        guard DictationModelFiles.exists() else { voiceTrouble = .modelMissing; return }
+        Task {
+            guard await TeleprompterVoice.askForMicrophone() else { voiceTrouble = .microphoneDenied; return }
+            voiceTrouble = nil
+            applyFollowsVoice(true)
+        }
+    }
+
+    /// Clears what Settings said, once the person has gone to fix it.
+    func refreshVoiceTrouble() {
+        if voiceTrouble == .microphoneDenied, TeleprompterVoice.microphoneStatus == .authorized { voiceTrouble = nil }
+        if voiceTrouble == .modelMissing, DictationModelFiles.exists() { voiceTrouble = nil }
+    }
+
+    private func applyFollowsVoice(_ follows: Bool) {
+        preferences.teleprompterFollowsVoice = follows
+        followsVoice = follows
+        litWord = nil
+        playback.setFollowsVoice(follows, at: Date())
+        schedule()
+        listenWhileRunning()
+    }
+
+    /// The microphone is on exactly while a Script runs following the voice:
+    /// paused, stopped, finished or switched off, it is off.
+    private func listenWhileRunning() {
+        guard let voice else { return }
+        guard isEnabled, followsVoice, playback.state == .running else {
+            voice.stop()
+            if playback.state == .stopped { follower.reset(); litWord = nil }
+            return
+        }
+        // The voice is expected where the Script is: the top on start, the
+        // line put there by hand after two fingers or a drag.
+        let line = Int(playback.position(at: Date()).rounded(.down))
+        if !follower.isOn(line: line) {
+            follower.expect(line: line)
+            litWord = nil
+        }
+        voice.start()
+    }
+
+    private func hear(_ text: String) {
+        guard followsVoice, playback.state == .running else { return }
+        guard follower.hear(ScriptWords.heard(text)), let index = follower.current else { return }
+        let word = follower.words[index]
+        litWord = word
+        if follower.hasReachedEnd {
+            change { $0.finishFollowing(at: Date()) }
+        } else {
+            change { $0.follow(toLine: Double(word.line), at: Date()) }
+        }
+    }
+
+    /// The microphone or the model failed as the Script started: following
+    /// turns off, so the Script is not left waiting for a voice it cannot
+    /// hear, and Settings says why.
+    private func voiceFailed(_ trouble: TeleprompterVoice.Trouble) {
+        voiceTrouble = trouble
+        if followsVoice { applyFollowsVoice(false) }
     }
 
     /// Wakes when the Script reaches its end, and again when its row leaves;
@@ -139,6 +225,7 @@ final class TeleprompterController: ObservableObject {
                 guard let self else { return }
                 self.playback.advance(to: Date())
                 self.schedule()
+                self.listenWhileRunning()
             }
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -152,7 +239,13 @@ final class TeleprompterController: ObservableObject {
             lineCount: lines.count,
             at: Date()
         )
+        // The words are where the new lines put them; the voice is expected
+        // at the start of the line the Script is on.
+        follower = ScriptFollower(lines: lines)
+        litWord = nil
+        follower.expect(line: Int(playback.position(at: Date()).rounded(.down)))
         schedule()
+        listenWhileRunning()
     }
 
     // MARK: - Shortcuts

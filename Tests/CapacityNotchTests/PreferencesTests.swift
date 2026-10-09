@@ -61,13 +61,15 @@ func aChoiceMadeAnywhereIsTheSameChoice() throws {
     preferences.alertsEnabled = true
     preferences.launchAtLogin = true
     preferences.preferredDisplayID = 7
-    preferences.backgroundRefreshSeconds = 900
+    preferences.refreshInterval = .everyFifteenMinutes
+    preferences.compactWindow = .weekly
 
     let elsewhere = Preferences(defaults: defaults)
     try expect(elsewhere.alertsEnabled, "Alerts")
     try expect(elsewhere.launchAtLogin, "Launch at login")
     try expect(elsewhere.preferredDisplayID == 7, "The chosen display")
-    try expect(elsewhere.backgroundRefreshSeconds == 900, "The background pace")
+    try expect(elsewhere.refreshInterval == .everyFifteenMinutes, "The background pace")
+    try expect(elsewhere.compactWindow == .weekly, "The strip's window")
 
     elsewhere.preferredDisplayID = nil
     try expect(
@@ -105,13 +107,51 @@ func theBackgroundPaceFallsBackToTheScheduleItCameFrom() throws {
     defer { defaults.removePersistentDomain(forName: suite) }
 
     try expect(
-        preferences.backgroundRefreshSeconds == RefreshSchedule.standard.whileCompact,
+        preferences.refreshInterval.rawValue == RefreshSchedule.standard.whileCompact,
         "Unset, the pace is the schedule's own"
     )
     try expect(
-        Preferences.refreshChoices.contains(RefreshSchedule.standard.whileCompact),
+        RefreshInterval.allCases.map(\.rawValue).contains(RefreshSchedule.standard.whileCompact),
         "And the schedule's own pace is one a person can choose"
     )
+    // A pace stored before the choices were these three — "Every hour" was
+    // once drawn — reads as the nearest one offered.
+    defaults.set(3600.0, forKey: "backgroundRefreshSeconds")
+    try expect(preferences.refreshInterval == .everyFifteenMinutes, "An hour reads as fifteen minutes")
+    defaults.set(120.0, forKey: "backgroundRefreshSeconds")
+    try expect(preferences.refreshInterval == .everyMinute, "Two minutes reads as one")
+}
+
+/// "Обновлять данные": the choice sets the closed surface's pace; open, the
+/// surface is still read every minute, and a failing Provider still backs
+/// off — never sooner than the pace chosen.
+func theChosenPaceSetsTheClosedSurfacesSchedule() throws {
+    let standard = RefreshSchedule.standard
+    try expect(standard.closed(every: .standard) == standard, "The default changes nothing")
+
+    let minute = standard.closed(every: .everyMinute)
+    try expect(minute.delay(expanded: false, consecutiveFailures: 0) == 60, "Every minute, closed")
+    try expect(minute.delay(expanded: true, consecutiveFailures: 0) == 60, "and open")
+
+    let quarter = standard.closed(every: .everyFifteenMinutes)
+    try expect(quarter.delay(expanded: false, consecutiveFailures: 0) == 900, "Every fifteen minutes, closed")
+    try expect(quarter.delay(expanded: true, consecutiveFailures: 0) == 60, "Open, still every minute")
+    try expect(quarter.delay(expanded: false, consecutiveFailures: 1) == 30, "A first failure is tried again soon")
+    try expect(quarter.delay(expanded: false, consecutiveFailures: 5) == 900, "Backing off stops at the pace chosen")
+
+    let language = Localization.current
+    defer { Localization.current = language }
+    Localization.current = .english
+    try expect(
+        RefreshInterval.allCases.map(\.title) == ["Every minute", "Every 5 min", "Every 15 min"],
+        "Three choices, as drawn"
+    )
+    Localization.current = .russian
+    try expect(
+        RefreshInterval.allCases.map(\.title) == ["Каждую минуту", "Каждые 5 мин", "Каждые 15 мин"],
+        "and in Russian"
+    )
+    try expect(CompactWindowChoice.allCases.map(\.title) == ["5 часов", "Неделя"], "The strip's two choices, as drawn")
 }
 
 func theAppearanceFollowsTheMacUntilChosen() throws {

@@ -11,6 +11,10 @@ import SwiftUI
 /// together, so no prompt interrupts work later. Continue waits for a Provider
 /// to answer, and Skip goes on without one. Every Module can be passed by with
 /// its switch left off.
+///
+/// Opened at the permissions step instead, it is how someone who used a
+/// build signed before the author's certificate is asked again, once, after
+/// the old grants were reset (ticket 33; Paper: "Permissions again — …").
 @MainActor
 final class OnboardingModel: ObservableObject {
     enum Step: Int, CaseIterable, Identifiable {
@@ -77,6 +81,10 @@ final class OnboardingModel: ObservableObject {
     @Published private(set) var step: Step = .welcome
     /// The furthest step reached; the sidebar goes back to any step up to it.
     @Published private(set) var reached: Step = .welcome
+    /// Why the permissions step is shown again, if it is (ticket 33).
+    let permissionsAgain: OldGrantReset.Opening?
+    /// Try Again was pressed and tccutil refused once more.
+    @Published private(set) var retryFailed = false
 
     let settings: SettingsModel
     let access: SystemAccess
@@ -91,6 +99,7 @@ final class OnboardingModel: ObservableObject {
         store: CapacityNotchStore,
         notifications: CapacityNotifications?,
         step: Step = .welcome,
+        permissionsAgain: OldGrantReset.Opening? = nil,
         teleprompter: TeleprompterController? = nil,
         dictation: DictationController? = nil
     ) {
@@ -103,9 +112,43 @@ final class OnboardingModel: ObservableObject {
             teleprompter: teleprompter,
             dictation: dictation
         )
-        access = SystemAccess(dictation: settings.dictation, notifications: notifications)
-        self.step = step
-        reached = step
+        access = SystemAccess(dictation: settings.dictation, notifications: notifications, calendar: application.calendar)
+        self.permissionsAgain = permissionsAgain
+        self.step = permissionsAgain == nil ? step : .permissions
+        reached = self.step
+    }
+
+    var title: String {
+        guard step == .permissions else { return step.title }
+        switch permissionsAgain {
+        case .permissionsAgain: return L("Permissions, Once More")
+        case .permissionsNotReset: return L("The Earlier Permissions Were Not Reset")
+        case .onboarding, nil: return step.title
+        }
+    }
+
+    var subtitle: String {
+        guard step == .permissions else { return step.subtitle }
+        switch permissionsAgain {
+        case .permissionsAgain:
+            return L("From this version on, CapaTheNotch is signed with its author's certificate. The permissions given to earlier builds were reset — once, so that a build someone else signed cannot use them.")
+        case .permissionsNotReset:
+            return L("CapaTheNotch is now signed with its author's certificate, but macOS did not let it reset the permissions of earlier builds. While they are there, a build someone else signed can use them. Remove them by hand:")
+        case .onboarding, nil:
+            return step.subtitle
+        }
+    }
+
+    /// Tries the reset again; once it is done, CapaTheNotch opens again and
+    /// asks there.
+    func retryReset() {
+        retryFailed = application.retryOldGrantReset() != .reset
+    }
+
+    /// Removed in Privacy & Security by hand: CapaTheNotch opens again and
+    /// asks there.
+    func removedByHand() {
+        application.oldGrantsRemovedByHand()
     }
 
     /// A Provider that is on and has said something about its Capacity.
@@ -178,7 +221,7 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        SectionHeading(title: model.step.title, subtitle: model.step.subtitle)
+                        SectionHeading(title: model.title, subtitle: model.subtitle)
                         content
                     }
                     .padding(.top, 52)
@@ -286,7 +329,11 @@ struct OnboardingView: View {
     private var content: some View {
         switch model.step {
         case .welcome: welcome
-        case .permissions: OnboardingPermissions(access: model.access)
+        case .permissions:
+            OnboardingPermissions(
+                access: model.access, again: model.permissionsAgain, retryFailed: model.retryFailed,
+                retry: model.retryReset, removedByHand: model.removedByHand
+            )
         case .providers: providers
         case .music: music
         case .teleprompter: OnboardingTeleprompter(teleprompter: settings.teleprompter)
@@ -385,22 +432,64 @@ struct OnboardingView: View {
 }
 
 /// Each thing macOS is asked for, why, and where it stands; one button asks
-/// for all of them in turn.
+/// for all of them in turn. Asked again after the reset (ticket 33), only
+/// what was reset is listed; when the reset failed, each opens its pane in
+/// Privacy & Security, where the old grant is removed by hand.
 private struct OnboardingPermissions: View {
     @ObservedObject var access: SystemAccess
+    let again: OldGrantReset.Opening?
+    let retryFailed: Bool
+    let retry: () -> Void
+    let removedByHand: () -> Void
+
+    private var notReset: Bool { again == .permissionsNotReset }
+
+    /// Notifications were not reset, so they are not asked for again; and
+    /// an old Calendars grant is there to remove whether the Module is on or
+    /// not.
+    private var kinds: [SystemAccess.Kind] {
+        switch again {
+        case .permissionsNotReset: [.microphone, .accessibility, .automation, .calendars]
+        case .permissionsAgain: access.kinds.filter { $0 != .notifications }
+        case .onboarding, nil: access.kinds
+        }
+    }
+
+    private var footnote: String {
+        switch again {
+        case .permissionsNotReset:
+            L("In each list, choose CapaTheNotch and press −; under Automation, turn System Events off. CapaTheNotch asks again after that.")
+        case .permissionsAgain:
+            L("macOS asks about each one in turn; Accessibility is switched on in System Settings. After this, updates keep the permissions again.")
+        case .onboarding, nil:
+            L("macOS asks about each one in turn. Accessibility is switched on in System Settings; its state here follows when you come back.")
+        }
+    }
 
     var body: some View {
-        SettingsGroup(footnote: L("macOS asks about each one in turn. Accessibility is switched on in System Settings; its state here follows when you come back.")) {
-            ForEach(SystemAccess.Kind.allCases) { kind in
-                if kind != SystemAccess.Kind.allCases.first { SettingsDivider() }
+        SettingsGroup(footnote: footnote) {
+            ForEach(kinds) { kind in
+                if kind != kinds.first { SettingsDivider() }
                 row(kind)
             }
         }
 
         HStack {
-            Button(L("Allow All")) { Task { await access.requestAll() } }
-                .buttonStyle(SettingsButtonStyle(prominent: true))
-                .disabled(!access.anyToAsk)
+            if notReset {
+                Button(L("Try Again"), action: retry)
+                    .buttonStyle(SettingsButtonStyle())
+                Button(L("Already Removed"), action: removedByHand)
+                    .buttonStyle(SettingsButtonStyle())
+                if retryFailed {
+                    Text(L("macOS refused again."))
+                        .font(SettingsType.caption)
+                        .foregroundStyle(SettingsPalette.muted)
+                }
+            } else {
+                Button(L("Allow All")) { Task { await access.requestAll() } }
+                    .buttonStyle(SettingsButtonStyle(prominent: true))
+                    .disabled(!access.anyToAsk)
+            }
             Spacer()
         }
         .onAppear { access.watch() }
@@ -413,27 +502,32 @@ private struct OnboardingPermissions: View {
                 .foregroundStyle(SettingsPalette.icon)
                 .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(kind.name).font(SettingsType.bodyMedium)
-                Text(kind.reason)
+                Text(notReset ? kind.paneName : kind.name).font(SettingsType.bodyMedium)
+                Text(notReset ? kind.shortReason : kind.reason)
                     .font(SettingsType.caption)
                     .foregroundStyle(SettingsPalette.muted)
             }
             Spacer(minLength: 0)
-            switch access.state(kind) {
-            case .granted:
-                Text(L("Granted"))
-                    .font(SettingsType.caption)
-                    .foregroundStyle(SettingsPalette.positive)
-            case .notAsked:
-                Button(L("Allow")) { Task { await access.request(kind) } }
+            if notReset {
+                Button(L("Open Settings")) { access.openSettings(kind) }
                     .buttonStyle(SettingsButtonStyle())
-            case .refused:
-                Button(L("Open Settings")) { Task { await access.request(kind) } }
-                    .buttonStyle(SettingsButtonStyle())
-            case .unavailable:
-                Text(L("Unavailable"))
-                    .font(SettingsType.caption)
-                    .foregroundStyle(SettingsPalette.muted)
+            } else {
+                switch access.state(kind) {
+                case .granted:
+                    Text(L("Granted"))
+                        .font(SettingsType.caption)
+                        .foregroundStyle(SettingsPalette.positive)
+                case .notAsked:
+                    Button(L("Allow")) { Task { await access.request(kind) } }
+                        .buttonStyle(SettingsButtonStyle())
+                case .refused:
+                    Button(L("Open Settings")) { Task { await access.request(kind) } }
+                        .buttonStyle(SettingsButtonStyle())
+                case .unavailable:
+                    Text(L("Unavailable"))
+                        .font(SettingsType.caption)
+                        .foregroundStyle(SettingsPalette.muted)
+                }
             }
         }
         .accessibilityElement(children: .contain)
@@ -513,6 +607,8 @@ private extension BuiltInModule {
         case .teleprompter: .teleprompter
         case .dictation: .dictation
         case .shelf: .shelf
+        case .calendar: .calendar
+        case .translator: .translator
         }
     }
 }

@@ -154,7 +154,6 @@ func aFailureWorthRetryingIsToldFromOneThatIsNot() throws {
         .providerUnavailable(detail: "the connection closed."),
         .providerCouldNotRead(detail: "error sending request"),
         .claudeStatusLineStale,
-        .claudeUsageFailed,
         .staleFromArchive,
     ]
     let terminal: [CapacityStatusReason] = [
@@ -165,8 +164,6 @@ func aFailureWorthRetryingIsToldFromOneThatIsNot() throws {
         .codexDisconnected,
         .claudeDisconnected,
         .claudeStatusLineUnavailable,
-        .claudeCodeNotInstalled,
-        .claudeUsageNotUnderstood,
     ]
 
     try expect(

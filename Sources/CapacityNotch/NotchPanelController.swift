@@ -11,6 +11,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private let music: MusicReader
     private let teleprompter: TeleprompterController
     private let shelf: ShelfController
+    private let calendar: CalendarReader
+    private let translator: TranslatorController?
     private let pages = SurfacePages()
     private let pointer = SurfacePointer()
     private var scrollMonitor: Any?
@@ -45,12 +47,19 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
     private static let presentTicksBeforeOpen = 3
     /// And a pointer that leaves for an instant has not left.
     private static let absentTicksBeforeClose = 2
+    /// Opened by two taps, the surface stays this long for a glance, then
+    /// closes unless the pointer has come onto it.
+    private static let peekDuration: TimeInterval = 4
+    /// Until when a surface opened for a glance holds open by itself.
+    private var peekUntil: Date?
 
     init(
         store: CapacityNotchStore,
         music: MusicReader,
         teleprompter: TeleprompterController,
         shelf: ShelfController,
+        calendar: CalendarReader,
+        translator: TranslatorController? = nil,
         connect: @escaping (Provider) -> Void,
         refresh: @escaping (Provider) -> Void,
         openProviderSettings: @escaping () -> Void
@@ -59,6 +68,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         self.music = music
         self.teleprompter = teleprompter
         self.shelf = shelf
+        self.calendar = calendar
+        self.translator = translator
         self.connect = connect
         self.refresh = refresh
         self.openProviderSettings = openProviderSettings
@@ -70,6 +81,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             music: music,
             teleprompter: teleprompter,
             shelf: shelf,
+            calendar: calendar,
+            translator: translator,
             pages: pages,
             shape: shape,
             pointer: pointer,
@@ -176,6 +189,18 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             }
             .store(in: &observers)
 
+        // An event about to start adds its row under the strip, and takes
+        // it away once it has begun; the window follows, as for music.
+        calendar.$rowEvent
+            .map { $0 != nil }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.store.presentation == .compact else { return }
+                self.positionPanel(for: .compact, animated: self.window?.isVisible == true)
+            }
+            .store(in: &observers)
+
         // The Teleprompter Row coming or going, or changing its text size,
         // resizes the closed surface; while it shows, the surface is kept out
         // of screen capture whatever the switch says.
@@ -205,13 +230,20 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         // Which pages there are: a Module switched on or off. The music page
         // stands while its Module is on, playing or not, so the surface keeps
         // its height and its pages as tracks come and go.
-        Publishers.CombineLatest3(
+        // The calendar's page stands while it is on and allowed to read.
+        Publishers.CombineLatest4(
             music.$isOn.removeDuplicates(),
             teleprompter.$isEnabled.removeDuplicates(),
-            shelf.$isEnabled.removeDuplicates()
+            shelf.$isEnabled.removeDuplicates(),
+            // Four at most to combine: the calendar and the translator ride as one.
+            Publishers.CombineLatest(
+                Publishers.CombineLatest(calendar.$isEnabled, calendar.$access).map { $0 && $1 == .granted }.removeDuplicates(),
+                translator?.$isEnabled.removeDuplicates().eraseToAnyPublisher() ?? Just(false).eraseToAnyPublisher()
+            )
         )
-        .sink { [weak self] music, teleprompter, shelf in
-            self?.pages.setAvailable(SurfacePageOrder.pages(music: music, teleprompter: teleprompter, shelf: shelf))
+        .sink { [weak self] music, teleprompter, shelf, later in
+            let (calendar, translator) = later
+            self?.pages.setAvailable(SurfacePageOrder.pages(music: music, teleprompter: teleprompter, shelf: shelf, calendar: calendar, translator: translator))
         }
         .store(in: &observers)
 
@@ -259,6 +291,13 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 guard let self, self.window?.isVisible == true else { return }
                 if pinned { self.takeKey() } else { self.window?.resignKey() }
             }
+            .store(in: &observers)
+
+        // Closed, the Translator lets go of a selection nobody acted on.
+        store.$presentation
+            .removeDuplicates()
+            .filter { $0 == .compact }
+            .sink { [weak self] _ in self?.translator?.surfaceClosed() }
             .store(in: &observers)
 
         positionPanel(for: store.presentation, animated: false)
@@ -455,6 +494,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             // A card with windows in it, which a fresh launch has not read yet.
             picture(ProviderCard(snapshot: sample, now: Date(), connect: {}, refresh: {}), width: 256, named: "card.png")
             drawShelf(into: folder, sample: [sample, CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: sample.windows, connectionState: .fresh)])
+            CalendarPictures.draw(into: folder, geometry: geometry, snapshots: [sample, CapacitySnapshot(provider: .claudeCode, capturedAt: Date(), windows: sample.windows, connectionState: .fresh)])
             // The gauge states of "Limits — C": stale beside connecting, and a
             // window used up beside a Provider that cannot be read.
             let stale = CapacitySnapshot(provider: .codex, capturedAt: Date(), windows: sample.windows, connectionState: .stale)
@@ -467,7 +507,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 ],
                 connectionState: .fresh
             )
-            let unreadable = CapacitySnapshot.disconnected(provider: .claudeCode, capturedAt: Date(), reason: .claudeCodeNotInstalled)
+            let unreadable = CapacitySnapshot.disconnected(provider: .claudeCode, capturedAt: Date(), reason: .claudeStatusLineUnavailable)
             for (pair, name) in [([stale, connecting], "expanded-stale-connecting.png"), ([exhausted, unreadable], "expanded-exhausted-no-data.png")] {
                 picture(
                     SurfaceColumn(snapshots: pair, geometry: geometry, now: Date(), isExpanded: true,
@@ -578,6 +618,10 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 width: geometry.surfaceWidth(), named: "compact.png"
             )
         }
+
+        // Measured and drawn: the run is done. Left running, each run stayed
+        // on screen as one more notch beside the real one.
+        NSApplication.shared.terminate(nil)
     }
 
     /// The Teleprompter's closed row and open page, drawn from `standIn` into
@@ -798,6 +842,30 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         store.pin()
     }
 
+    /// Opens the surface pinned on the Translator page, for a selection the
+    /// shortcut brought: pinned, it is key, so Return and Escape reach it.
+    func openTranslator() {
+        peekUntil = nil
+        pages.select(.translator)
+        store.pin()
+        // Already pinned, it did not take the keyboard again on its own.
+        if window?.isKeyWindow == false { takeKey() }
+    }
+
+    /// Opens the surface for a glance (two taps, ticket 14): unpinned, it
+    /// holds for `peekDuration` and then closes like a surface the pointer
+    /// left; once the pointer comes onto it, it follows the pointer as usual.
+    /// Two taps on an open surface close it.
+    func peek() {
+        if store.presentation == .expanded {
+            peekUntil = nil
+            store.dismiss()
+            return
+        }
+        peekUntil = Date().addingTimeInterval(Self.peekDuration)
+        store.expand()
+    }
+
     // MARK: - Screen sharing
 
     /// Whether the surface appears in screen recordings and shared screens.
@@ -977,6 +1045,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
 
         guard !region.contains(NSEvent.mouseLocation) else {
             absentTicks = 0
+            peekUntil = nil
             // A button held down is a drag on its way somewhere — a file for
             // the Shelf among them — not a pointer resting on the strip.
             guard NSEvent.pressedMouseButtons & 1 == 0, !shelf.isDropTargeted else {
@@ -1006,6 +1075,12 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             absentTicks = 0
             return
         }
+        // Opened for a glance: it holds until its time is up.
+        if let peekUntil, Date() < peekUntil {
+            absentTicks = 0
+            return
+        }
+        peekUntil = nil
 
         absentTicks += 1
         guard absentTicks >= Self.absentTicksBeforeClose else { return }
@@ -1152,7 +1227,12 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
             return self.follow(swipe: event) ? nil : event
         }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, event.window === self.window, self.canTurnPages else { return event }
+            guard let self, event.window === self.window else { return event }
+            // Return on the Translator page chooses what the pill offers,
+            // while it shows a selection the shortcut brought.
+            if self.store.presentation == .expanded, self.pages.selected == .translator,
+               self.translator?.handleKey(event.keyCode) == true { return nil }
+            guard self.canTurnPages else { return event }
             switch event.keyCode {
             case 123: self.pages.previous(); return nil
             case 124: self.pages.next(); return nil
@@ -1280,6 +1360,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 )
             case .music:
                 NSSize(width: geometry.compactWidth(), height: geometry.menuBarHeight + MusicType.rowHeight)
+            case .calendar:
+                NSSize(width: geometry.compactWidth(), height: geometry.menuBarHeight + CalendarType.rowHeight)
             case .none:
                 NSSize(width: geometry.compactWidth(), height: geometry.menuBarHeight)
             }
@@ -1348,7 +1430,8 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
         TeleprompterSurface.compactRow(
             teleprompterShowing: teleprompter.isShowingRow,
             musicShown: music.shown != nil,
-            fullscreen: metrics.isFullscreen
+            fullscreen: metrics.isFullscreen,
+            calendarShown: calendar.rowEvent != nil
         )
     }
 
@@ -1368,6 +1451,7 @@ final class NotchPanelController: NSWindowController, NSWindowDelegate {
                 remembered: music.remembered,
                 teleprompter: teleprompter,
                 shelf: shelf,
+                calendarEvents: calendar.showsPage ? calendar.events : nil,
                 page: pages.selected,
                 controlsShown: pages.controlsShown,
                 connect: { _ in },

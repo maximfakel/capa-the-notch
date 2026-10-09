@@ -21,7 +21,8 @@ struct TeleprompterRow: View {
             lines: teleprompter.lines,
             size: size,
             playback: teleprompter.playback,
-            reduceMotion: reduceMotion
+            reduceMotion: reduceMotion,
+            litWord: teleprompter.followsVoice ? teleprompter.litWord : nil
         )
         .frame(width: TeleprompterLayout.rowWidth, height: TeleprompterLayout.textAreaHeight(size))
         .overlay(alignment: .topLeading) {
@@ -51,7 +52,15 @@ struct TeleprompterRow: View {
         .contentShape(Rectangle())
         .onTapGesture { teleprompter.toggle() }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(teleprompter.playback.state.spoken)
+        .accessibilityLabel(teleprompter.spokenState)
+    }
+}
+
+extension TeleprompterController {
+    /// What VoiceOver hears for the row and the page: the state, and whether
+    /// the Script follows the voice — never the Script.
+    var spokenState: String {
+        followsVoice && playback.state == .running ? L("Teleprompter, following your voice") : playback.state.spoken
     }
 }
 
@@ -63,17 +72,21 @@ private struct ScriptScroll: NSViewRepresentable {
     let size: TeleprompterTextSize
     let playback: TeleprompterPlayback
     let reduceMotion: Bool
+    var litWord: ScriptWord?
 
     func makeNSView(context: Context) -> ScriptScrollView { ScriptScrollView() }
 
     func updateNSView(_ view: ScriptScrollView, context: Context) {
-        view.update(lines: lines, size: size, playback: playback, reduceMotion: reduceMotion)
+        view.update(lines: lines, size: size, playback: playback, reduceMotion: reduceMotion, litWord: litWord)
     }
 }
 
 final class ScriptScrollView: NSView {
     private let content = CALayer()
     private let fade = CAGradientLayer()
+    /// Behind the word being said, while the Script follows the voice.
+    private let wordLight = CALayer()
+    private var litWord: ScriptWord?
     private var lineLayers: [Int: CATextLayer] = [:]
     private var lines: [String] = []
     private var size: TeleprompterTextSize = .medium
@@ -99,6 +112,10 @@ final class ScriptScrollView: NSView {
         layer?.masksToBounds = true
         content.anchorPoint = .zero
         layer?.addSublayer(content)
+        wordLight.backgroundColor = Self.lightColour
+        wordLight.cornerRadius = 5
+        wordLight.opacity = 0
+        content.addSublayer(wordLight)
         if !Self.drawnForPictures { layer?.mask = fade }
     }
 
@@ -115,7 +132,7 @@ final class ScriptScrollView: NSView {
         lineLayers.values.forEach { $0.contentsScale = scale }
     }
 
-    func update(lines: [String], size: TeleprompterTextSize, playback: TeleprompterPlayback, reduceMotion: Bool) {
+    func update(lines: [String], size: TeleprompterTextSize, playback: TeleprompterPlayback, reduceMotion: Bool, litWord: ScriptWord? = nil) {
         if lines != self.lines || size != self.size {
             lineLayers.values.forEach { $0.removeFromSuperlayer() }
             lineLayers = [:]
@@ -127,6 +144,44 @@ final class ScriptScrollView: NSView {
         self.playback = playback
         self.reduceMotion = reduceMotion
         if changed || lineLayers.isEmpty { placeScript() }
+        if litWord != self.litWord || changed {
+            self.litWord = litWord
+            light(litWord)
+        }
+    }
+
+    /// Kapa's cyan, quiet enough that the white word on it stays the thing read.
+    private static let lightColour = NSColor(srgbRed: 0x40 / 255, green: 0xC8 / 255, blue: 0xE0 / 255, alpha: 0.34).cgColor
+
+    /// The word being said, lit where it stands on its line; it slides from
+    /// word to word, and simply appears under Reduce Motion.
+    private func light(_ word: ScriptWord?) {
+        guard let word, lines.indices.contains(word.line), playback.isShowing,
+              NSMaxRange(word.range) <= (lines[word.line] as NSString).length
+        else {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            wordLight.opacity = 0
+            CATransaction.commit()
+            return
+        }
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: lines[word.line], attributes: TeleprompterLayout.attributes(size)))
+        let start = CTLineGetOffsetForStringIndex(line, word.range.location, nil)
+        let end = CTLineGetOffsetForStringIndex(line, NSMaxRange(word.range), nil)
+        let frame = CGRect(
+            x: TeleprompterLayout.textInset + start - 4,
+            y: CGFloat(word.line) * pitch - 1,
+            width: min(end, TeleprompterLayout.textWidth) - start + 8,
+            height: TeleprompterLayout.lineHeight(size) + 2
+        )
+        let appearing = wordLight.opacity == 0
+        CATransaction.begin()
+        CATransaction.setDisableActions(reduceMotion || appearing || Self.drawnForPictures)
+        CATransaction.setAnimationDuration(0.14)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
+        wordLight.frame = frame
+        wordLight.opacity = 1
+        CATransaction.commit()
     }
 
     /// Puts the Script where the playback says it is, and — running — sets it
@@ -136,6 +191,9 @@ final class ScriptScrollView: NSView {
         refresh = nil
         let now = Date()
         let position = playback.position(at: now)
+        // Following the voice, the Script steps from line to line as the
+        // voice does; each step eases from wherever it is on screen.
+        let shownY = content.presentation()?.position.y ?? content.position.y
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -144,6 +202,15 @@ final class ScriptScrollView: NSView {
         content.position = CGPoint(x: 0, y: offset(reduceMotion ? position.rounded(.down) : position))
         showLines(around: position)
         CATransaction.commit()
+
+        if playback.followsVoice, !reduceMotion, !Self.drawnForPictures, abs(shownY - offset(position)) > 0.5 {
+            let step = CABasicAnimation(keyPath: "position.y")
+            step.fromValue = shownY
+            step.toValue = offset(position)
+            step.duration = 0.32
+            step.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            content.add(step, forKey: "follow")
+        }
 
         guard playback.state == .running, let endsAt = playback.endsAt, !Self.drawnForPictures else { return }
 
@@ -341,6 +408,15 @@ struct TeleprompterPage: View {
                 }
                 .accessibilityLabel(L("Stop"))
 
+                // Following the voice (ticket 20): the speed still sets the
+                // time shown, and takes over if following is turned off.
+                if teleprompter.followsVoice {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SurfaceType.captionColour)
+                        .accessibilityLabel(L("Following your voice"))
+                }
+
                 HStack(spacing: 10) {
                     Button { teleprompter.slower() } label: {
                         Image(systemName: "minus").font(.system(size: 13, weight: .semibold))
@@ -382,7 +458,7 @@ struct TeleprompterPage: View {
             .frame(height: 18)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(playback.state.spoken)
+        .accessibilityLabel(teleprompter.spokenState)
     }
 
     private func previewLine(_ index: Int, font: Font, size: TeleprompterTextSize, opacity: Double) -> some View {

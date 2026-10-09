@@ -29,6 +29,9 @@ source="/tmp/capacity-notch-source"
 dist="$project_root/dist"
 
 cd "$project_root"
+source "$script_dir/signing.sh"
+# Before the build, not after it: no certificate, no release (ticket 30).
+signing_identity >/dev/null
 
 # What goes into the build must be what the commit says, untracked files
 # included: SwiftPM compiles everything under Sources, committed or not.
@@ -69,6 +72,11 @@ install -m 644 Sources/CapacityNotch/Resources/DictationLicenses.txt "$app/Conte
 # Geist travels with its licence (SIL OFL 1.1), as the licence asks.
 install -m 644 Sources/CapacityNotch/Resources/Geist.ttf "$app/Contents/Resources/Geist.ttf"
 install -m 644 Sources/CapacityNotch/Resources/Geist-OFL.txt "$app/Contents/Resources/Geist-OFL.txt"
+# The Claude Code mod, as in build-app.sh: only what it runs.
+for mod_file in .claude-plugin/plugin.json hooks/hooks.json hooks/register.ts; do
+  install -d "$app/Contents/Resources/ClaudeMod/capathenotch/${mod_file:h}"
+  install -m 644 "Packaging/ClaudeMod/capathenotch/$mod_file" "$app/Contents/Resources/ClaudeMod/capathenotch/$mod_file"
+done
 
 # The Music Module's reader (ADR 0004): run by /usr/bin/perl, never loaded here.
 mkdir -p "$app/Contents/Frameworks"
@@ -85,16 +93,11 @@ for binary in "$app"/Contents/MacOS/* "$app"/Contents/Helpers/* "$app"/Contents/
   fi
 done
 
-# Hardened Runtime, with the same entitlements as build-app.sh; the bridge
-# first and on its own, because signing the bundle marks only its main
-# executable. Without audio-input, macOS refuses the microphone silently: no
-# prompt, no entry in Privacy & Security, and requestAccess answers false.
-codesign --force --options runtime --sign - "$app/Contents/MacOS/CapacityNotchClaudeBridge"
-# A named designated requirement, so an update keeps what macOS granted the
-# last version; see build-app.sh.
-codesign --force --options runtime --sign - \
-  --entitlements Packaging/CapacityNotch.entitlements \
-  -r='designated => identifier "app.capacitynotch.CapacityNotch"' "$app"
+# Hardened Runtime, with the same entitlements and certificate as
+# build-app.sh; see signing.sh. Without audio-input, macOS refuses the
+# microphone silently: no prompt, no entry in Privacy & Security, and
+# requestAccess answers false.
+sign_capathenotch "$app" Packaging/CapacityNotch.entitlements
 find "$app" -exec touch -h -t "$stamp" {} +
 
 archive="CapaTheNotch-$version.zip"

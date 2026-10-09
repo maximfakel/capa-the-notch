@@ -54,6 +54,20 @@ struct DictationDelivery {
         )
     }
 
+    /// The application captured.
+    var processIdentifier: pid_t { pid }
+
+    /// Whether the captured focus can take text in place of its selection
+    /// through Accessibility — the first path `insert` tries: a field whose
+    /// value, selection and selected text Accessibility reports, the selected
+    /// text settable. Page text in a browser, a chat message, is not.
+    var canReplaceThroughAccessibility: Bool {
+        guard let element, selection != nil, original != nil else { return false }
+        var writable = DarwinBoolean(false)
+        return AXUIElementIsAttributeSettable(element, kAXSelectedTextAttribute as CFString, &writable) == .success
+            && writable.boolValue
+    }
+
     func insert(_ text: String) async -> String? {
         guard isTargetAppFrontmost() else {
             Self.logger.info("Insertion skipped: captured app is no longer frontmost")

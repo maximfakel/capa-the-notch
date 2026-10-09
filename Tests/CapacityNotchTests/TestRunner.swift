@@ -17,6 +17,26 @@ enum CapacityNotchTestRunner {
             ("Dictation.replacements", dictationReplacesPhrasesWithoutSubstringsOrCascades),
             ("Dictation.history", dictationHistoryIsOptInBoundedAndPersistent),
             ("Dictation.session", dictationStopsOnceAndRejectsCancelledResults),
+            ("Translator.direction", cyrillicGoesToEnglishAndLatinToRussian),
+            ("Translator.flip", aFlipHoldsWhileTypingAndIsForgottenWhenEmptied),
+            ("Translator.readiness", theTranslatorIsReadyOnlyWithBothWaysDownloaded),
+            ("Translator.onceAtATime", theShortcutRunsOnceAtATime),
+            ("Translator.accessibilityReplaces", aSelectionReadThroughAccessibilityIsReplacedAndTheClipboardPutBack),
+            ("Translator.copyFallback", whereAccessibilityCannotReadTheSelectionItIsCopiedAndTheClipboardPutBack),
+            ("Translator.notInPlace", aTranslationThatCannotBePutInPlaceStaysOnTheClipboard),
+            ("Translator.newerCopyKept", somethingCopiedMeanwhileIsNotOverwrittenByTheRestore),
+            ("Translator.nothingSelected", nothingSelectedLeavesTheClipboardUntouched),
+            ("Translator.refusals", passwordFieldsAndUnreadyTranslatorsReadNothing),
+            ("Translator.statesNeverText", theTranslatorTellsTheLogAndDiagnosticsStatesNeverText),
+            ("Translator.offAndShortcut", theTranslatorIsOffUntilTurnedOnWithItsOwnShortcut),
+            ("Translator.pageOrder", theTranslatorsPageComesLast),
+            ("Translator.russian", theTranslatorSpeaksRussian),
+            ("Translator.nothingReplacedUnasked", theShortcutReplacesNothingUntilThePersonAsks),
+            ("Translator.selectionInAField", aSelectionInAFieldOffersPastingInPlaceFirst),
+            ("Translator.selectionToRead", aSelectionToReadOffersOnlyCopying),
+            ("Translator.returnChooses", returnChoosesThePrimaryAction),
+            ("Translator.problemsOnThePage", shortcutProblemsAreSaidOnThePage),
+            ("Translator.languageLogChangesOnly", askingForLanguagesLogsOnlyChanges),
             ("Localization.translationsKeepTheirArguments", everyTranslationKeepsItsSentencesNumbersAndNames),
             ("Localization.systemFollowsTheMac", systemLanguageFollowsTheMacsFirstLanguage),
             ("Localization.missingFallsBackToEnglish", aSentenceWithoutATranslationIsShownAsWritten),
@@ -43,6 +63,38 @@ enum CapacityNotchTestRunner {
             ("Shelf.fileKinds", aFileIsDrawnByWhatKindItIs),
             ("Shelf.diagnostics", theShelfTellsDiagnosticsHowManyNeverWhich),
             ("Shelf.pageOrder", pagesRunCapacityMusicTeleprompterShelf),
+            ("Calendar.rowTenMinutesBefore", theRowAppearsTenMinutesBeforeAnEventAndLeavesFiveAfter),
+            ("Calendar.comingOutranksStarted", anEventStillToComeOutranksOneAlreadyStarted),
+            ("Calendar.allDay", anAllDayEventNeverTakesTheRowButLeadsTheDay),
+            ("Calendar.declinedAndCancelled", declinedAndCancelledEventsAreNotComing),
+            ("Calendar.nextEventAndRestOfToday", theDayFeaturesTheNextEventAndListsTheRestOfToday),
+            ("Calendar.crossingMidnight", anEventCrossingMidnightBelongsToBothDays),
+            ("Calendar.nextChange", theApplicationWakesWhenTheRowCouldChange),
+            ("Calendar.callLinks", aCallLinkIsFoundWhereverTheCalendarPutsIt),
+            ("Calendar.offReadsNothing", whileOffNothingIsAskedOrRead),
+            ("Calendar.refusalShowsNothing", aRefusalShowsNothingOnTheSurface),
+            ("Calendar.launchNeverPrompts", atLaunchTheModuleNeverPrompts),
+            ("Calendar.pageOrder", calendarComesLastAmongThePages),
+            ("Calendar.compactRow", anEventAboutToStartOutranksMusicButNotTheTeleprompter),
+            ("Calendar.diagnostics", diagnosticsSayHowManyEventsAndNeverWhich),
+            ("Calendar.russian", theCalendarSpeaksRussian),
+            ("Calendar.hideFromRow", theRowsCrossHidesThatOccurrenceAndNotTheNext),
+            ("Calendar.weekFromToday", theWeekIsSevenDaysStartingToday),
+            ("Calendar.weekChips", theWeeksChipsAreTwoAtMostAndTheRestAreCounted),
+            ("Calendar.weekFree", aWeekWithNothingSaysWhenTheNextEventIs),
+            ("Calendar.dayNothingLeft", aDayWithNothingLeftSaysWhatComesNext),
+            ("Calendar.kapaFreeTime", kapaWearsSunglassesOnlyInAnEmptyDayOrWeek),
+            ("Calendar.monthOctober", octoberIsFiveWeeksFromTheTwentyEighthOfSeptember),
+            ("Calendar.monthMarch", marchTwentyTwentySixIsSixWeeks),
+            ("Calendar.monthRows", everyMonthsGridFillsTheView),
+            ("Calendar.monthFreeDay", aFreeDayChosenInTheMonthSaysWhatComesAfterIt),
+            ("Calendar.monthChosenDay", aDayInTheMonthCanBeChosenAndTodayIsTheDefault),
+            ("Calendar.weekendsAndHolidays", weekendsAndHolidaysAreRed),
+            ("Calendar.monthDots", theMonthsDotsAreItsCalendarsColoursThreeAtMost),
+            ("Calendar.rememberedTab", thePageOpensOnTheTabLastUsed),
+            ("Calendar.readInterval", theWeekAndTheMonthWidenWhatIsReadAndNothingElse),
+            ("Calendar.headings", theCalendarsHeadingsSpeakBothLanguages),
+            ("Calendar.callService", theComingEventSaysWhatItsCallIsOn),
             ("Shelf.fileCount", theShelfCountsItsFilesAsEachLanguageDoes),
             ("Shelf.imageInMemory", anImageWithoutAFileIsHeldInMemory),
             ("Shelf.threeTabs", theShelfHasThreeTabsInOrder),
@@ -55,12 +107,39 @@ enum CapacityNotchTestRunner {
             ("Shelf.screenshotFolderNameAndType", aScreenshotIsKnownByTheNameAndTypeMacOSWasToldToUse),
             ("Shelf.screenshotFolderSettings", theScreenshotSettingsAreReadFromMacOSsOwnKeys),
             ("Shelf.screenshotFolderTarget", theFolderIsLookedAtOnlyWhileMacOSSavesScreenshotsToOne),
+            ("ClaudeMod.copiedSettingsUntouched", theModIsCopiedIntoTheSkillsFolderAndSettingsAreNotTouched),
+            ("ClaudeMod.refreshSaysWhereTheNextReadingComesFrom", aRefreshWithNothingNewerSaysWhereTheNextReadingComesFrom),
+            ("ClaudeMod.nextReadingInBothLanguages", whereTheNextReadingComesFromIsSaidInBothLanguages),
+            ("ClaudeMod.noReadingWaitsForAnyReply", withTheModNoReadingYetWaitsForAnyReply),
+            ("ClaudeMod.buildBundlesWhatIsInstalled", theBuildBundlesExactlyWhatIsInstalled),
+            ("ClaudeMod.followsTheBridgeKeepsTypes", anInstalledModFollowsTheBridgeAndKeepsClaudeCodesTypes),
+            ("ClaudeMod.notOursNeverTouched", aFolderCapaTheNotchDidNotMakeIsNeverTouched),
+            ("ClaudeMod.turnOffRemovesOnlyIt", turningOffRemovesTheModAndNothingElse),
+            ("ClaudeMod.incompleteInstallsNothing", aBundleMissingAFileInstallsNothing),
+            ("ClaudeMod.versions", modsAreUsedOnlyWhereClaudeCodeRunsThem),
+            ("ClaudeMod.diagnostics", copyDiagnosticsSaysTheModsStateInOneWord),
+            ("ClaudeMod.newestOfTwoWritersWins", theModAndTheStatusLineShareOneFileAndTheNewestWins),
+            ("ClaudeMod.noCredentialsCross", theBridgeIsRunWithNoneOfClaudeCodesCredentials),
+            ("ClaudeMod.validatesToItsTwoCalls", theModHooksAndCallsNothingButItsOwnTwo),
+            ("ClaudeSettings.rowsForEachState", theClaudeCardShowsOneRowSetForEachStateOfTheMod),
+            ("ClaudeSettings.wordsAsDrawn", theClaudeCardSaysWhatTheMockupsSay),
+            ("ClaudeSettings.addAndRemoveShowAtOnce", addingAndRemovingTheModShowsAtOnce),
+            ("ClaudeSettings.newestVersionNamed", theNewestClaudeCodeFoundIsTheOneNamed),
+            ("ClaudeSettings.terminalStartsClaude", theTerminalButtonStartsClaudeWithNothingSent),
+            ("Preferences.chosenPaceSetsTheSchedule", theChosenPaceSetsTheClosedSurfacesSchedule),
             ("ClaudeBridgeMove.toTheRenamedApplication", theBridgeMovesToTheRenamedApplication),
             ("ClaudeBridgeMove.passedStatusLineKept", aStatusLinePassedToTheBridgeIsKept),
             ("ClaudeBridgeMove.wholeOldPath", theWholeOldPathMovesWhereverTheBundleWas),
             ("ClaudeBridgeMove.nothingToMove", settingsWithoutTheOldBridgeAreLeftAlone),
             ("ClaudeBridgeMove.writtenAsJSON", aBridgePathIsWrittenAsJSON),
             ("ClaudeBridgeMove.inPlace", theSettingsFileIsRewrittenInPlaceKeepingItsLinkAndPermissions),
+            ("OldGrantReset.onceUnderTheCertificate", theOldGrantsAreResetOnceAndOnlyUnderTheCertificate),
+            ("OldGrantReset.exactlyTheFour", exactlyTheFourGrantsAreResetForCapaTheNotch),
+            ("OldGrantReset.failureTriedAgain", aResetThatFailsIsSaidAndTriedAgainAtTheNextLaunch),
+            ("OldGrantReset.whatOpens", onboardingSaysWhyItAsksAgainOnlyToSomeoneWhoGrantedBefore),
+            ("OldGrantReset.firstRunResetsNothing", aFirstRunResetsNothingThenOrLater),
+            ("OldGrantReset.removedByHand", grantsRemovedByHandEndTheAsking),
+            ("OldGrantReset.askedAtTheRelaunch", aResetDoneWhileRunningAsksAgainAtTheRelaunchOnce),
             ("CapacityAlert.recoveryAfterAlert", aWindowThatRecoversAfterItsAlertIsGoodNews),
             ("Sound.recipesRing", everySoundRecipeDecodesAndRings),
             ("Sound.layerDelayAndRamp", aLayerStartsAtItsDelayAndRampsFromTheFloor),
@@ -94,8 +173,28 @@ enum CapacityNotchTestRunner {
             ("Shelf.clipboard", whatIsCopiedLandsOnTheShelfExceptFromFinder),
             ("CompactStrip.choice", theStripShowsTheWindowChosenInSettings),
             ("CompactStrip.choiceByLength", theChosenWindowIsTheOneOfThatLengthNotTheShortestOrLongest),
+            ("CompactStrip.claudeFiveHoursMissing", claudeCodesFiveHoursNotSentShowAsADashInTheStrip),
+            ("StatusLineSetup.keepsTheRest", theStatusLineIsAddedAndTheRestOfTheFileKeptByteForByte),
+            ("StatusLineSetup.wrapsAnExistingLine", aStatusLineAlreadyThereRunsAfterTheBridge),
+            ("StatusLineSetup.alreadyThere", aBridgeAlreadySetUpIsLeftAsItIs),
+            ("StatusLineSetup.newFile", noSettingsFileYetGetsOneWithTheStatusLineAlone),
+            ("StatusLineSetup.turnOffRestores", turningOffPutsBackWhatWasThere),
+            ("StatusLineSetup.notJSON", aFileThatIsNotJSONIsNotTouched),
+            ("StatusLineSetup.remembered", whatTheStatusLineReplacedIsRememberedToPutBack),
+            ("StatusLineSetup.oldBundle", aBridgeFromTheOldBundleIsPointedAtThisOne),
+            ("StatusLineSetup.twoStatusLines", aFileWithTwoStatusLinesIsNotTouched),
             ("Diagnostics.dictationStatesReachTheReport", dictationStatesReachTheReportWhole),
             ("Diagnostics.logLinesCarryCodes", aLogLineCarriesCodesAndNeverDescriptions),
+            ("TrackpadTap.twoTaps", twoQuickTapsOfOneFingerOpenTheSurface),
+            ("TrackpadTap.twoFingers", twoFingersAreNotOneFingerTapping),
+            ("TrackpadTap.dragAndHold", aDragOrAPressAndHoldIsNotATap),
+            ("TrackpadTap.palm", aPalmIsNotATap),
+            ("TrackpadTap.farApart", tapsTooFarApartInTimeOrPlaceAreTwoSingleTaps),
+            ("TrackpadTap.press", aTouchThatClicksIsAClickNotATap),
+            ("TrackpadTap.thirdTap", aThirdTapStartsOver),
+            ("TrackpadTap.silence", aTrackpadThatStopsAnsweringIsNoticed),
+            ("TrackpadTap.offAndFailures", theTrackpadTapIsOffUntilAskedForAndSaysWhenItCannotWork),
+            ("TrackpadTap.typing", twoTapsWhileTypingAreAHandOnTheTrackpad),
             (
                 "TeleprompterTests.aScriptTakesAMinuteAtLeastAndRoundsToTheNearest",
                 aScriptTakesAMinuteAtLeastAndRoundsToTheNearest
@@ -180,6 +279,20 @@ enum CapacityNotchTestRunner {
                 "TeleprompterTests.diagnosticsSayHowLongTheScriptIsAndNeverWhatItSays",
                 diagnosticsSayHowLongTheScriptIsAndNeverWhatItSays
             ),
+            ("ScriptFollower.theScriptsWordsKnowTheirLineAndPlace", theScriptsWordsKnowTheirLineAndPlace),
+            ("ScriptFollower.followingMovesWithTheWordsReadInOrder", followingMovesWithTheWordsReadInOrder),
+            ("ScriptFollower.aWordCutOffByTheWindowStillCounts", aWordCutOffByTheWindowStillCounts),
+            ("ScriptFollower.aRepeatOrAStumbleDoesNotMoveThePlaceBack", aRepeatOrAStumbleDoesNotMoveThePlaceBack),
+            ("ScriptFollower.skippingALineJumpsAheadOnceTheVoiceIsSure", skippingALineJumpsAheadOnceTheVoiceIsSure),
+            ("ScriptFollower.talkOffTheScriptMovesNothing", talkOffTheScriptMovesNothing),
+            ("ScriptFollower.whenTheVoiceStopsTheScriptHolds", whenTheVoiceStopsTheScriptHolds),
+            ("ScriptFollower.aCommonShortWordAloneDoesNotJump", aCommonShortWordAloneDoesNotJump),
+            ("ScriptFollower.readingAgainFromEarlierGoesBackOnlyOnALongRun", readingAgainFromEarlierGoesBackOnlyOnALongRun),
+            ("ScriptFollower.theLastWordSaidIsTheEnd", theLastWordSaidIsTheEnd),
+            ("ScriptFollower.aNewestWordNotYetMadeOutDoesNotPullThePlaceBack", aNewestWordNotYetMadeOutDoesNotPullThePlaceBack),
+            ("ScriptFollower.followingTheVoiceTheScriptMovesOnlyWhereTheVoiceIs", followingTheVoiceTheScriptMovesOnlyWhereTheVoiceIs),
+            ("ScriptFollower.theVoiceReadingTheLastWordFinishesTheScript", theVoiceReadingTheLastWordFinishesTheScript),
+            ("ScriptFollower.turningFollowingOffGoesOnAtTheSetSpeedFromThePlace", turningFollowingOffGoesOnAtTheSetSpeedFromThePlace),
             (
                 "CapacitySnapshotTests.quotaWindowReportsThirtyPercentLeftAfterSeventyPercentIsUsed",
                 quotaWindowReportsThirtyPercentLeftAfterSeventyPercentIsUsed
@@ -425,58 +538,6 @@ enum CapacityNotchTestRunner {
                 aGaugeSaysWhenItResetsInOneShortThing
             ),
             (
-                "ClaudeUsageCommandTests.theUsageReportBecomesQuotaWindows",
-                theUsageReportBecomesQuotaWindows
-            ),
-            (
-                "ClaudeUsageCommandTests.proseThatNoLongerParsesIsNotAReading",
-                proseThatNoLongerParsesIsNotAReading
-            ),
-            (
-                "ClaudeUsageCommandTests.aWindowInWordingNotKnownRefusesTheWholeReport",
-                aWindowInWordingNotKnownRefusesTheWholeReport
-            ),
-            (
-                "ClaudeUsageCommandTests.windowsLeftOutOnPurposeOrNotPrintedAreNotAChangedReport",
-                windowsLeftOutOnPurposeOrNotPrintedAreNotAChangedReport
-            ),
-            (
-                "ClaudeUsageCommandTests.aWindowWithoutAYearReadsAsTheOneAhead",
-                aWindowWithoutAYearReadsAsTheOneAhead
-            ),
-            (
-                "ClaudeUsageCommandTests.theNewerOfTwoSourcesWins",
-                theNewerOfTwoSourcesWins
-            ),
-            (
-                "ClaudeUsageCommandTests.aBridgeThatWasNeverSetUpDoesNotHideWhyUsageFailed",
-                aBridgeThatWasNeverSetUpDoesNotHideWhyUsageFailed
-            ),
-            (
-                "ClaudeUsageCommandTests.aBrokenBridgeFileDoesNotHideWhyUsageFailed",
-                aBrokenBridgeFileDoesNotHideWhyUsageFailed
-            ),
-            (
-                "ClaudeUsageCommandTests.anOldReadingDoesNotHideWhyTheOtherSourceFailed",
-                anOldReadingDoesNotHideWhyTheOtherSourceFailed
-            ),
-            (
-                "ClaudeUsageCommandTests.aClaudeCodeThatHangsIsGivenUpOnAtTheTimeout",
-                aClaudeCodeThatHangsIsGivenUpOnAtTheTimeout
-            ),
-            (
-                "ClaudeUsageCommandTests.anAnswerBeforeTheTimeoutIsStillRead",
-                anAnswerBeforeTheTimeoutIsStillRead
-            ),
-            (
-                "ClaudeUsageCommandTests.askingClaudeCodeIsThrottled",
-                askingClaudeCodeIsThrottled
-            ),
-            (
-                "ClaudeUsageCommandTests.aFailedAskIsHeldOnlyBrieflyNotForTheWholeInterval",
-                aFailedAskIsHeldOnlyBrieflyNotForTheWholeInterval
-            ),
-            (
                 "UnreadCapacityTests.anUnreadSurfaceShowsNoNumbersAtAll",
                 anUnreadSurfaceShowsNoNumbersAtAll
             ),
@@ -569,10 +630,6 @@ enum CapacityNotchTestRunner {
                 liveArchiveReadsBackWhatTheAppWrote
             ),
             (
-                "LiveClaudeUsageTests.liveClaudeUsageReportsCapacity",
-                liveClaudeUsageReportsCapacity
-            ),
-            (
                 "LiveCodexTests.liveCodexPublishesFreshCapacity",
                 liveCodexPublishesFreshCapacity
             ),
@@ -597,12 +654,12 @@ enum CapacityNotchTestRunner {
                 fileClaudeCapacitySourceReadsPublishedQuotaWindows
             ),
             (
-                "ClaudeCapacityServiceTests.eachWayAskingClaudeCodeFailsSaysItsOwnFix",
-                eachWayAskingClaudeCodeFailsSaysItsOwnFix
+                "ClaudeCapacityServiceTests.aWindowClaudeCodeDoesNotSendIsNoDataNotWhole",
+                aWindowClaudeCodeDoesNotSendIsNoDataNotWhole
             ),
             (
-                "ClaudeCapacityServiceTests.aBridgeFromYesterdayDoesNotReplaceTheLastCapacityRead",
-                aBridgeFromYesterdayDoesNotReplaceTheLastCapacityRead
+                "ClaudeCapacityServiceTests.theSessionWhoseLimitsChangedLastIsBelieved",
+                theSessionWhoseLimitsChangedLastIsBelieved
             ),
             (
                 "ClaudeCapacityServiceTests.missingClaudeStatusLineSnapshotIsActionableAndDisconnected",

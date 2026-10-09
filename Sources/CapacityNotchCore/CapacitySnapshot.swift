@@ -20,9 +20,13 @@ public enum CapacityStatusReason: Equatable, Sendable {
     case claudeDisconnected
     case claudeStatusLineStale
     case claudeStatusLineUnavailable
-    case claudeCodeNotInstalled
-    case claudeUsageFailed
-    case claudeUsageNotUnderstood
+    /// Claude Code's Capacity cannot be pulled: it arrives when Claude
+    /// answers. Said when a refresh found nothing newer, with how old the
+    /// last reading is; `anyReply` when CapaTheNotch's mod is installed, so a
+    /// reply anywhere — the desktop app, VS Code, a terminal — brings it.
+    case claudeNextReply(lastReadAt: Date?, anyReply: Bool)
+    /// An old reading, with the mod installed: a reply anywhere renews it.
+    case claudeStaleUntilReply
     case openCodeDisconnected
     case openCodeNotSignedIn
     case openCodeKeyRefused
@@ -54,13 +58,11 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case .claudeStatusLineStale:
             "Run Claude Code in a terminal to update its last published Capacity."
         case .claudeStatusLineUnavailable:
-            "Claude Code has not published Capacity yet. Configure the CapaTheNotch status-line bridge, then run Claude Code in a terminal."
-        case .claudeCodeNotInstalled:
-            "Install Claude Code, then try again."
-        case .claudeUsageFailed:
-            "Claude Code did not answer. Check that it is signed in, then refresh."
-        case .claudeUsageNotUnderstood:
-            "Claude Code's usage report has changed and CapaTheNotch cannot read it. Update CapaTheNotch."
+            "Claude Code's Capacity appears after your next message in Claude Code in a terminal."
+        case .claudeStaleUntilReply:
+            "Updates after Claude's next reply — in the desktop app, VS Code or a terminal."
+        case let .claudeNextReply(lastReadAt, anyReply):
+            Localization.format(Self.nextReply(lastReadAt: lastReadAt, anyReply: anyReply), lastReadAt.map { Self.age(of: $0, now: Date(), in: .english) } ?? "", in: .english)
         case .openCodeDisconnected:
             "Turn on OpenCode in Settings to read its Capacity."
         case .openCodeNotSignedIn:
@@ -80,8 +82,15 @@ public enum CapacityStatusReason: Equatable, Sendable {
 
     /// The guidance in the language Settings speak. A Provider's own detail
     /// stays as it came: it is the Provider's words, not ours to translate.
-    public var localizedGuidance: String {
+    public var localizedGuidance: String { localizedGuidance(at: Date()) }
+
+    /// The guidance as of `now`, for a reason that says how old something is.
+    public func localizedGuidance(at now: Date) -> String {
         switch self {
+        case let .claudeNextReply(lastReadAt?, anyReply):
+            Localization.format(Self.nextReply(lastReadAt: lastReadAt, anyReply: anyReply), Self.age(of: lastReadAt, now: now))
+        case let .claudeNextReply(nil, anyReply):
+            Localization.text(Self.nextReply(lastReadAt: nil, anyReply: anyReply))
         case let .providerIncompatible(detail):
             Localization.format("Update the Codex CLI — %@", detail)
         case let .providerUnavailable(detail):
@@ -91,6 +100,24 @@ public enum CapacityStatusReason: Equatable, Sendable {
         default:
             Localization.text(guidance)
         }
+    }
+
+    private static func nextReply(lastReadAt: Date?, anyReply: Bool) -> String {
+        switch (lastReadAt != nil, anyReply) {
+        case (true, true): "Updates after Claude's next reply · read %@"
+        case (true, false): "Updates after your next message in Claude Code in a terminal · read %@"
+        case (false, true): "Claude Code's Capacity appears after Claude's next reply."
+        case (false, false): "Claude Code's Capacity appears after your next message in Claude Code in a terminal."
+        }
+    }
+
+    /// How long ago, as the cards say it: "2 hours ago", "2 ч назад".
+    public static func age(of date: Date, now: Date, in language: AppLanguage = Localization.current) -> String {
+        guard now.timeIntervalSince(date) >= 60 else { return Localization.text("just now", in: language) }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = language.locale
+        formatter.unitsStyle = language.resolved() == .russian ? .short : .full
+        return formatter.localizedString(for: date, relativeTo: now)
     }
 
     /// Whether the card's chip already carries this, so spelling it out in a
@@ -122,9 +149,8 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case .claudeDisconnected: "claude-disconnected"
         case .claudeStatusLineStale: "claude-status-line-stale"
         case .claudeStatusLineUnavailable: "claude-status-line-unavailable"
-        case .claudeCodeNotInstalled: "claude-code-not-installed"
-        case .claudeUsageFailed: "claude-usage-failed"
-        case .claudeUsageNotUnderstood: "claude-usage-not-understood"
+        case .claudeNextReply: "claude-next-reply"
+        case .claudeStaleUntilReply: "claude-stale-until-reply"
         case .openCodeDisconnected: "opencode-disconnected"
         case .openCodeNotSignedIn: "opencode-not-signed-in"
         case .openCodeKeyRefused: "opencode-key-refused"
@@ -144,8 +170,7 @@ public enum CapacityStatusReason: Equatable, Sendable {
              .providerNotAuthenticated,
              .providerAnswerNotUnderstood,
              .claudeStatusLineUnavailable,
-             .claudeCodeNotInstalled,
-             .claudeUsageNotUnderstood,
+             .claudeNextReply,
              .openCodeNotSignedIn,
              .openCodeKeyRefused,
              .openCodeAnswerNotUnderstood:
@@ -155,7 +180,7 @@ public enum CapacityStatusReason: Equatable, Sendable {
              .codexDisconnected,
              .claudeDisconnected,
              .claudeStatusLineStale,
-             .claudeUsageFailed,
+             .claudeStaleUntilReply,
              .openCodeDisconnected,
              .openCodeUnreachable,
              .openCodeMonthlyLimitReached,
@@ -175,7 +200,8 @@ public enum CapacityStatusReason: Equatable, Sendable {
         case .providerUnavailable,
              .providerCouldNotRead,
              .claudeStatusLineStale,
-             .claudeUsageFailed,
+             .claudeStaleUntilReply,
+             .claudeNextReply,
              .openCodeUnreachable,
              .staleFromArchive:
             true
@@ -190,9 +216,7 @@ public enum CapacityStatusReason: Equatable, Sendable {
              .providerAnswerNotUnderstood,
              .codexDisconnected,
              .claudeDisconnected,
-             .claudeStatusLineUnavailable,
-             .claudeCodeNotInstalled,
-             .claudeUsageNotUnderstood:
+             .claudeStatusLineUnavailable:
             false
         }
     }
@@ -214,19 +238,24 @@ public struct QuotaWindow: Equatable, Sendable {
     public let durationMinutes: Int?
     public let usedFraction: Double
     public let resetsAt: Date?
+    /// A window known to have reset at this moment and not used since as
+    /// far as the Provider has said: whole, with no next reset to show.
+    public let cameBackAt: Date?
 
     public init(
         id: String,
         label: String,
         durationMinutes: Int? = nil,
         usedFraction: Double,
-        resetsAt: Date?
+        resetsAt: Date?,
+        cameBackAt: Date? = nil
     ) {
         self.id = id
         self.label = label
         self.durationMinutes = durationMinutes
         self.usedFraction = usedFraction
         self.resetsAt = resetsAt
+        self.cameBackAt = cameBackAt
     }
 
     public var remainingPercentage: Double {
@@ -271,3 +300,27 @@ public struct CapacitySnapshot: Equatable, Sendable {
         )
     }
 }
+
+/// One place for a gauge on a Provider's card: a window as read, or one the
+/// Provider is known to keep that was not sent this time.
+public enum GaugeSlot: Equatable, Sendable {
+    case read(QuotaWindow)
+    /// Kept in its place, saying there is no data, rather than left out or
+    /// guessed at.
+    case missing(label: String)
+
+    /// The windows Claude Code always has, a five-hour one and a week; each
+    /// of its sessions sends only those it saw used, so one may be missing.
+    static let claudeCodeWindows: [(label: String, durationMinutes: Int)] = [("5 hour", 300), ("Weekly", 10_080)]
+
+    public static func slots(for snapshot: CapacitySnapshot) -> [GaugeSlot] {
+        guard snapshot.provider == .claudeCode, !snapshot.windows.isEmpty else {
+            return snapshot.windows.map(GaugeSlot.read)
+        }
+        return claudeCodeWindows.map { expected in
+            snapshot.windows.first { $0.durationMinutes == expected.durationMinutes }
+                .map(GaugeSlot.read) ?? .missing(label: expected.label)
+        }
+    }
+}
+

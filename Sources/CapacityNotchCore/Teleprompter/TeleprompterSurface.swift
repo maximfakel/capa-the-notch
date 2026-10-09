@@ -7,13 +7,22 @@ public enum TeleprompterSurface {
         case none
         case music
         case teleprompter
+        /// An event about to start (the Calendar Module).
+        case calendar
     }
 
     /// The Teleprompter Row takes the music row's place — nearness to the
     /// camera is the point — and shows over a fullscreen application too,
     /// where music does not: calls are often fullscreen.
-    public static func compactRow(teleprompterShowing: Bool, musicShown: Bool, fullscreen: Bool) -> CompactRow {
+    ///
+    /// An event about to start outranks music for its few minutes — it is
+    /// the one that needs attention now — and, unlike music, shows over a
+    /// fullscreen application too: the author's rule of 2026-10-07, since a
+    /// meeting matters most while something else fills the screen. Its ✕
+    /// hides it.
+    public static func compactRow(teleprompterShowing: Bool, musicShown: Bool, fullscreen: Bool, calendarShown: Bool = false) -> CompactRow {
         if teleprompterShowing { return .teleprompter }
+        if calendarShown { return .calendar }
         if musicShown, !fullscreen { return .music }
         return .none
     }

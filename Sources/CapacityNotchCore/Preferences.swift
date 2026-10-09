@@ -119,17 +119,14 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "launchAtLogin") }
     }
 
-    /// How often a Provider is read while the surface is closed. The open pace
-    /// is not a choice: an open surface is being watched.
-    public var backgroundRefreshSeconds: TimeInterval {
-        get {
-            let stored = defaults.double(forKey: "backgroundRefreshSeconds")
-            return stored > 0 ? stored : RefreshSchedule.standard.whileCompact
-        }
-        set { defaults.set(newValue, forKey: "backgroundRefreshSeconds") }
+    /// How often a polled Provider — Codex, OpenCode — is read while the
+    /// surface is closed: "Обновлять данные" in Settings ▸ Providers. Open,
+    /// it is read at least every minute: an open surface is being watched.
+    /// Claude Code is not polled; its readings arrive after each reply.
+    public var refreshInterval: RefreshInterval {
+        get { RefreshInterval(stored: defaults.double(forKey: "backgroundRefreshSeconds")) }
+        set { defaults.set(newValue.rawValue, forKey: "backgroundRefreshSeconds") }
     }
-
-    public static let refreshChoices: [TimeInterval] = [60, 300, 900]
 
     /// Whether the App Server's own output is kept for a bug report. Off by
     /// default; a diagnostic nobody asked for is a log nobody consented to.
@@ -138,9 +135,10 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "keepsDiagnosticLog") }
     }
 
-    /// Which window the closed strip shows for each Provider while both are on.
+    /// Which window the closed strip shows for each Provider while two are
+    /// on. The notch watches the same key, so a choice shows at once.
     public var compactWindow: CompactWindowChoice {
-        get { defaults.string(forKey: "compactWindow").flatMap(CompactWindowChoice.init(rawValue:)) ?? .fiveHour }
+        get { CompactWindowChoice(stored: defaults.string(forKey: "compactWindow")) }
         set { defaults.set(newValue.rawValue, forKey: "compactWindow") }
     }
 
@@ -257,6 +255,14 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue.rawValue, forKey: "teleprompterTextSize") }
     }
 
+    /// Ticket 20: the Script follows the voice reading it rather than moving
+    /// at the set speed. Off until turned on; the microphone is asked for
+    /// only then (ADR 0003).
+    public var teleprompterFollowsVoice: Bool {
+        get { defaults.bool(forKey: "teleprompterFollowsVoice") }
+        set { defaults.set(newValue, forKey: "teleprompterFollowsVoice") }
+    }
+
     public func teleprompterShortcut(for action: TeleprompterAction) -> KeyShortcut? {
         let key = Self.shortcutKey(action)
         guard let data = defaults.data(forKey: key) else { return TeleprompterShortcuts.standard[action] }
@@ -315,12 +321,77 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue, forKey: "openCodeConsentGiven") }
     }
 
+    /// Whether setting Claude Code's status line up has been asked about
+    /// (ADR 0001, amended 2026-10-06). A person who connected before that is
+    /// asked once at launch.
+    public var claudeStatusLineAsked: Bool {
+        get { defaults.bool(forKey: "claudeStatusLineAsked") }
+        set { defaults.set(newValue, forKey: "claudeStatusLineAsked") }
+    }
+
+    /// Whether the person said yes to it. Only then is `settings.json`
+    /// changed, on any Turn On after; "Not Now" means asking again next time.
+    public var claudeStatusLineAgreed: Bool {
+        get { defaults.bool(forKey: "claudeStatusLineAgreed") }
+        set { defaults.set(newValue, forKey: "claudeStatusLineAgreed") }
+    }
+
+    /// The status line CapaTheNotch set up, with what it replaced, so Turn
+    /// Off puts back exactly that and touches nothing it did not add.
+    public struct ClaudeStatusLineSetUp: Equatable, Sendable {
+        /// The earlier `statusLine` value as it was written; nil when there
+        /// was none.
+        public var previous: String?
+        public init(previous: String?) { self.previous = previous }
+    }
+
+    public var claudeStatusLineSetUp: ClaudeStatusLineSetUp? {
+        get {
+            guard defaults.bool(forKey: "claudeStatusLineSetUp") else { return nil }
+            return ClaudeStatusLineSetUp(previous: defaults.string(forKey: "claudeStatusLinePrevious"))
+        }
+        set {
+            defaults.set(newValue != nil, forKey: "claudeStatusLineSetUp")
+            defaults.set(newValue?.previous, forKey: "claudeStatusLinePrevious")
+        }
+    }
+
+    /// Whether putting CapaTheNotch's Claude Code mod in place has been
+    /// asked about (ADR 0001, amended 2026-10-08). A person who connected
+    /// before the mod existed is asked once at launch.
+    public var claudeModAsked: Bool {
+        get { defaults.bool(forKey: "claudeModAsked") }
+        set { defaults.set(newValue, forKey: "claudeModAsked") }
+    }
+
+    /// Whether the person said yes to it. Only then is the mod copied to
+    /// `~/.claude/skills/capathenotch`, on any Turn On after and at launch.
+    public var claudeModAgreed: Bool {
+        get { defaults.bool(forKey: "claudeModAgreed") }
+        set { defaults.set(newValue, forKey: "claudeModAgreed") }
+    }
+
     /// Whether moving Claude Code's status-line bridge to the renamed
     /// application has been settled: offered once and answered, or found to
     /// have nothing to move. A question re-asked is not consent.
     public var claudeBridgeMoveSettled: Bool {
         get { defaults.bool(forKey: "claudeBridgeMoveSettled") }
         set { defaults.set(newValue, forKey: "claudeBridgeMoveSettled") }
+    }
+
+    /// Whether the grants kept under the old ad-hoc signature have been
+    /// reset (ticket 33). Set only once every one of them was, by tccutil or
+    /// by the person; on a first run, at once, with nothing to reset.
+    public var oldGrantsReset: Bool {
+        get { defaults.bool(forKey: "oldGrantsReset") }
+        set { defaults.set(newValue, forKey: "oldGrantsReset") }
+    }
+
+    /// The next launch asks for the permissions again, once: the reset was
+    /// done in a process that keeps the answers macOS gave it before.
+    public var oldGrantsAskAgain: Bool {
+        get { defaults.bool(forKey: "oldGrantsAskAgain") }
+        set { defaults.set(newValue, forKey: "oldGrantsAskAgain") }
     }
 }
 
@@ -366,4 +437,49 @@ extension Preferences {
     private func setDictationValue<T: Encodable>(_ value: T, _ name: String) {
         if let data = try? JSONEncoder().encode(value) { defaults.set(data, forKey: "dictation." + name) }
     }
+}
+
+extension Preferences {
+    /// The Calendar Module. Off until asked for (ADR 0003): while off, no
+    /// calendar is read and macOS is not asked for access.
+    public var calendarEnabled: Bool {
+        get { defaults.bool(forKey: "calendarEnabled") }
+        set { defaults.set(newValue, forKey: "calendarEnabled") }
+    }
+
+    /// The Calendar page's view last used — Day, Week or Month — which it
+    /// opens on; the Day until another is chosen.
+    public var calendarTab: CalendarTab {
+        get { defaults.string(forKey: "calendarTab").flatMap(CalendarTab.init(rawValue:)) ?? .standard }
+        set { defaults.set(newValue.rawValue, forKey: "calendarTab") }
+    }
+}
+
+extension Preferences {
+    /// Two taps of one finger on the trackpad open the surface (ticket 14).
+    /// Off until asked for: it reads a private framework (ADR 0004).
+    public var opensOnTrackpadTap: Bool {
+        get { defaults.bool(forKey: "trackpadTap.enabled") }
+        set { defaults.set(newValue, forKey: "trackpadTap.enabled") }
+    }
+    /// The Translator Module (ticket 28). Off until asked for (ADR 0003):
+    /// while off, no shortcut is registered and nothing is translated. What
+    /// was translated is never kept here.
+    public var translatorEnabled: Bool {
+        get { defaults.bool(forKey: "translator.enabled") }
+        set { defaults.set(newValue, forKey: "translator.enabled") }
+    }
+    public var translatorShortcut: KeyShortcut {
+        get {
+            defaults.data(forKey: "translator.shortcut").flatMap { try? JSONDecoder().decode(KeyShortcut.self, from: $0) }
+                ?? TranslatorShortcutDefault.standard
+        }
+        set { if let data = try? JSONEncoder().encode(newValue) { defaults.set(data, forKey: "translator.shortcut") } }
+    }
+}
+
+public enum TranslatorShortcutDefault {
+    /// ⌃⌥T: beside Dictation's ⌃⌥D and the Teleprompter's ⌃⌥Space, Esc, ↑
+    /// and ↓, and none of them.
+    public static let standard = KeyShortcut(keyCode: 17, modifiers: [.control, .option], keyLabel: "T")
 }

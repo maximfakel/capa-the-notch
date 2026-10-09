@@ -14,8 +14,10 @@ forever.
 
 Decided already, by the author on 2026-09-30:
 
-- **Free, ad-hoc signed, not notarized.** No paid Apple Developer Program.
-  1.0 is not a signing change; the README and release notes keep saying
+- **Free, not Developer ID signed, not notarized.** No paid Apple Developer
+  Program. Amended 2026-10-07: ad-hoc gives way to the author's own
+  self-signed certificate (ticket 30), which is free and changes nothing
+  about first open; the README and release notes keep saying
   plainly that it is not Developer ID signed or notarized, and why macOS
   warns on first open (as ticket 11 requires).
 - **Updates stay manual.** "Check for Updates…" opens the latest GitHub
@@ -38,6 +40,11 @@ Decided already, by the author on 2026-09-30:
       scrolling on the row, dragging the progress, Reduce Motion, VoiceOver.
       Dictation: insertion outside Codex, Escape during a recording, a
       minute of speech, unloading after five minutes, VoiceOver.
+- [x] **Signed with the author's own certificate** (ticket 30). The
+      designated requirement names that certificate, not the bundle
+      identifier alone, so a build someone else signed inherits none of the
+      microphone, Accessibility or System Events grants; and the grants given
+      under the old requirement are reset once.
 - [ ] **The word "beta" goes.** README, release notes template and the
       release title say 1.0, and nothing else about the install changes.
 
@@ -68,3 +75,16 @@ The author changed three of ticket 07's rules:
   "Allow All". Asking for notifications no longer switches alerts on.
 
 Still open under this item: the author's pass on sizes in Paper.
+
+**2026-10-08 — the certificate, half of its item.** Ticket 30 is resolved:
+every build is signed with the author's own certificate and the designated
+requirement names it, so a build someone else signed inherits nothing —
+measured on this Mac. The item stays open for its other half, "the grants
+given under the old requirement are reset once": that is ticket 33, which
+the author chose to have the application do itself on first launch.
+
+**2026-10-09 — the certificate item done.** Ticket 33 resets the grants
+given under the old requirement once, on the first launch signed with the
+certificate, and asks for them again in onboarding — checked on this Mac.
+With ticket 30 that is the whole item.
+
