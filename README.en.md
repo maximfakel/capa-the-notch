@@ -14,14 +14,15 @@ A free beta for Apple Silicon Macs running macOS 14 or later.
 ## What it does
 
 - **Limits.** What is left in the five-hour and weekly windows of Codex,
-  Claude Code and OpenCode (its Go plan) — any two at once — when they reset, and whether it will last until then. An alert
-  when a window drops below 10%.
+  Claude Code and OpenCode (its Go plan) — any two at once — when they
+  reset, and whether it will last until then. An alert when a window drops
+  below 10%.
 - **Music.** What is playing, the artwork, seeking, the controls and the Mac's
   volume — for any player that shows its track in Control Center.
-- **Teleprompter.** A Script scrolls right under the camera, so you can read
+- **Teleprompter.** Your script scrolls right under the camera, so you can read
   and look into the lens — at a set speed, or following your voice as you
-  read it aloud. While it runs, the surface is kept out of screen recording
-  and sharing.
+  read it aloud. While it runs, the notch stays out of screen recordings and
+  screen sharing.
 - **Dictation.** Hold ⌃⌥D (or a shortcut of your own), speak, let go — the text appears at the cursor.
   Recognised entirely on this Mac, with GigaAM.
 - **Shelf.** Files dropped on the notch stay at hand until you drag them out;
@@ -32,6 +33,9 @@ A free beta for Apple Silicon Macs running macOS 14 or later.
 - **Translator.** Russian ↔ English on this Mac (macOS 26 or later): select
   text anywhere, press ⌃⌥T, then copy the translation or put it in place of
   the selection.
+- **Kapa.** A character in the notch whose face says what the modules already
+  say in words — worried when a limit won’t last until the reset, nodding
+  to music, eating a file you drop on the Shelf. Turn it off in Settings → General.
 - **Two taps on the trackpad** open the notch from anywhere, if you turn that
   on.
 
@@ -182,6 +186,14 @@ only the author can rebuild the published archive byte for byte; with your
 own certificate, everything but the signature is the same. Views declare
 their state with `State(initialValue:)` rather than `@State`, whose macro
 plugin ships inside Xcode.
+
+## How it was made
+
+CapaTheNotch was conceived and designed by [Maxim Marchenkov](https://github.com/maximfakel):
+the features, screens, Kapa, motion and sound. Claude Code wrote the
+Swift/SwiftUI code from the spec and tickets; the author checked every build
+by hand. Why things are the way they are is in the [decision records](docs/adr/);
+the product's words are in [`CONTEXT.md`](CONTEXT.md).
 
 ## License
 
