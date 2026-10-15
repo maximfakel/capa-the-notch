@@ -2,11 +2,13 @@
 
 [Русский](README.md) · **English**
 
+<p align="center"><a href="https://capathenotch.tech/en/"><img src="docs/media/capa-cover-en.webp" width="720" alt="CapaTheNotch: the notch opens on the Codex and Claude Code limits; the pointer comes near the dots at the bottom, they open into buttons, and the pages turn: music, teleprompter, Shelf, calendar and back to the limits"></a></p>
+
 Codex, Claude Code and OpenCode limits in the MacBook notch — beside the camera, at a
 glance. Music, a teleprompter, dictation, a shelf for files, a calendar and a
 translator live there too.
 
-**Website:** https://capathenotch.tech/ ·
+**Website and showreel:** https://capathenotch.tech/en/ ·
 **Download:** [latest release](https://github.com/maximfakel/capa-the-notch/releases/latest)
 
 A free beta for Apple Silicon Macs running macOS 14 or later.
@@ -34,8 +36,10 @@ A free beta for Apple Silicon Macs running macOS 14 or later.
   text anywhere, press ⌃⌥T, then copy the translation or put it in place of
   the selection.
 - **Kapa.** A character in the notch whose face says what the modules already
-  say in words — worried when a limit won’t last until the reset, nodding
+  say in words — worried when a window drops below 10%, nodding
   to music, eating a file you drop on the Shelf. Turn it off in Settings → General.
+
+  <img src="docs/media/kapa-en.webp" width="480" alt="Kapa's poses: under 10% left (Limits), recording (Dictation), file received (Shelf), track playing (Music)">
 - **Two taps on the trackpad** open the notch from anywhere, if you turn that
   on.
 

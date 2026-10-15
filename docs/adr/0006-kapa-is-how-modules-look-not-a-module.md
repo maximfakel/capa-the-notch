@@ -1,6 +1,6 @@
 # Kapa Is How Modules Look, Not a Module
 
-The author wanted something with feeling on the surface — one character — after OpenAI's Dots and the Coucou notch companion (`docs/research/coucou-character.md`). Kapa is that character: a cyan bell drawn in Paper ("Kapa — 01 Character sheet", "— 02 When to show"), with a pose for each thing the surface can already say honestly.
+The author wanted something with feeling on the surface — one character — after OpenAI's Dots and the Coucou notch companion (`docs/research/coucou-character.md`). Kapa is that character: a cyan bell, with a pose for each thing the surface can already say honestly. The author worked out its look from references studied with Claude — characters of other notch apps, WALL-E, Love, Death & Robots — then made a concept and a sheet of twelve states with Codex; in the app it is drawn by code (`KapaView`), not from an image.
 
 Kapa is not a Module. It reads nothing new, asks for no permission and owns no page; it appears only inside what Modules already show — the Capacity cards, the Shelf's drop tab and header, the Music row and page, the Dictation Capsule — and says in a face what those already say in words. So it does not wait to be turned on as ADR 0003 asks of Modules: it is on, with one switch to turn it off (Settings ▸ General, `KapaPreference`). Making it a Module was the alternative, and would have put a permission-free decoration behind the same ceremony as a microphone.
 
@@ -20,3 +20,5 @@ Coucou's character, name, look and sounds are its author's, all rights reserved;
 **Amended 2026-10-07 (ticket 23).** Kapa stands on the Calendar Module's day page too, one a page: attentive while the coming event is within ten minutes or under way, at rest otherwise (`KapaMood.calendar`) — what the page already says in words. The event's row beneath the strip has no Kapa.
 
 **Amended 2026-10-08 (ticket 23).** On the Calendar page Kapa stands only in free time — the Day with nothing left today, the Week with nothing in it — large, in the box that says so, and nowhere else: not on the coming event's card, not in a week with meetings, not in the Month. There it wears a pose for free time: sunglasses (`KapaExpression.free`), only on an empty calendar day or week; the eyes are behind the lenses, so it does not blink. This replaces the 2026-10-07 amendment above.
+
+**Corrected 2026-10-15.** This record first said Kapa was drawn in Paper. It was not: the concept and the state sheet were made with Codex, and the app draws Kapa in code. Only the sentence about its origin changed; the decision and its rules are as they were.
